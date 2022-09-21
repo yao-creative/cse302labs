@@ -105,7 +105,7 @@ main:
 	movq %r11, -216(%rbp)
 	movq -24(%rbp), %r11
 	movq %r11, -224(%rbp)
-	movq -208(%rbp), %rax
+	movq -216(%rbp), %rax
 	cqto
 	idivq -224(%rbp)
 	movq %rax, -232(%rbp)
@@ -120,7 +120,7 @@ main:
 	movq %r11, -248(%rbp)
 	movq -24(%rbp), %r11
 	movq %r11, -256(%rbp)
-	movq -240(%rbp), %rax
+	movq -248(%rbp), %rax
 	cqto
 	idivq -256(%rbp)
 	movq %rdx, -264(%rbp)

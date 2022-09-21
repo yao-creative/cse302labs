@@ -144,6 +144,9 @@ class TAC_proc:
     def save(self,outfile):
         with open(outfile, 'w') as fp:
             json.dump([{"proc": self.proc, "body": self.body}], fp)
+    #___________________________________________________________
+    #TMM
+    #___________________________________________________________
     def tmm_stmt(self,statement):
         """Takes a statement and returns a list of TAC statements"""
         if isinstance(statement, StatementVardecl):
@@ -181,24 +184,89 @@ class TAC_proc:
         elif isinstance(expression, ExpressionOp) and len(expression.arguments) == 1:
             #unary operator
             opcode = self.operator_map[expression.operator]
-            target = self.new_temp(f"{len(self.temps)}")
-            prev_lines = self.tmm_expr(expression.arguments[0], target)
-            return prev_lines + [TAC_line(opcode, [f"%{len(self.temps)-1}"], result).format()] #figure out args from last one
+            subexpr_target = self.new_temp(f"{len(self.temps)}")
+            prev_lines = self.tmm_expr(expression.arguments[0], subexpr_target)
+            return prev_lines + [TAC_line(opcode, [subexpr_target], result).format()] #figure out args from last one
         else:   #binary operator
             prev_lines = []
             opcode = self.operator_map[expression.operator]
-            for subexpr in expression.arguments: #
+            subexpr_targets = [] #the two subexpressions are fed into the higher one, the binary operator expression
+            for subexpr in expression.arguments: 
                 target = self.new_temp(f"{len(self.temps)}")
+                subexpr_targets.append(target)
                 prev_lines += self.tmm_expr(subexpr,target)
-            return prev_lines + [TAC_line(opcode, [f"%{len(self.temps)-2}", f"%{len(self.temps)-1}"], result).format()] #figure out args are last two
+            return prev_lines + [TAC_line(opcode, subexpr_targets, result).format()] #figure out args are last two
         
     def tmm(self):
         print(f"tmm")
         for item in self.tree.body:
             self.body += self.tmm_stmt(item)
         print(f"body: {self.body}")
+        
+    #___________________________________________________________
+    #BMM
+    #___________________________________________________________
+    def bmm_stmt(self,statement):
+        """Takes a statement and returns a list of TAC statements"""
+        if isinstance(statement, StatementVardecl):
+            opcode = "const"
+            args = [statement.init] #initialization value of declaration
+            result = self.new_temp(statement.name) #use the name of the variable as the key
+            return [TAC_line(opcode, args, result).format()]
+        elif isinstance(statement, StatementEval):
+            #this is guaranteed unique since it is an integer and length keeps growing.
+            prev_lines,temp_to_print = self.bmm_expr(statement.arguments)
+            opcode = "print"
+            result = None
+            return prev_lines + [TAC_line(opcode, [temp_to_print], result).format()]
+        elif isinstance(statement, StatementAssign):
+            print(f"expression assign")
+            l, subexpr_result = self.bmm_expr(statement.rvalue)
+            if self.search(statement.lvalue.name):
+                result = self.temps[statement.lvalue.name]
+            else:
+                result = self.new_temp(statement.lvalue.name)
+            #copy on assign
+            opcode = "copy"
+            args = [subexpr_result]
+            return l + [TAC_line(opcode, args, result).format()]
+
+            
+    def bmm_expr(self,expression):
+        """Takes an expression and returns a list of TAC statements"""
+        #figure out bottom up numbering maybe add output of bmm expression,  so it gives list of instructions and 
+        if isinstance(expression, ExpressionInt):
+            opcode = "const"
+            args = [expression.value] #what if two intergers same name?
+            result = self.new_temp(f"{len(self.temps)}")
+            return [TAC_line(opcode, args,result).format()], result
+        elif isinstance(expression, ExpressionVar):
+            print(f"expression var: {expression.name}")
+            return [], self.temps[expression.name]
+        elif isinstance(expression, ExpressionOp) and len(expression.arguments) == 1:
+            #unary operator
+            opcode = self.operator_map[expression.operator]
+            prev_lines, subexpr_result = self.bmm_expr(expression.arguments[0])
+            result = self.new_temp(f"{len(self.temps)}")
+            return prev_lines + [TAC_line(opcode, [subexpr_result], result).format()], result #figure out args from last one
+        else:   #binary operator
+            prev_lines = []
+            opcode = self.operator_map[expression.operator]
+            args = []
+            for subexpr in expression.arguments: 
+                line, subexpr_result = self.bmm_expr(subexpr)
+                prev_lines += line
+                args.append(subexpr_result)
+            result = self.new_temp(f"{len(self.temps)}")
+            return prev_lines + [TAC_line(opcode, args, result).format()], result #figure out args are last two
+
     def bmm(self):
-        pass
+        print(f"bmm")
+        for item in self.tree.body:
+            print(f"line: {item}")
+            self.body += self.bmm_stmt(item)
+        print(f"body: {self.body}")
+
 class TAC_line:
     def __init__(self, opcode, args, result):
         self.opcode = opcode
@@ -214,17 +282,10 @@ if __name__ == "__main__":
     with open(infile, 'r') as fp:
         js_obj = json.load(fp)
         js_obj = js_obj["ast"][0]
-    # print(f"final js_obj: {js_obj}")
-    # print(js_obj)
-    # print(f"\n\n-----------------------------\n\n")
-    # print(f"PARSING")
-    # print(f"\n\n-----------------------------\n\n")
+
     tree =json_to_expr(js_obj)
     mm = sys.argv[2]
     TAC_proc(tree, mm).save(sys.argv[3])
-    # print(f"\n\n-----------------------------\n\n")
-    # print(f"TREE:")
-    # print(f"\n\n-----------------------------\n\n")
-    # print(f"Tree: {tree}")
+    
 #TMM
 #---------------------------------------------------
