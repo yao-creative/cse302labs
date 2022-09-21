@@ -1,4 +1,4 @@
-def main(x : int) {
+def main() {
   var x = 0 : int ;
   var y = 0 : int ;
   var z = 0 : int ;

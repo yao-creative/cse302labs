@@ -54,6 +54,7 @@ def tac_to_asm(tac_instrs):
   temp_map = dict()
   asm = []
   for instr in tac_instrs:
+    print(f"instr: {instr}")
     opcode = instr['opcode']
     args = instr['args']
     result = instr['result']
