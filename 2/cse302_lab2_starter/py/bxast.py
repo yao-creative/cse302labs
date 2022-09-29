@@ -66,11 +66,10 @@ class StatementAssign(Statement):
         self.lvalue = lvalue
         self.rvalue = rvalue
         self.declared_ids = copy.deepcopy(declared_ids)
+        # print(f"self.declared_ids: {self.declared_ids} self.lvalue: {self.lvalue}")
     def __str__(self):
         return "StatementAssign(%s,%s)" % (self.lvalue,self.rvalue)
     def syntax_check(self):
-        if self.lvalue in self.declared_ids:
-            self.syntax_error("Error: variable already declared")
         self.rvalue.syntax_check()
 class Expression(Node):
     def __init__(self,location):
