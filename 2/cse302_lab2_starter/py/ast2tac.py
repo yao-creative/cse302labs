@@ -32,9 +32,6 @@ class TAC_proc:
     def new_temp(self, key=None):
         if key not in self.temps:
             self.temps[key] = f"%{len(self.temps)}"
-            # print(F"created new temp: {self.temps[key]}")
-        else:
-            print(F"temp already exists: {self.temps[key]}")
         return self.temps[key]
     def search(self, key):
         """Searches for a key in the temps dictionary"""
