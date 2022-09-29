@@ -70,6 +70,8 @@ class StatementAssign(Statement):
     def __str__(self):
         return "StatementAssign(%s,%s)" % (self.lvalue,self.rvalue)
     def syntax_check(self):
+        if self.lvalue not in self.declared_ids:
+            self.syntax_error("Error: variable yet not declared")
         self.rvalue.syntax_check()
 class Expression(Node):
     def __init__(self,location):
