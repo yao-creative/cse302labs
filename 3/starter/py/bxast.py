@@ -33,20 +33,26 @@ class DeclProc(Node):
 class Statement(Node):
     def __init__(self,location):
         super().__init__(location)
+class StatementBlock(Statement):
+    def __init__(self,location, statements):
+        super().__init__(location)
+        self.statements = statements
+    def syntax_check(self):
+        for statement in self.statements:
+            statement.syntax_check()
+    def __str__(self):
+        return "block(%s)" % (self.statements)
 class StatementVardecl(Statement):
-    def __init__(self,location, name, t, init, declared_ids = []):
+    def __init__(self,location, name, ty, init, declared_ids = []):
         super().__init__(location)
         self.name = name
-        self.type = t
+        self.ty = ty
         self.init = init 
         self.declared_ids = copy.deepcopy(declared_ids)
-        # print(f"self: {self}")
-        # print(F"declared_ids: {self.declared_ids}")
     def __str__(self):
-        return "vardecl(%s,%s,%s)" % (self.name,self.type,self.init)
+        return "vardecl(%s,%s,%s)" % (self.name,self.ty,self.init)
 
     def syntax_check(self):
-        # print(f"checking self: {self}")
         if self.name in self.declared_ids:
             self.syntax_error("Error: variable already declared")
         self.init.syntax_check()
@@ -60,23 +66,63 @@ class StatementPrint(Statement):
         return "print({})".format(self.arguments)
     def syntax_check(self):
         self.arguments.syntax_check()
+
 class StatementAssign(Statement):
     def __init__(self, location, lvalue,rvalue, declared_ids = []): 
         super().__init__(location)
         self.lvalue = lvalue
         self.rvalue = rvalue
         self.declared_ids = copy.deepcopy(declared_ids)
-        # print(f"self.declared_ids: {self.declared_ids} self.lvalue: {self.lvalue}")
     def __str__(self):
         return "StatementAssign(%s,%s)" % (self.lvalue,self.rvalue)
     def syntax_check(self):
         if self.lvalue not in self.declared_ids:
             self.syntax_error("Error: variable yet not declared")
         self.rvalue.syntax_check()
+class StatementIfElse(Statement):
+    def __init__(self, location, condition, block, ifrest):
+        super().__init__(location)
+        """if_body is a block, condition is an expression"""
+        self.condition = condition
+        self.block = block 
+        self.if_rest = ifrest
+    def __str__(self):
+        return "ifelse(%s,%s,%s)" % (self.condition,self.block,self.if_rest)
+    def syntax_check(self):
+        self.condition.syntax_check()
+        self.block.syntax_check()
+        self.if_rest.syntax_check()
+
+class StatementWhile(Statement):
+    def __init__(self, location, condition, block):
+        super().__init__(location)
+        self.condition = condition
+        self.block = block
+    def __str__(self):
+        return "while(%s,%s)" % (self.condition,self.block)
+    def syntax_check(self):
+        self.condition.syntax_check()
+        self.block.syntax_check()
+class StatementJump(Statement):
+    def __init__(self, location, keyword):
+        super().__init__(location)
+        self.keyword = keyword
+    def __str__(self):
+        return "Jump(%s)" % (self.keyword)
+    def syntax_check(self):
+        pass
 class Expression(Node):
     def __init__(self,location):
         super().__init__(location)
-
+class ExpressionBool(Expression):
+    def __init__(self,location, value):
+        super().__init__(location)
+        self.value = value
+    def __str__(self):
+        return "bool(%s)" % (self.value)
+    def syntax_check(self):
+        if self.value not in [True, False]:
+            self.syntax_error("Error: value must be 'true' or 'false'.")
 class ExpressionVar(Expression):
     def __init__(self, location, name, declared_ids = []):
         super().__init__(location)
