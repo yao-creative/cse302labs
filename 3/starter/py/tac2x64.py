@@ -1,9 +1,6 @@
 import json, sys, os
 from pathlib import Path
 from typing import List
-
-from bx_ast_classes import Statement
-
 """
 Authors: Yi Yao Tan 
          Vrushank Agrawal
@@ -121,7 +118,7 @@ class tac2x64:
     def tac_to_asm(self):
         """ Get the x64 instructions corresponding to the TAC """
 
-        for index, instr in enumerate(self.tac_instrs):
+        for index, instr in enumerate(self.tac_instr):
             
             assert isinstance(instr, dict), f'Invalid type for instruction: {instr}'
             print(f"instr: {instr}")          # DEBUG
@@ -133,7 +130,7 @@ class tac2x64:
 
             if opcode == 'nop': pass
 
-            elif opcode == 'Label':
+            elif opcode == 'label':
                 self.check_arguments(args, 1, instr)
                 arg = args[0]
                 self.check_label(arg, instr)
@@ -160,7 +157,7 @@ class tac2x64:
                 self.assembly.append(f'\tmovq %r11, {result}')
 
             elif opcode in self.binops:
-                self.check_arguments(args, 1, instr)
+                self.check_arguments(args, 2, instr)
                 arg1 = self.lookup_temp(args[0], instr)
                 arg2 = self.lookup_temp(args[1], instr)
                 result = self.lookup_temp(result, instr)
