@@ -1,21 +1,12 @@
-"""
-This is a very simple TAC to x64 assembly pass. It only handles straightline
-code and a single main() function.
-
-Usage: python3 tac2asm.py tacfile.json
-Produces: tacfile.s (assembly) and tacfile.exe (executable)
-Requires: a working gcc
-"""
-
 import json, sys, os
 from pathlib import Path
 from typing import List
 
-"""
+from bx_ast_classes import Statement
 
+"""
 Authors: Yi Yao Tan 
          Vrushank Agrawal
-
 """
 
 class tac2x64:
@@ -25,6 +16,10 @@ class tac2x64:
         self.func_name: str = functn
         self.assembly: List = []
         self.temp_map: dict = {}
+
+    # ---------------------------------------------------------------------#
+    # Class Macro Variables
+    # ---------------------------------------------------------------------#
 
     binops = {'add': 'addq',
               'sub': 'subq',
@@ -53,56 +48,122 @@ class tac2x64:
     unops = {'neg': 'negq',
             'not': 'notq'}
 
-    jcc = ["je", "jz"     # Src2 == Src1
-           "jne", "jnz",  # Src2 != Src1
-           "jl", "jnge",  # Src2 < Src1
-           "jle", "jng",  # Src2 <= Src1
-           "jg", "jnle",  # Src2 > Src1
-           "jge", "jnl",  # Src2 >= Src1
+    jcc = ["je", "jz"         # Src2 == Src1
+           "jne", "jnz",      # Src2 != Src1
+           "jl", "jnge",      # Src2 < Src1
+           "jle", "jng",      # Src2 <= Src1
+           "jg", "jnle",      # Src2 > Src1
+           "jge", "jnl",      # Src2 >= Src1
            ]
 
-    def lookup_temp(self, temp) -> str:
+    # ---------------------------------------------------------------------#
+    # misc functions
+    # ---------------------------------------------------------------------#
+
+    def lookup_temp(self, temp: str, instr: dict) -> str:
         """ Returns the value of the temp from the stack 
             while simultaneously creating a hash table """
-        assert (isinstance(temp, str) and \
-                temp[0] == '%' and \
-                temp[1:].isnumeric()), temp
+        self.check_temporary(temp, instr)
         return self.temp_map.setdefault(temp, f'{-8 * (len(self.temp_map) + 1)}(%rbp)')
 
-    def tac_to_asm(self) -> List:
-        """
-        Get the x64 instructions correspondign to the TAC instructions
-        """
+    def add_instr_comment(self, instr: dict) -> None:
+        """ Adds instruction as a comment in the assembly """
+        if len(instr["args"]) == 1:
+            self.assembly.append(f'\t/*  {instr["result"]} = {instr["opcode"]}, {instr["args"][0]} [TAC] */')
+        elif len(instr["args"]) == 2:
+            self.assembly.append(f'\t/*  {instr["result"]} = {instr["opcode"]}, {instr["args"][0]}, {instr["args"][1]} [TAC] */')
+        else:       # should have been caught before
+            raise RuntimeError(f'Too many arguments for instruction: {instr}')
+    
+    def check_prv_instr(self, index: int, field: str, value_to_check: str) -> bool:
+        """ Checks the previous instruction if it has a certain value """
+        return self.tac_instr[index][field] == value_to_check
 
-        for instr in self.tac_instrs:
-            print(f"instr: {instr}")    # DEBUG
+    def get_label_name(self, lab: str) -> str:
+        """ returns a label name for the current function """
+        return f'.{self.func_name}{lab[1:]}'
+
+    # ---------------------------------------------------------------------#
+    # assertion functions
+    # ---------------------------------------------------------------------#
+        
+    @staticmethod
+    def check_temporary(temp: str, instr: dict) -> None:
+        """ Checks if temporary is of correct format """
+        assert (isinstance(temp, str) and \
+                temp[0] == '%' and \
+                temp[1:].isnumeric()), f'Invalid format for temporary in {instr}'
+
+    @staticmethod
+    def check_label(arg: str, instr: dict) -> None:
+        """ Checks if label is of correct format """
+        assert (isinstance(arg, str) and \
+                arg.startswith('%.L') and \
+                arg[3:].isnumeric()), f'Invalid format for label in {instr}'
+
+    @staticmethod
+    def check_arguments(args: List, num: int, instr: dict) -> None:
+        """ Checks if correct number of arguments passed """
+        if num == 1:
+          assert (len(args)==1), f'Invalid number of arguments in {instr}'
+        elif num == 2:
+          assert (len(args)==2), f'Invalid number of arguments in {instr}'
+
+    @staticmethod
+    def check_result(result: None, instr: dict) -> None:
+        """ Checks if result temporary is set to None """
+        assert result == None, f'Result should be empty in {instr}'        
+
+    # ---------------------------------------------------------------------#
+    # tac to assembly conversion
+    # ---------------------------------------------------------------------#
+
+    def tac_to_asm(self):
+        """ Get the x64 instructions corresponding to the TAC """
+
+        for index, instr in enumerate(self.tac_instrs):
+            
+            assert isinstance(instr, dict), f'Invalid type for instruction: {instr}'
+            print(f"instr: {instr}")          # DEBUG
+
+            self.add_instr_comment(instr)     # Add coment in assembly file
             opcode = instr['opcode']
             args = instr['args']
             result = instr['result']
-            if opcode == 'nop':
-                pass
+
+            if opcode == 'nop': pass
+
             elif opcode == 'Label':
-                assert (len(args) == 1), args
+                self.check_arguments(args, 1, instr)
                 arg = args[0]
-                assert (isinstance(arg, str) and \
-                        arg.startswith('%.L')), arg
-                assert result == None
-                self.assembly.append(f'.{self.func_name}{arg[1:]}')    # add label to the assembly
+                self.check_label(arg, instr)
+                self.check_result(result, instr)
+                
+                # if previous instruction is jmp to current lab then comment the jmp
+                if self.check_prv_instr(index, 'opcode', 'jmp'): 
+                    if self.check_prv_instr(index, 'args[0]', arg):
+                        # TODO
+                        pass
+                self.assembly.append(self.get_label_name(arg)+':')          # add label to the assembly
+
             elif opcode == 'const':
-                assert len(args) == 1 and isinstance(args[0], int)
-                result = self.lookup_temp(result, self.temp_map)
-                self.assembly.append(f'\tmovq ${args[0]}, {result}')
+                self.check_arguments(args, 1, instr)
+                assert isinstance(args[0], int)                         # check if instruction is in correct format
+                result = self.lookup_temp(result, instr)        # get stack position to store result of temp
+                self.assembly.append(f'\tmovq ${args[0]}, {result}')    # add instruction as assembly
+
             elif opcode == 'copy':
-                assert len(args) == 1
-                arg = self.lookup_temp(args[0], self.temp_map)
-                result = self.lookup_temp(result, self.temp_map)
+                self.check_arguments(args, 1, instr)
+                arg = self.lookup_temp(args[0], instr)
+                result = self.lookup_temp(result, instr)
                 self.assembly.append(f'\tmovq {arg}, %r11')
                 self.assembly.append(f'\tmovq %r11, {result}')
+
             elif opcode in self.binops:
-                assert len(args) == 2
-                arg1 = self.lookup_temp(args[0], self.temp_map)
-                arg2 = self.lookup_temp(args[1], self.temp_map)
-                result = self.lookup_temp(result, self.temp_map)
+                self.check_arguments(args, 1, instr)
+                arg1 = self.lookup_temp(args[0], instr)
+                arg2 = self.lookup_temp(args[1], instr)
+                result = self.lookup_temp(result, instr)
                 bin_op = self.binops[opcode]
                 if isinstance(bin_op, str):
                     self.assembly.extend([f'\tmovq {arg1}, %r11',
@@ -110,40 +171,58 @@ class tac2x64:
                                           f'\tmovq %r11, {result}'])
                 else: 
                     self.assembly.extend(bin_op(arg1, arg2, result))
+
             elif opcode in self.unops:
-                assert len(args) == 1
-                arg = self.lookup_temp(args[0], self.temp_map)
-                result = self.lookup_temp(result, self.temp_map)
+                self.check_arguments(args, 1, instr)
+                arg = self.lookup_temp(args[0], instr)
+                result = self.lookup_temp(result, instr)
                 un_op = self.unops[opcode]
                 self.assembly.extend([f'\tmovq {arg}, %r11',
                                       f'\t{un_op} %r11',
                                       f'\tmovq %r11, {result}'])
+
             elif opcode == 'print':
-                assert len(args) == 1
-                assert result == None
-                arg = self.lookup_temp(args[0], self.temp_map)
+                self.check_arguments(args, 1, instr)
+                self.check_result(result, instr)
+                arg = self.lookup_temp(args[0], instr)
                 self.assembly.extend([f'\tmovq {arg}, %rdi',
                                       f'\tcallq bx_print_int'])
+
             elif opcode == 'jmp':
-                assert len(args) == 1
-                assert result == None
+                self.check_arguments(args, 1, instr)
+                self.check_result(result, instr)
                 arg = args[0]
-                self.assembly.append(f'\tjmp {args[0]}')
+                self.assembly.append(f'\tjmp {self.get_label_name(arg)}')
 
             elif opcode in self.jcc:
-                assert len(args) == 1
-                assert result == None
-                arg = self.lookup_temp(args[0], self.temp_map)
-                self.assembly.extend([f'\tjmp {args[0]}'])
+                self.check_arguments(args, 2, instr)
+                arg = args[0]
+                lab = args[1]
+                self.check_temporary(arg, instr)
+                self.check_label(lab, instr)
+                self.check_result(result, instr)
+                # if previous instruction is not a sub then we need to compare
+                if not self.check_prv_instr(index, 'opcode', 'sub'):
+                    arg = self.lookup_temp(arg, instr)
+                    self.assembly.extend([f'\tmovq {arg}, %r11',
+                                          f'\testq %r11, %r11'])
+                self.assembly.append(f'\t{opcode} {self.get_label_name(lab)}')
 
             else:       # where did we screw up?
                 raise RuntimeError(f'Undefined opcode: {opcode}')
-            
+
+
+    def complete_assembly(self) -> List:
+        """ Creates complete assembly code with stack manipulation """
+
+        # convert the tac to assembly
+        self.tac_to_asm()
+
         # set the stack size to the number of temporaries we need
         stack_size = len(self.temp_map)
         if stack_size % 2 != 0: 
             stack_size += 1         # 16 byte alignment for x64
-        
+
         # Store the base pointer and initialize the stack pointer 
         self.assembly[:0] = [f'\tpushq %rbp',
                              f'\tmovq %rsp, %rbp',
@@ -152,18 +231,26 @@ class tac2x64:
         # Reset the base pointer to the stack pointer
         self.assembly.extend([f'\tmovq %rbp, %rsp',
                               f'\tpopq %rbp',
-                              f'\tmovq $0, %rax',     # set return code to 0
+                              f'\tmovq $0, %rax',
                               f'\tretq'])
+
         return self.assembly
 
+# ------------------------------------------------------------------------------#
+# main function drivers
+# ------------------------------------------------------------------------------#
+
 def compile_tac(fname):
+
+    # Check if fileformat is correct
     if fname.endswith('.tac.json'):
         rname = fname[:-9]
     elif fname.endswith('.json'):
         rname = fname[:-5]
     else:
-        raise ValueError(f'{fname} does not end in .tac.json or .json')
+        raise ValueError(f'{fname} is not of the correct format .tac.json or .json')
     
+    # Open file and check if it has correct structure
     tac_jsn = None
     with open(fname, 'rb') as fp:
         tac_jsn = json.load(fp)
@@ -171,12 +258,14 @@ def compile_tac(fname):
     tac_jsn = tac_jsn[0]
     assert 'proc' in tac_jsn and tac_jsn['proc'] == '@main', tac_jsn
     
+    # Convert tac to assembly
     x64_asm = tac2x64(tac_jsn['proc'][1:], tac_jsn['body'])     # initialize tac2x64 class here 
-    asm = x64_asm.tac_to_asm()
+    asm = x64_asm.complete_assembly()
     asm[:0] = [f'\t.text',
                f'\t.globl main',
                f'main:']
     
+    # Save assembly code and create executable
     xname = rname + '.exe'
     sname = rname + '.s'
     with open(sname, 'w') as afp:
