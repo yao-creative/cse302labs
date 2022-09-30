@@ -76,10 +76,8 @@ class tac2x64:
         
         elif len(instr["args"]) == 1:
             self.assembly.append(f'\t/*   {instr["result"]} = {instr["opcode"]} {instr["args"][0]} [TAC] */')
-        
         elif len(instr["args"]) == 2:
             self.assembly.append(f'\t/*   {instr["result"]} = {instr["opcode"]} {instr["args"][0]}, {instr["args"][1]} [TAC] */')
-        
         else:       # should have been caught before
             raise RuntimeError(f'Could not comment the instruction: {instr}')
     
@@ -155,7 +153,9 @@ class tac2x64:
                 if self.check_prv_instr(index-1, 'opcode', 'jmp'): 
                     if self.check_prv_instr(index-1, 'args', arg):
                         # TODO
-                        pass
+                        previos_instr_txt = self.assembly[-2][1:]
+                        # print(previos_instr_txt)
+                        self.assembly[-2] = f'\t/* --{previos_instr_txt}-- */'
                 self.assembly.append(self.get_label_name(arg)+':')          # add label to the assembly
 
             elif opcode == 'const':
