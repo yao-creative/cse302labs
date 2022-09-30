@@ -65,15 +65,30 @@ class tac2x64:
 
     def add_instr_comment(self, instr: dict) -> None:
         """ Adds instruction as a comment in the assembly """
-        if len(instr["args"]) == 1:
-            self.assembly.append(f'\t/*  {instr["result"]} = {instr["opcode"]}, {instr["args"][0]} [TAC] */')
+
+        if instr['result'] == None:
+            if instr['opcode'] == 'jmp' or instr['opcode'] == 'print':
+                self.assembly.append(f'\t/*   {instr["opcode"]} {instr["args"][0]} [TAC] */')
+            elif instr['opcode'] in self.jcc:
+                self.assembly.append(f'\t/*   {instr["opcode"]} {instr["args"][0]}, {instr["args"][1]} [TAC] */')
+            elif instr['opcode'] == 'label':
+                self.assembly.append(f'\t/*  {instr["args"][0]}: [TAC] */')
+        
+        elif len(instr["args"]) == 1:
+            self.assembly.append(f'\t/*   {instr["result"]} = {instr["opcode"]} {instr["args"][0]} [TAC] */')
+        
         elif len(instr["args"]) == 2:
-            self.assembly.append(f'\t/*  {instr["result"]} = {instr["opcode"]}, {instr["args"][0]}, {instr["args"][1]} [TAC] */')
+            self.assembly.append(f'\t/*   {instr["result"]} = {instr["opcode"]}, {instr["args"][0]}, {instr["args"][1]} [TAC] */')
+        
         else:       # should have been caught before
-            raise RuntimeError(f'Too many arguments for instruction: {instr}')
+            raise RuntimeError(f'Could not comment the instruction: {instr}')
     
     def check_prv_instr(self, index: int, field: str, value_to_check: str) -> bool:
         """ Checks the previous instruction if it has a certain value """
+        # print(self.tac_instr[index])
+        # print(self.tac_instr[index][field], value_to_check)
+        if field == 'args':   # compare the jmp argument with current label
+          return self.tac_instr[index][field][0] == value_to_check
         return self.tac_instr[index][field] == value_to_check
 
     def get_label_name(self, lab: str) -> str:
@@ -121,7 +136,7 @@ class tac2x64:
         for index, instr in enumerate(self.tac_instr):
             
             assert isinstance(instr, dict), f'Invalid type for instruction: {instr}'
-            print(f"instr: {instr}")          # DEBUG
+            # print(f"instr: {instr}")          # DEBUG
 
             self.add_instr_comment(instr)     # Add coment in assembly file
             opcode = instr['opcode']
@@ -137,8 +152,8 @@ class tac2x64:
                 self.check_result(result, instr)
                 
                 # if previous instruction is jmp to current lab then comment the jmp
-                if self.check_prv_instr(index, 'opcode', 'jmp'): 
-                    if self.check_prv_instr(index, 'args[0]', arg):
+                if self.check_prv_instr(index-1, 'opcode', 'jmp'): 
+                    if self.check_prv_instr(index-1, 'args', arg):
                         # TODO
                         pass
                 self.assembly.append(self.get_label_name(arg)+':')          # add label to the assembly
@@ -199,10 +214,10 @@ class tac2x64:
                 self.check_label(lab, instr)
                 self.check_result(result, instr)
                 # if previous instruction is not a sub then we need to compare
-                if not self.check_prv_instr(index, 'opcode', 'sub'):
+                if not self.check_prv_instr(index-1, 'opcode', 'sub'):
                     arg = self.lookup_temp(arg, instr)
                     self.assembly.extend([f'\tmovq {arg}, %r11',
-                                          f'\testq %r11, %r11'])
+                                          f'\ttestq %r11, %r11'])
                 self.assembly.append(f'\t{opcode} {self.get_label_name(lab)}')
 
             else:       # where did we screw up?
