@@ -20,32 +20,32 @@ class tac2x64:
 
     binops = {'add': 'addq',
               'sub': 'subq',
-              'mul': (lambda ra, rb, rd: [f'movq {ra}, %rax',
-                                          f'imulq {rb}',
-                                          f'movq %rax, {rd}']),
-              'div': (lambda ra, rb, rd: [f'movq {ra}, %rax',
-                                          f'cqto',
-                                          f'idivq {rb}',
-                                          f'movq %rax, {rd}']),
-              'mod': (lambda ra, rb, rd: [f'movq {ra}, %rax',
-                                          f'cqto',
-                                          f'idivq {rb}',
-                                          f'movq %rdx, {rd}']),
+              'mul': (lambda ra, rb, rd: [f'\tmovq {ra}, %rax',
+                                          f'\timulq {rb}',
+                                          f'\tmovq %rax, {rd}']),
+              'div': (lambda ra, rb, rd: [f'\tmovq {ra}, %rax',
+                                          f'\tcqto',
+                                          f'\tidivq {rb}',
+                                          f'\tmovq %rax, {rd}']),
+              'mod': (lambda ra, rb, rd: [f'\tmovq {ra}, %rax',
+                                          f'\tcqto',
+                                          f'\tidivq {rb}',
+                                          f'\tmovq %rdx, {rd}']),
               'and': 'andq',
               'or': 'orq',
               'xor': 'xorq',
-              'shl': (lambda ra, rb, rd: [f'movq {ra}, %r11',
-                                          f'movq {rb}, %rcx',
-                                          f'salq %cl, %r11',
-                                          f'movq %r11, {rd}']),
-              'shr': (lambda ra, rb, rd: [f'movq {ra}, %r11',
-                                          f'movq {rb}, %rcx',
-                                          f'sarq %cl, %r11',
-                                          f'movq %r11, {rd}'])}
+              'shl': (lambda ra, rb, rd: [f'\tmovq {ra}, %r11',
+                                          f'\tmovq {rb}, %rcx',
+                                          f'\tsalq %cl, %r11',
+                                          f'\tmovq %r11, {rd}']),
+              'shr': (lambda ra, rb, rd: [f'\tmovq {ra}, %r11',
+                                          f'\tmovq {rb}, %rcx',
+                                          f'\tsarq %cl, %r11',
+                                          f'\tmovq %r11, {rd}'])}
     unops = {'neg': 'negq',
             'not': 'notq'}
 
-    jcc = ["je", "jz"         # Src2 == Src1
+    jcc = ["je", "jz",        # Src2 == Src1
            "jne", "jnz",      # Src2 != Src1
            "jl", "jnge",      # Src2 < Src1
            "jle", "jng",      # Src2 <= Src1
@@ -78,7 +78,7 @@ class tac2x64:
             self.assembly.append(f'\t/*   {instr["result"]} = {instr["opcode"]} {instr["args"][0]} [TAC] */')
         
         elif len(instr["args"]) == 2:
-            self.assembly.append(f'\t/*   {instr["result"]} = {instr["opcode"]}, {instr["args"][0]}, {instr["args"][1]} [TAC] */')
+            self.assembly.append(f'\t/*   {instr["result"]} = {instr["opcode"]} {instr["args"][0]}, {instr["args"][1]} [TAC] */')
         
         else:       # should have been caught before
             raise RuntimeError(f'Could not comment the instruction: {instr}')
