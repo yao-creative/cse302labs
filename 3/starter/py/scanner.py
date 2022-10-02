@@ -1,3 +1,4 @@
+from regex import R
 import ply.lex as lex
 import argparse
 import sys
@@ -8,10 +9,15 @@ reserved = {
     "print": "PRINT",
     "def" : "DEF",
     "int" : "INT",
+    "bool": "BOOL",
     "var" : "VAR",
     "if" : "IF",
     "else": "ELSE",
-    "while": "WHILE"
+    "while": "WHILE",
+    "true": "TRUE",
+    "false": "FALSE",
+    "break": "BREAK",
+    "continue": "CONTINUE"
 }
 
 #Symbols
@@ -19,7 +25,8 @@ reserved = {
 tokens = ("PLUS", "MINUS", "SEMICOLON", "COLON", "LPAREN", "RPAREN", "IDENT", "NUMBER", 
         "LBRACE", "RBRACE", "EQUALS", "MULTIPLY", "DIVIDE",
          "PERCENT", "BITWISE_AND", "BITWISE_OR", "BITWISE_XOR",
-         "BITWISE_NEGATION", "LOGICAL_SHIFT_LEFT", "LOGICAL_SHIFT_RIGHT") + tuple(reserved.values())
+         "BITWISE_NEGATION", "LOGICAL_SHIFT_LEFT", "LOGICAL_SHIFT_RIGHT",
+         "CMPE", "CMPNE", "CMPL", "CMPLE", "CMPG", "CMPGE", "AND", "OR", "NOT") + tuple(reserved.values())
 
 #Non identifiers and numbers:
 
@@ -41,6 +48,15 @@ t_BITWISE_XOR = r'\^'
 t_BITWISE_NEGATION = r'\~'
 t_LOGICAL_SHIFT_LEFT = r'\<\<'
 t_LOGICAL_SHIFT_RIGHT = r'\>\>'
+t_CMPE = r'\=\='
+t_CMPNE = r'\!\='
+t_CMPL = r'\<'
+t_CMPLE = r'\<\='
+t_CMPG = r'\>'
+t_CMPGE = r'\>\='
+t_AND = r'\&\&'
+t_OR = r'\|\|'
+t_NOT = r'\!'
 
 
 def t_IDENT(t):
