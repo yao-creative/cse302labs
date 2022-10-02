@@ -1,9 +1,9 @@
 def main() {
   var x = 10 : int;
-  print(x);
+  print(x);                 // 10
   var y = x + 20 : int;
-  print(y);
+  print(y);                 // 30
   var z = y * 42 : int;
-  print(z);
+  print(z);                 // 1260
   var w = x * y - z : int;
 }

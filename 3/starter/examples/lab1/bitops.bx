@@ -6,12 +6,12 @@ def main() {
   x = 10;
   y = 42;
   z = -100;
-  print(x & y);
-  print(x & z);
-  print(x | y);
-  print(x | z);
-  print(x ^ y);
-  print(x ^ z);
-  print(~x);
-  print(~z);
+  print(x & y);   // 10
+  print(x & z);   // 8
+  print(x | y);   // 42
+  print(x | z);   // -98
+  print(x ^ y);   // 32
+  print(x ^ z);   // -106
+  print(~x);      // -11
+  print(~z);      // 99
 }
