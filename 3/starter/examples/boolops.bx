@@ -20,5 +20,5 @@ def main() {
   if (false == false) { print(15); }  // true   15
   if (false == true) { print(16); }   // false
   if (! (x == x)) { print(17); }      // false
-  if (! (x != x)) { print(18); }      // true
+  if (! (x != x)) { print(18); }      // true   18
 }

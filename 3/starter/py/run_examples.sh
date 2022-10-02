@@ -7,12 +7,12 @@
 #     echo -e '\n'
 # done
 
-# run all executables
-for file in $(find ../examples -name "*.exe"); do
-    echo $file 
-    $file
-    echo -e '\n'
-done
+# # run all executables
+# for file in $(find ../examples -name "*.exe"); do
+#     echo $file 
+#     $file
+#     echo -e '\n'
+# done
 
 # # test all error files
 # for file in $(find ../regression -name "*.tac.json"); do
