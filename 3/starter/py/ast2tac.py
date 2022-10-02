@@ -10,6 +10,7 @@ class TAC_proc:
         self.body = []
         self.tree = tree
         self.temps = {}
+        self.labels = []
         self.operator_map = {
             "substraction": "sub",
             "addition": "add",
@@ -41,7 +42,7 @@ class TAC_proc:
             return False
     def save(self,outfile):
         with open(outfile, 'w') as fp:
-            json.dump([{"proc": self.proc, "body": self.body}], fp)
+            json.dump([{"proc": self.proc, "body": self.body, "temps": list(self.temps.keys()), "labels": self.labels}], fp)
 
     #___________________________________________________________
     #TMM
@@ -61,6 +62,14 @@ class TAC_proc:
         elif isinstance(statement, StatementAssign):
             result = self.new_temp(statement.lvalue)
             return self.tmm_expr(statement.rvalue,result)
+        elif isinstance(statement, StatementIfElse):
+            pass
+        elif isinstance(statement, StatementWhile):
+            pass
+        elif isinstance(statement, StatementJump):
+            pass
+        elif isinstance(statement, StatementBlock):
+            pass
             
             
     def tmm_expr(self,expression,result):
@@ -73,6 +82,11 @@ class TAC_proc:
             opcode = "copy"
             args = [self.temps[expression.name]]
             return [TAC_line(opcode, args, result).format()]
+        elif isinstance(expression, ExpressionBool):
+            # opcode = "const"
+            # args = [expression.value]
+            # return [TAC_line(opcode, args, result).format()]
+            pass
             #This expression is unary or binary operator
         elif isinstance(expression, ExpressionOp) and len(expression.arguments) == 1:
             #unary operator
@@ -80,6 +94,7 @@ class TAC_proc:
             subexpr_target = self.new_temp(f"{len(self.temps)}")
             prev_lines = self.tmm_expr(expression.arguments[0], subexpr_target)
             return prev_lines + [TAC_line(opcode, [subexpr_target], result).format()] #figure out args from last one
+        
         else:   #binary operator
             prev_lines = []
             opcode = self.operator_map[expression.operator]
