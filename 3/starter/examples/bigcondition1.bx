@@ -1,4 +1,5 @@
 // stress testing booleans: prints 42 or -42
+// condition evaluates to true hence prints    // 42
 def main() {
   if (!
         !
