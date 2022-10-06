@@ -28,6 +28,9 @@ class BX_TYPE:
         def __str__(self) -> str:
             return "bool"
 
+INT = BX_TYPE.INT
+BOOL = BX_TYPE.BOOL
+
 class Scopes:
     pass
 
@@ -81,16 +84,17 @@ class ExpressionBool(Expression):
     def __init__(self,location, value):
         super().__init__(location)
         self.value = value
-    
+        self.type = BOOL
+
     def __str__(self):
         return "bool(%s)" % (self.value)
     
     def type_check(self) -> None:
-        if self.value not in [True, False]:
+        if self.value not in ("true", "false"):
             self.syntax_error(" value must be 'true' or 'false'.")
 
 class ExpressionVar(Expression):
-    def __init__(self, location, name, declared_ids = []):
+    def __init__(self, location: List[int], name, declared_ids = []):
         super().__init__(location)
         
         self.name = name
@@ -104,11 +108,12 @@ class ExpressionVar(Expression):
             self.syntax_error(" variable yet not declared")
 
 class ExpressionInt(Expression):
-    def __init__(self, location, value):
+    def __init__(self, location: List[int], value):
         super().__init__(location)
         self.value = value
         self._max = 1<<63
-    
+        self.type = INT
+
     def __str__(self):
         return "ExpressionInt({})".format(self.value)
     
@@ -119,13 +124,13 @@ class ExpressionInt(Expression):
             self.syntax_error(" number too large")
 
 class ExpressionOp(Expression):
-    def __init__(self, location, operator, arguments):
-        """operator: string of the operator
-        arguments: list of expressions"""
+    def __init__(self, location: List[int], operator: str, arguments: List[Expression]):
+        """ operator  : string of the operator
+            arguments : list of expressions     """
         super().__init__(location)
         self.operator: str = operator
         self.arguments = arguments
-        self.result_type: BX_TYPE = None
+        self.type: BX_TYPE = None
         self.argument_type: Tuple[BX_TYPE] = None
         self._type_init()
     
@@ -135,28 +140,28 @@ class ExpressionOp(Expression):
     def _type_init(self) -> None:
         """ Initializes the result and argument type based on argument input """
         if self.operator in _binops_int:
-            self.argument_type = (BX_TYPE.INT, BX_TYPE.INT)
-            self.result_type = BX_TYPE.INT
+            self.argument_type = (INT, INT)
+            self.type = INT
         
+        elif self.operator in _binops_bool:
+            self.argument_type = (BOOL, BOOL)
+            self.type = BOOL
+
         elif self.operator in _binops_cmp_val:
-            self.argument_type = (BX_TYPE.INT, BX_TYPE.INT)
-            self.result_type = BX_TYPE.BOOL
+            self.argument_type = (INT, INT)
+            self.type = BOOL
         
         elif self.operator in _binops_cmp:
             self.argument_type = (None, None)
-            self.result_type = BX_TYPE.BOOL
-        
-        elif self.operator in _binops_bool:
-            self.argument_type = (BX_TYPE.BOOL, BX_TYPE.BOOL)
-            self.result_type = BX_TYPE.BOOL
+            self.type = BOOL
         
         elif self.operator in _unops_int:
-            self.argument_type = (BX_TYPE.INT)
-            self.result_type = BX_TYPE.INT
+            self.argument_type = (INT,)
+            self.type = INT
 
         elif self.operator in _unops_bool:
-            self.argument_type = (BX_TYPE.BOOL)
-            self.result_type = BX_TYPE.BOOL
+            self.argument_type = (BOOL,)
+            self.type = BOOL
 
         else:       # this should not happen
             self.syntax_error(f"Unkown operator {self.operator}")
@@ -167,7 +172,18 @@ class ExpressionOp(Expression):
             self.syntax_error(f"{self.operator} takes {len(self.argument_type)} arguments got {len(self.arguments)}")
 
         for index, arg in enumerate(self.arguments):
+            expected_type = self.argument_type[index]
+            # in case we have
+            if not expected_type and index:
+                expected_type = self.arguments[0].type
             arg.type_check()
+            arg_type = self.arguments[index].type
+            if not expected_type:
+                expected_type = arg_type
+            if arg_type != expected_type:
+                self.syntax_error(f"Argument {index+1} for operation {self.operator} should \
+                                    have type {expected_type} but has {arg_type}")
+
         
 # ------------------------------------------------------------------------------#
 # Statement Classes
@@ -207,7 +223,7 @@ class StatementVardecl(Statement):
         
 class StatementPrint(Statement):
     """Actually are are prints"""
-    def __init__(self, location, arguments):
+    def __init__(self, location: List[int], arguments):
         super().__init__(location)
         self.arguments = arguments
     
@@ -218,7 +234,7 @@ class StatementPrint(Statement):
         self.arguments.type_check()
 
 class StatementAssign(Statement):
-    def __init__(self, location, lvalue,rvalue, declared_ids = []): 
+    def __init__(self, location: List[int], lvalue,rvalue, declared_ids = []): 
         super().__init__(location)
         self.lvalue = lvalue
         self.rvalue = rvalue
@@ -237,7 +253,7 @@ class StatementAssign(Statement):
 # ------------------------------------------------------------------------------#
 
 class StatementIfElse(Statement):
-    def __init__(self, location, condition, block, ifrest):
+    def __init__(self, location: List[int], condition, block, ifrest):
         super().__init__(location)
         """if_body is a block, condition is an expression"""
         self.condition = condition
@@ -253,7 +269,7 @@ class StatementIfElse(Statement):
         self.if_rest.type_check()
 
 class StatementWhile(Statement):
-    def __init__(self, location, condition, block):
+    def __init__(self, location: List[int], condition, block):
         super().__init__(location)
         self.condition = condition
         self.block = block
@@ -266,7 +282,7 @@ class StatementWhile(Statement):
         self.block.type_check()
 
 class StatementJump(Statement):
-    def __init__(self, location, keyword):
+    def __init__(self, location: List[int], keyword):
         super().__init__(location)
         self.keyword = keyword
     
