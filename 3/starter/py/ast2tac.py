@@ -1,180 +1,155 @@
-from re import search
 import sys
 import json
+from typing import Union
 from bxast import *
 
-class TAC_proc:
-    def __init__(self, tree, mm):
-        print(f"initializing TAC_proc")
-        self.proc = f"@{tree.name}"
-        self.body = []
-        self.tree = tree
-        self.temps = {}
-        self.labels = []
-        self.operator_map = {
-            "substraction": "sub",
-            "addition": "add",
-            "multiplication": "mul",
-            "division": "div",
-            "modulus": "mod",
-            "bitwise-and": "and",
-            "bitwise-or": "or",
-            "bitwise-xor": "xor",
-            "bitwise-negation": "not",
-            "logical-shift-right": "shr",
-            "logical-shift-left": "shl",
-            "opposite": "neg",
-        }
-        if mm == "--tmm":
-            self.tmm()
-        elif mm == "--bmm":
-            self.bmm()
-        
-    def new_temp(self, key=None):
-        if key not in self.temps:
-            self.temps[key] = f"%{len(self.temps)}"
-        return self.temps[key]
-    def search(self, key):
-        """Searches for a key in the temps dictionary"""
-        if key in self.temps:
-            return True
-        else:
-            return False
-    def save(self,outfile):
-        with open(outfile, 'w') as fp:
-            json.dump([{"proc": self.proc, "body": self.body, "temps": list(self.temps.keys()), "labels": self.labels}], fp)
+"""
+Authors: Yi Yao Tan 
+         Vrushank Agrawal
+"""
 
-    #___________________________________________________________
-    #TMM
-    #___________________________________________________________
-    def tmm_stmt(self,statement):
-        """Takes a statement and returns a list of TAC statements"""
-        if isinstance(statement, StatementVardecl):
-            result = self.new_temp(statement.name)
-            return self.tmm_expr(statement.init,result) 
-        elif isinstance(statement, StatementPrint):
-            temp_to_print = self.new_temp(f"{len(self.temps)}")
-            #this is guaranteed unique since it is an integer and length keeps growing.
-            prev_lines = self.tmm_expr(statement.arguments, temp_to_print)
-            opcode = "print"
-            result = None
-            return prev_lines + [TAC_line(opcode, [temp_to_print], result).format()]
-        elif isinstance(statement, StatementAssign):
-            result = self.new_temp(statement.lvalue)
-            return self.tmm_expr(statement.rvalue,result)
-        elif isinstance(statement, StatementIfElse):
+# ------------------------------------------------------------------------------#
+# Helper Classes
+# ------------------------------------------------------------------------------#
+
+class Code_Macro:
+    """ The class contains mappings needed for parsing """
+
+    operator_map = {
+        "substraction": "sub", "addition": "add",
+        "multiplication": "mul", "division": "div",
+        "modulus": "mod", "bitwise-xor": "xor", 
+        "bitwise-and": "and", "bitwise-or": "or",
+        "logical-shift-right": "shr", "logical-shift-left": "shl",
+        "opposite": "neg", "bitwise-negation": "not",
+    }
+
+    jump_map = {
+        "cmpe": "jz", "cmpne": "jnz",
+        "cmpl": "jl", "cmpg": "jnle",
+        "cmple": "jle", "cmpge": "jnl",
+    }
+
+
+class Code_State:
+    """ The class keeps track of helper information 
+        needed to track TAC stmt generation """
+
+    def __init__(self, func: str) -> None:
+        self.func_name: str = func
+        self.temps: dict = {}
+        self.labels: list = []  
+        self.__break_stack = []
+        self.__continue_stack = []
+    
+    
+class TAC_line:
+    """ This class generates single tac line for each instruction """
+    def __init__(self, opcode: str, args: List, result: str):
+        self.opcode: str = opcode
+        self.args: List = args
+        self.result: str = result
+    
+    def format(self) -> Dict[str, Union[str, List[str]]]:
+        """ Returns tac instruction as a json object """
+        return {"opcode": self.opcode, 
+                "args": self.args, 
+                "result": self.result }
+
+# ------------------------------------------------------------------------------#
+# Typed Maximul Munch Class
+# ------------------------------------------------------------------------------#
+
+class AST_to_TAC_Generator:
+    """ Takes the AST tree and converts it to TAC """
+    def __init__(self, tree: DeclProc):
+        self.code_state: Code_State = Code_State("main")
+        self.code: DeclProc = tree
+        self.instructions: List[TAC_line] = []
+        self.begin_parse(self.code.body)
+
+    def tac_generator(self) -> json:
+        """ Generates the tac file """
+        return {"proc": '@'+self.code.name,
+                "body": [instr.format() for instr in self.instructions],
+                "temps": self.code_state.temps,
+                "labels": self.code_state.labels}
+
+    def statement_parse(self, statement) -> None:
+        """ parses the statement and builds its tac """
+        if isinstance(statement, StatementBlock):
             pass
+
         elif isinstance(statement, StatementWhile):
             pass
+        
+        elif isinstance(statement, StatementIfElse):
+            pass
+
         elif isinstance(statement, StatementJump):
             pass
-        elif isinstance(statement, StatementBlock):
+
+        elif isinstance(statement, StatementVardecl):
             pass
-            
-            
-    def tmm_expr(self,expression,result):
-        """Takes an expression and returns a list of TAC statements"""
-        if isinstance(expression, ExpressionInt):
-            opcode = "const"
-            args = [expression.value] #what if two intergers same name?
-            return [TAC_line(opcode, args, result).format()]
-        elif isinstance(expression, ExpressionVar):
-            opcode = "copy"
-            args = [self.temps[expression.name]]
-            return [TAC_line(opcode, args, result).format()]
-        elif isinstance(expression, ExpressionBool):
-            # opcode = "const"
-            # args = [expression.value]
-            # return [TAC_line(opcode, args, result).format()]
-            pass
-            #This expression is unary or binary operator
-        elif isinstance(expression, ExpressionOp) and len(expression.arguments) == 1:
-            #unary operator
-            opcode = self.operator_map[expression.operator]
-            subexpr_target = self.new_temp(f"{len(self.temps)}")
-            prev_lines = self.tmm_expr(expression.arguments[0], subexpr_target)
-            return prev_lines + [TAC_line(opcode, [subexpr_target], result).format()] #figure out args from last one
-        
-        else:   #binary operator
-            prev_lines = []
-            opcode = self.operator_map[expression.operator]
-            subexpr_targets = [] #the two subexpressions are fed into the higher one, the binary operator expression
-            for subexpr in expression.arguments: 
-                target = self.new_temp(f"{len(self.temps)}")
-                subexpr_targets.append(target)
-                prev_lines += self.tmm_expr(subexpr,target)
-            return prev_lines + [TAC_line(opcode, subexpr_targets, result).format()] #figure out args are last two
-        
-    def tmm(self):
-        print(f"tmm")
-        for item in self.tree.body:
-            print(f"item: {item}")
-            self.body += self.tmm_stmt(item)
-        # print(f"body: {self.body}")
-        
-    #___________________________________________________________
-    #BMM
-    #___________________________________________________________
-    def bmm_stmt(self,statement):
-        """Takes a statement and returns a list of TAC statements"""
-        if isinstance(statement, StatementVardecl):
-            prev_lines, expr_result = self.bmm_expr(statement.init)
-            result = self.new_temp(statement.name)
-            return prev_lines + [TAC_line("copy", [expr_result], result).format()]
-        elif isinstance(statement, StatementPrint):
-            #this is guaranteed unique since it is an integer and length keeps growing.
-            prev_lines,temp_to_print = self.bmm_expr(statement.arguments)
-            opcode = "print"
-            result = None
-            return prev_lines + [TAC_line(opcode, [temp_to_print], result).format()]
+
         elif isinstance(statement, StatementAssign):
-            l, subexpr_result = self.bmm_expr(statement.rvalue)
-            result = self.new_temp(statement.lvalue)
-            #copy on assign
-            opcode = "copy"
-            args = [subexpr_result]
-            return l + [TAC_line(opcode, args, result).format()]
+            pass
 
-            
-    def bmm_expr(self,expression):
-        """Takes an expression and returns a list of TAC statements"""
-        #figure out bottom up numbering maybe add output of bmm expression,  so it gives list of instructions and 
+        elif isinstance(statement, StatementPrint):
+            pass
+
+    def int_expression_parse(self, expression: Expression) -> None:
+        """ parses the expression and builds its tac """
+        if expression.type != INT:
+            raise RuntimeError(f'Expression must have type INT but has type {expression.type}')
+        
         if isinstance(expression, ExpressionInt):
-            opcode = "const"
-            args = [expression.value] #what if two intergers same name?
-            result = self.new_temp(f"{len(self.temps)}")
-            return [TAC_line(opcode, args,result).format()], result
+            pass
+
         elif isinstance(expression, ExpressionVar):
-            # print(f"expression var: {expression.name}")
-            return [], self.temps[expression.name]
-        elif isinstance(expression, ExpressionOp) and len(expression.arguments) == 1:
-            #unary operator
-            opcode = self.operator_map[expression.operator]
-            prev_lines, subexpr_result = self.bmm_expr(expression.arguments[0])
-            result = self.new_temp(f"{len(self.temps)}")
-            return prev_lines + [TAC_line(opcode, [subexpr_result], result).format()], result #figure out args from last one
-        else:   #binary operator
-            prev_lines = []
-            opcode = self.operator_map[expression.operator]
-            args = []
-            for subexpr in expression.arguments: 
-                line, subexpr_result = self.bmm_expr(subexpr)
-                prev_lines += line
-                args.append(subexpr_result)
-            result = self.new_temp(f"{len(self.temps)}")
-            return prev_lines + [TAC_line(opcode, args, result).format()], result #figure out args are last two
+            pass
 
-    def bmm(self):
-        print(f"bmm")
-        for item in self.tree.body:
-            # print(f"line: {item}")
-            self.body += self.bmm_stmt(item)
-        # print(f"body: {self.body}")
+        elif isinstance(expression, ExpressionOp):
+            pass
 
-class TAC_line:
-    def __init__(self, opcode, args, result):
-        self.opcode = opcode
-        self.args = args
-        self.result = result
-    def format(self):
-        return {"opcode": self.opcode, "args": self.args, "result": self.result}
+    def bool_expression_parse(self, expression: Expression) -> None:
+        """ parses the expression and builds its tac """
+        if expression.type != BOOL:
+            raise RuntimeError(f'Expression must have type BOOL but has type {expression.type}')
+        
+        if isinstance(expression, ExpressionBool):
+            pass
+
+        elif isinstance(expression, ExpressionOp):
+            pass
+
+
+# ------------------------------------------------------------------------------#
+# Main function
+# ------------------------------------------------------------------------------#
+
+import argparse
+import my_parser as lexer_parser
+
+if __name__=="__main__":
+
+    parser = argparse.ArgumentParser(description='Get method for conversion and filetype.')
+    parser.add_argument('filename', metavar="FILE", type=str, nargs=1)
+    args = parser.parse_args(sys.argv[1:])
+    
+    filename = args.filename[0]     # get the filename
+
+    with open(filename, 'r') as fp:             # read the bx code as text
+        code = fp.read()
+
+    ast_: DeclProc = lexer_parser.run_parser(code)        # run lexer and parser
+    if ast_ is None: 
+        raise SyntaxError("Could not compile ast")          # exit if error occured while parsing 
+    ast_.type_check()                         # check syntax
+    print('reached tac json')
+    tac_code = AST_to_TAC_Generator(ast_)   # convert ast code to json
+    print("tac json created")
+    tac_filename = filename[:-2] + 'tac.json'   # get new file name
+    with open(tac_filename, 'w') as fp:         # save the file
+        # json.dump(tac_code.json_tac(), fp, indent=4)
+        pass

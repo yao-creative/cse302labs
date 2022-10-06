@@ -187,17 +187,17 @@ def p_error(p):
 
 parser = yacc.yacc()
 
-def parse_file(filename):
+def run_parser(filename):
     """Parse a file and return the AST"""
     with open(filename) as f:
         data = f.read()
 
     result = parser.parse(data, lexer=lexer,tracking=True)
-    print(result)
+    # print(result)
     return result 
 
 if __name__ == "__main__":
-    res = parse_file(sys.argv[1])
+    res = run_parser(sys.argv[1])
     print(res)
     
 

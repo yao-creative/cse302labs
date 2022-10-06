@@ -58,10 +58,8 @@ class Scope:
 
 
 # ------------------------------------------------------------------------------#
-# Top Classes
+# Main Classes
 # ------------------------------------------------------------------------------#
-
-import copy
 
 class Node:
     def __init__(self, location):
@@ -75,24 +73,24 @@ class Node:
 class DeclProc(Node):
     def __init__(self,location, name, arguments,returntype,body, previous_functions = []):
         super().__init__(location)
-        self.__name = name
+        self.name = name
         self.__arguments = arguments
         self.returntype = returntype
-        self.__body = body
+        self.body = body
         self.__scope = Scope()
     
-    def type_check(self, scope: Scope, ongoingloop: bool) -> None:
-        if self.__name != "main":
+    def type_check(self) -> None:
+        if self.name != "main":
             self.syntax_error("non-main function found")
         if self.__arguments != []:
             self.syntax_error(" main function cannot have arguments")
         if self.returntype != None:
             self.syntax_error(" main function cannot have a return type")
-        for statement in self.__body:
+        for statement in self.body:
             statement.type_check(self.__scope)
     
     def __str__(self):
-        return "proc(%s,%s,%s,%s)" % (self.__name, self.__arguments, self.returntype, self.__body)
+        return "proc(%s,%s,%s,%s)" % (self.name, self.__arguments, self.returntype, self.body)
 
 
 # ------------------------------------------------------------------------------#
