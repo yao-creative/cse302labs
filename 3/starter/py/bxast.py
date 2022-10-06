@@ -62,10 +62,6 @@ class Scope:
             self.__scope_map[-1][variable] = value
 
 
-# ------------------------------------------------------------------------------#
-# Main Classes
-# ------------------------------------------------------------------------------#
-
 class Node:
     def __init__(self, location):
         self.location = location
@@ -74,29 +70,6 @@ class Node:
     def syntax_error(self,error):
         msg = f"\033[0;37m in line {self.location[0]}\n {error}"
         raise SyntaxError(msg)
-
-class DeclProc(Node):
-    def __init__(self,location, name, arguments,returntype,body, previous_functions = []):
-        super().__init__(location)
-        self.name = name
-        self.__arguments = arguments
-        self.returntype = returntype
-        self.body = body
-        self.__scope = Scope()
-    
-    def type_check(self) -> None:
-        if self.name != "main":
-            self.syntax_error("non-main function found")
-        if self.__arguments != []:
-            self.syntax_error(" main function cannot have arguments")
-        if self.returntype != None:
-            self.syntax_error(" main function cannot have a return type")
-        for statement in self.body:
-            statement.type_check(self.__scope)
-    
-    def __str__(self):
-        return "proc(%s,%s,%s,%s)" % (self.name, self.__arguments, self.returntype, self.body)
-
 
 # ------------------------------------------------------------------------------#
 # Expression Classes
@@ -323,3 +296,34 @@ class StatementJump(Statement):
         if not ongoingloop:
             self.syntax_error(f'')
 
+# ------------------------------------------------------------------------------#
+# Main Class
+# ------------------------------------------------------------------------------#
+
+class DeclProc(Node):
+    def __init__(self,location, name, arguments, returntype, body: StatementBlock, previous_functions = []):
+        super().__init__(location)
+        self.__name = name
+        self.__arguments = arguments
+        self.__returntype = returntype
+        self.__body: StatementBlock = body
+        self.__scope = Scope()
+    
+    def type_check(self) -> None:
+        if self.__name != "main":
+            self.syntax_error("non-main function found")
+        if self.__arguments != []:
+            self.syntax_error(" main function cannot have arguments")
+        if self.__returntype != None:
+            self.syntax_error(" main function cannot have a return type")
+        for statement in self.__body:
+            statement.type_check(self.__scope)
+    
+    def __str__(self):
+        return "proc(%s,%s,%s,%s)" % (self.__name, self.__arguments, self.__returntype, self.__body)
+
+    def get_name(self) -> str:
+        return self.__name
+
+    def get_body(self) -> StatementBlock:
+        return self.__body
