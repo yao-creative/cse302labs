@@ -4,8 +4,11 @@ binops = ["addition", "substraction", "multiplication",
           "bitwise-xor", "logical-shift-left", "logical-shift-right",
           "cmpe", "cmpne", "cmpl", "cmple", "cmpge",
           "cmpg", "logical-and", "logical-or"]
+          
 unops = [ "bitwise-negation", "opposite", "not"]
+
 import copy
+
 class Node:
     def __init__(self, location):
         self.location = location
@@ -34,9 +37,11 @@ class DeclProc(Node):
             statement.syntax_check()
     def __str__(self):
         return "proc(%s,%s,%s,%s)" % (self.name,self.arguments,self.returntype,self.body)
+
 class Statement(Node):
     def __init__(self,location):
         super().__init__(location)
+
 class StatementBlock(Statement):
     def __init__(self,location, statements):
         super().__init__(location)
@@ -46,6 +51,7 @@ class StatementBlock(Statement):
             statement.syntax_check()
     def __str__(self):
         return "block(%s)" % (self.statements)
+
 class StatementVardecl(Statement):
     def __init__(self,location, name, ty, init, declared_ids = []):
         super().__init__(location)
@@ -83,6 +89,7 @@ class StatementAssign(Statement):
         if self.lvalue not in self.declared_ids:
             self.syntax_error("Error: variable yet not declared")
         self.rvalue.syntax_check()
+
 class StatementIfElse(Statement):
     def __init__(self, location, condition, block, ifrest):
         super().__init__(location)
@@ -107,6 +114,7 @@ class StatementWhile(Statement):
     def syntax_check(self):
         self.condition.syntax_check()
         self.block.syntax_check()
+
 class StatementJump(Statement):
     def __init__(self, location, keyword):
         super().__init__(location)
@@ -115,9 +123,11 @@ class StatementJump(Statement):
         return "Jump(%s)" % (self.keyword)
     def syntax_check(self):
         pass
+
 class Expression(Node):
     def __init__(self,location):
         super().__init__(location)
+
 class ExpressionBool(Expression):
     def __init__(self,location, value):
         super().__init__(location)
@@ -127,6 +137,7 @@ class ExpressionBool(Expression):
     def syntax_check(self):
         if self.value not in [True, False]:
             self.syntax_error("Error: value must be 'true' or 'false'.")
+
 class ExpressionVar(Expression):
     def __init__(self, location, name, declared_ids = []):
         super().__init__(location)
@@ -140,6 +151,7 @@ class ExpressionVar(Expression):
     def syntax_check(self):
         if self.name not in self.declared_ids:
             self.syntax_error("Error: variable yet not declared")
+
 class ExpressionInt(Expression):
     def __init__(self, location, value):
         super().__init__(location)
