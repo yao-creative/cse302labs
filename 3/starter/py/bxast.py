@@ -3,10 +3,9 @@ from typing import List, Tuple, Dict
 _binops_int: tuple = ("addition", "substraction", "multiplication",
                     "division", "modulus", "bitwise-and", "bitwise-or", 
                     "bitwise-xor", "logical-shift-left", "logical-shift-right")
-_binops_cmp_val: tuple = ("cmpl", "cmple", "cmpge", "cmpg")
-_binops_cmp: tuple = ("cmpe", "cmpne")
+_binops_cmp: tuple = ("cmpl", "cmple", "cmpge", "cmpg", "cmpe", "cmpne")
 _binops_bool: tuple = ("logical-and", "logical-or")
-_binops: tuple = _binops_bool + _binops_cmp_val + _binops_cmp + _binops_int
+_binops: tuple = _binops_bool + _binops_cmp + _binops_int
 
 _unops_int: tuple = ("bitwise-negation", "opposite")
 _unops_bool: tuple = ("not",)
@@ -89,9 +88,9 @@ class ExpressionBool(Expression):
     def __str__(self):
         return "bool(%s)" % (self.value)
     
-    def type_check(self) -> None:
+    def type_check(self) -> None:   # We should never reach here
         if self.value not in ("true", "false"):
-            self.syntax_error(" value must be 'true' or 'false'.")
+            self.syntax_error(f"{self.value} value must be 'true' or 'false'.")
 
 class ExpressionVar(Expression):
     def __init__(self, location: List[int], name, declared_ids = []):
@@ -131,7 +130,7 @@ class ExpressionOp(Expression):
         self.operator: str = operator
         self.arguments = arguments
         self.type: BX_TYPE = None
-        self.argument_type: Tuple[BX_TYPE] = None
+        self.expected_argument_type: Tuple[BX_TYPE] = None
         self._type_init()
     
     def __str__(self):
@@ -140,27 +139,23 @@ class ExpressionOp(Expression):
     def _type_init(self) -> None:
         """ Initializes the result and argument type based on argument input """
         if self.operator in _binops_int:
-            self.argument_type = (INT, INT)
+            self.expected_argument_type = (INT, INT)
             self.type = INT
         
         elif self.operator in _binops_bool:
-            self.argument_type = (BOOL, BOOL)
+            self.expected_argument_type = (BOOL, BOOL)
             self.type = BOOL
 
-        elif self.operator in _binops_cmp_val:
-            self.argument_type = (INT, INT)
-            self.type = BOOL
-        
         elif self.operator in _binops_cmp:
-            self.argument_type = (None, None)
+            self.expected_argument_type = (INT, INT)
             self.type = BOOL
         
         elif self.operator in _unops_int:
-            self.argument_type = (INT,)
+            self.expected_argument_type = (INT,)
             self.type = INT
 
         elif self.operator in _unops_bool:
-            self.argument_type = (BOOL,)
+            self.expected_argument_type = (BOOL,)
             self.type = BOOL
 
         else:       # this should not happen
@@ -168,18 +163,14 @@ class ExpressionOp(Expression):
 
 
     def type_check(self) -> None:
-        if len(self.arguments) != len(self.argument_type):
-            self.syntax_error(f"{self.operator} takes {len(self.argument_type)} arguments got {len(self.arguments)}")
+        if len(self.arguments) != len(self.expected_argument_type):
+            self.syntax_error(f"{self.operator} takes {len(self.expected_argument_type)} \
+                                arguments got {len(self.arguments)}")
 
         for index, arg in enumerate(self.arguments):
-            expected_type = self.argument_type[index]
-            # in case we have
-            if not expected_type and index:
-                expected_type = self.arguments[0].type
             arg.type_check()
             arg_type = self.arguments[index].type
-            if not expected_type:
-                expected_type = arg_type
+            expected_type = self.expected_argument_type[index]
             if arg_type != expected_type:
                 self.syntax_error(f"Argument {index+1} for operation {self.operator} should \
                                     have type {expected_type} but has {arg_type}")
@@ -206,10 +197,10 @@ class StatementBlock(Statement):
         return "block(%s)" % (self.statements)
 
 class StatementVardecl(Statement):
-    def __init__(self,location, name, ty, init, declared_ids = []):
+    def __init__(self,location, name, type, init, declared_ids = []):
         super().__init__(location)
         self.name = name
-        self.ty = ty
+        self.type = type
         self.init = init 
         self.declared_ids = copy.deepcopy(declared_ids)
     
@@ -217,21 +208,26 @@ class StatementVardecl(Statement):
         return "vardecl(%s,%s,%s)" % (self.name,self.ty,self.init)
 
     def type_check(self) -> None:
+        if self.type != INT:    # shouldn't be possible but anyways
+            self.syntax_error(f'{self.name} should have type {str(INT)} \
+                                but has type {self.type}')
         if self.name in self.declared_ids:
             self.syntax_error(" variable already declared")
         self.init.type_check()
         
 class StatementPrint(Statement):
     """Actually are are prints"""
-    def __init__(self, location: List[int], arguments):
+    def __init__(self, location: List[int], argument):
         super().__init__(location)
-        self.arguments = arguments
+        self.argument = argument
     
     def __str__(self):
         return "print({})".format(self.arguments)
     
     def type_check(self) -> None:
-        self.arguments.type_check()
+        self.argument.type_check()
+        if self.argument.type != INT:
+            self.syntax_error(f'')
 
 class StatementAssign(Statement):
     def __init__(self, location: List[int], lvalue,rvalue, declared_ids = []): 
@@ -247,16 +243,18 @@ class StatementAssign(Statement):
         if self.lvalue not in self.declared_ids:
             self.syntax_error(" variable yet not declared")
         self.rvalue.type_check()
+        if self.lvalue.type != self.rvalue.type:
+            self.syntax_error(f'')
 
 # ------------------------------------------------------------------------------#
 # Conditional Statement Classes
 # ------------------------------------------------------------------------------#
 
 class StatementIfElse(Statement):
-    def __init__(self, location: List[int], condition, block, ifrest):
+    def __init__(self, location: List[int], condition: Expression, block, ifrest):
         super().__init__(location)
         """if_body is a block, condition is an expression"""
-        self.condition = condition
+        self.condition: Expression = condition
         self.block = block 
         self.if_rest = ifrest
     
@@ -264,9 +262,11 @@ class StatementIfElse(Statement):
         return "ifelse(%s,%s,%s)" % (self.condition,self.block,self.if_rest)
     
     def type_check(self) -> None:
+        if self.condition.type != BOOL:
+            self.syntax_error(f'')
         self.condition.type_check()
         self.block.type_check()
-        self.if_rest.type_check()
+        if self.ifrest is not None: self.if_rest.type_check()
 
 class StatementWhile(Statement):
     def __init__(self, location: List[int], condition, block):
@@ -279,6 +279,8 @@ class StatementWhile(Statement):
     
     def type_check(self) -> None:
         self.condition.type_check()
+        if self.condition.type != BOOL:
+            self.syntax_error(f'')
         self.block.type_check()
 
 class StatementJump(Statement):
