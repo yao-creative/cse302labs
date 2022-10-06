@@ -302,3 +302,4 @@ if __name__ == '__main__':
         print(f'Usage: {sys.argv[0]} tacfile.tac.json')
         sys.exit(1)
     compile_tac(sys.argv[1])
+
