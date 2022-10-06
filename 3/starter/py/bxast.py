@@ -1,6 +1,11 @@
 from tkinter.messagebox import NO
 from typing import List, Tuple, Dict
 
+"""
+Authors: Yi Yao Tan 
+         Vrushank Agrawal
+"""
+
 _binops_int: tuple = ("addition", "substraction", "multiplication",
                     "division", "modulus", "bitwise-and", "bitwise-or", 
                     "bitwise-xor", "logical-shift-left", "logical-shift-right")

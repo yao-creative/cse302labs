@@ -6,6 +6,11 @@ import sys
 import scanner
 import ply.lex as lex
 
+"""
+Authors: Yi Yao Tan 
+         Vrushank Agrawal
+"""
+
 unop_dict = {
     '!': "not",
     '-': "opposite",
