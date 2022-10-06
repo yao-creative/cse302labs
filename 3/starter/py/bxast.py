@@ -1,3 +1,4 @@
+from doctest import Example
 from tkinter.messagebox import NO
 from typing import List, Tuple, Dict
 from webbrowser import Opera
@@ -199,9 +200,9 @@ class StatementBlock(Statement):
         return "block(%s)" % (self.statements)
 
 class StatementVardecl(Statement):
-    def __init__(self,location, name, type: BX_TYPE, init: Expression):
+    def __init__(self,location, variable: ExpressionVar, type: BX_TYPE, init: Expression):
         super().__init__(location)
-        self.name = name
+        self.variable: ExpressionVar = variable
         self.type: BX_TYPE = type
         self.init: Expression = init 
     
