@@ -1,21 +1,22 @@
 from tkinter.messagebox import NO
 from typing import List, Tuple, Dict
+from webbrowser import Opera
 
 """
 Authors: Yi Yao Tan 
          Vrushank Agrawal
 """
+class Operations:
+    _binops_int: tuple = ("addition", "substraction", "multiplication",
+                        "division", "modulus", "bitwise-and", "bitwise-or", 
+                        "bitwise-xor", "logical-shift-left", "logical-shift-right")
+    _binops_cmp: tuple = ("cmpl", "cmple", "cmpge", "cmpg", "cmpe", "cmpne")
+    _binops_bool: tuple = ("logical-and", "logical-or")
+    _binops: tuple = _binops_bool + _binops_cmp + _binops_int
 
-_binops_int: tuple = ("addition", "substraction", "multiplication",
-                    "division", "modulus", "bitwise-and", "bitwise-or", 
-                    "bitwise-xor", "logical-shift-left", "logical-shift-right")
-_binops_cmp: tuple = ("cmpl", "cmple", "cmpge", "cmpg", "cmpe", "cmpne")
-_binops_bool: tuple = ("logical-and", "logical-or")
-_binops: tuple = _binops_bool + _binops_cmp + _binops_int
-
-_unops_int: tuple = ("bitwise-negation", "opposite")
-_unops_bool: tuple = ("not",)
-_unops: tuple = _unops_bool + _unops_int
+    _unops_int: tuple = ("bitwise-negation", "opposite")
+    _unops_bool: tuple = ("not",)
+    _unops: tuple = _unops_bool + _unops_int
 
 # ------------------------------------------------------------------------------#
 # Macro Classes
@@ -95,7 +96,6 @@ class ExpressionBool(Expression):
 class ExpressionVar(Expression):
     def __init__(self, location: List[int], name):
         super().__init__(location)
-        
         self.name = name
 
     def __str__(self):
@@ -130,6 +130,7 @@ class ExpressionOp(Expression):
         self.arguments = arguments
         self.type: BX_TYPE = None
         self.expected_argument_type: Tuple[BX_TYPE] = None
+        self.operations: Operations = Operations
         self._type_init()
     
     def __str__(self):
@@ -137,23 +138,23 @@ class ExpressionOp(Expression):
 
     def _type_init(self) -> None:
         """ Initializes the result and argument type based on argument input """
-        if self.operator in _binops_int:
+        if self.operator in self.operations._binops_int:
             self.expected_argument_type = (INT, INT)
             self.type = INT
         
-        elif self.operator in _binops_bool:
+        elif self.operator in self.operations._binops_bool:
             self.expected_argument_type = (BOOL, BOOL)
             self.type = BOOL
 
-        elif self.operator in _binops_cmp:
+        elif self.operator in self.operations._binops_cmp:
             self.expected_argument_type = (INT, INT)
             self.type = BOOL
         
-        elif self.operator in _unops_int:
+        elif self.operator in self.operations._unops_int:
             self.expected_argument_type = (INT,)
             self.type = INT
 
-        elif self.operator in _unops_bool:
+        elif self.operator in self.operations._unops_bool:
             self.expected_argument_type = (BOOL,)
             self.type = BOOL
 
