@@ -193,7 +193,7 @@ def parse_file(filename):
         data = f.read()
 
     result = parser.parse(data, lexer=lexer,tracking=True)
-    # print(result)
+    print(result)
     return result 
 
 if __name__ == "__main__":

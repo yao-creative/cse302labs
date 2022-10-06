@@ -9,7 +9,7 @@ _binops_bool: tuple = ("logical-and", "logical-or")
 _binops: tuple = _binops_bool + _binops_cmp_val + _binops_cmp + _binops_int
 
 _unops_int: tuple = ("bitwise-negation", "opposite")
-_unops_bool: tuple = ("not")
+_unops_bool: tuple = ("not",)
 _unops: tuple = _unops_bool + _unops_int
 
 # ------------------------------------------------------------------------------#
