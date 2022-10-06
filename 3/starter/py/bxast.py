@@ -1,6 +1,10 @@
 #can assume that all of the variable names are distinct
-binops = ["addition", "substraction", "multiplication", "division", "modulus", "bitwise-and", "bitwise-or", "bitwise-xor", "logical-shift-left", "logical-shift-right"]
-unops = [ "bitwise-negation", "opposite"]
+binops = ["addition", "substraction", "multiplication",
+          "division", "modulus", "bitwise-and", "bitwise-or", 
+          "bitwise-xor", "logical-shift-left", "logical-shift-right",
+          "cmpe", "cmpne", "cmpl", "cmple", "cmpge",
+          "cmpg", "logical-and", "logical-or"]
+unops = [ "bitwise-negation", "opposite", "not"]
 import copy
 class Node:
     def __init__(self, location):
