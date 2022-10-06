@@ -1,3 +1,4 @@
+from tkinter.messagebox import NO
 from typing import List, Tuple, Dict
 
 _binops_int: tuple = ("addition", "substraction", "multiplication",
@@ -30,8 +31,30 @@ class BX_TYPE:
 INT = BX_TYPE.INT
 BOOL = BX_TYPE.BOOL
 
-class Scopes:
-    pass
+class Scope:
+    def __init__(self) -> None:
+        self.__scope_map: List[Dict[str, BX_TYPE]] = []
+
+    def scope_len(self) -> int:
+        """ returns number of scopes """
+        return len(self.__scope_map)
+
+    def create_scope(self) -> None:
+        """ appends a new scope when a block is entered"""
+        self.__scope_map.append({})
+
+    def delete_scope(self) -> None:
+        """ pops a scope when exiting a block """
+        self.__scope_map.pop()
+
+    def exists(self, variable: str) -> bool:
+        """ Checks if a variable exists in current scope """
+        return variable in self.__scope_map[-1]
+
+    def add(self, variable: str, value: BX_TYPE) -> None:
+        """ Adds a variable in the current scope """
+        if self.scope_len() and self.exists(variable):
+            self.__scope_map[-1][variable] = value
 
 
 # ------------------------------------------------------------------------------#
@@ -52,23 +75,24 @@ class Node:
 class DeclProc(Node):
     def __init__(self,location, name, arguments,returntype,body, previous_functions = []):
         super().__init__(location)
-        self.name = name
-        self.arguments = arguments
+        self.__name = name
+        self.__arguments = arguments
         self.returntype = returntype
-        self.body = body
+        self.__body = body
+        self.__scope = Scope()
     
-    def type_check(self) -> None:
-        if self.name != "main":
+    def type_check(self, scope: Scope, ongoingloop: bool) -> None:
+        if self.__name != "main":
             self.syntax_error("non-main function found")
-        if self.arguments != []:
+        if self.__arguments != []:
             self.syntax_error(" main function cannot have arguments")
         if self.returntype != None:
             self.syntax_error(" main function cannot have a return type")
-        for statement in self.body:
-            statement.type_check()
+        for statement in self.__body:
+            statement.type_check(self.__scope)
     
     def __str__(self):
-        return "proc(%s,%s,%s,%s)" % (self.name,self.arguments,self.returntype,self.body)
+        return "proc(%s,%s,%s,%s)" % (self.__name, self.__arguments, self.returntype, self.__body)
 
 
 # ------------------------------------------------------------------------------#
@@ -88,21 +112,20 @@ class ExpressionBool(Expression):
     def __str__(self):
         return "bool(%s)" % (self.value)
     
-    def type_check(self) -> None:   # We should never reach here
+    def type_check(self, scope: Scope, ongoingloop: bool) -> None:   # We should never reach here
         if self.value not in ("true", "false"):
             self.syntax_error(f"{self.value} value must be 'true' or 'false'.")
 
 class ExpressionVar(Expression):
-    def __init__(self, location: List[int], name, declared_ids = []):
+    def __init__(self, location: List[int], name):
         super().__init__(location)
         
         self.name = name
-        self.declared_ids = copy.deepcopy(declared_ids)
 
     def __str__(self):
         return "ExpressionVar({})".format(self.name)
 
-    def type_check(self) -> None:
+    def type_check(self, scope: Scope) -> None:
         if self.name not in self.declared_ids:
             self.syntax_error(" variable yet not declared")
 
@@ -116,7 +139,7 @@ class ExpressionInt(Expression):
     def __str__(self):
         return "ExpressionInt({})".format(self.value)
     
-    def type_check(self) -> None:
+    def type_check(self, scope: Scope) -> None:
         if self.value < 0:
             self.syntax_error(" negative number")
         if self.value >= self._max:
@@ -162,13 +185,13 @@ class ExpressionOp(Expression):
             self.syntax_error(f"Unkown operator {self.operator}")
 
 
-    def type_check(self) -> None:
+    def type_check(self, scope: Scope) -> None:
         if len(self.arguments) != len(self.expected_argument_type):
             self.syntax_error(f"{self.operator} takes {len(self.expected_argument_type)} \
                                 arguments got {len(self.arguments)}")
 
         for index, arg in enumerate(self.arguments):
-            arg.type_check()
+            arg.type_check(scope)
             arg_type = self.arguments[index].type
             expected_type = self.expected_argument_type[index]
             if arg_type != expected_type:
@@ -189,31 +212,34 @@ class StatementBlock(Statement):
         super().__init__(location)
         self.statements = statements
     
-    def type_check(self) -> None:
+    def type_check(self, scope: Scope, ongoingloop: bool) -> None:
+        scope.create_scope()
         for statement in self.statements:
-            statement.type_check()
-    
+            statement.type_check(scope, ongoingloop)
+        scope.delete_scope()
+
     def __str__(self):
         return "block(%s)" % (self.statements)
 
 class StatementVardecl(Statement):
-    def __init__(self,location, name, type, init, declared_ids = []):
+    def __init__(self,location, name, type: BX_TYPE, init: Expression):
         super().__init__(location)
         self.name = name
-        self.type = type
-        self.init = init 
-        self.declared_ids = copy.deepcopy(declared_ids)
+        self.type: BX_TYPE = type
+        self.init: Expression = init 
     
     def __str__(self):
         return "vardecl(%s,%s,%s)" % (self.name,self.ty,self.init)
 
-    def type_check(self) -> None:
+    def type_check(self, scope: Scope, ongoingloop: bool) -> None:
         if self.type != INT:    # shouldn't be possible but anyways
             self.syntax_error(f'{self.name} should have type {str(INT)} \
                                 but has type {self.type}')
-        if self.name in self.declared_ids:
+        if scope.exists(self.name):
             self.syntax_error(" variable already declared")
-        self.init.type_check()
+        else:
+            scope.add(self.name, self.type)
+        self.init.type_check(scope)
         
 class StatementPrint(Statement):
     """Actually are are prints"""
@@ -224,24 +250,23 @@ class StatementPrint(Statement):
     def __str__(self):
         return "print({})".format(self.arguments)
     
-    def type_check(self) -> None:
-        self.argument.type_check()
+    def type_check(self, scope: Scope, ongoingloop: bool) -> None:
+        self.argument.type_check(scope)
         if self.argument.type != INT:
             self.syntax_error(f'')
 
 class StatementAssign(Statement):
-    def __init__(self, location: List[int], lvalue,rvalue, declared_ids = []): 
+    def __init__(self, location: List[int], lvalue, rvalue):
         super().__init__(location)
         self.lvalue = lvalue
         self.rvalue = rvalue
-        self.declared_ids = copy.deepcopy(declared_ids)
     
     def __str__(self):
         return "StatementAssign(%s,%s)" % (self.lvalue,self.rvalue)
     
-    def type_check(self) -> None:
-        if self.lvalue not in self.declared_ids:
-            self.syntax_error(" variable yet not declared")
+    def type_check(self, scope: Scope, ongoingloop: bool) -> None:
+        if not scope.exists(self.lvalue):
+            self.syntax_error(f" variable not yet declared")
         self.rvalue.type_check()
         if self.lvalue.type != self.rvalue.type:
             self.syntax_error(f'')
@@ -261,12 +286,12 @@ class StatementIfElse(Statement):
     def __str__(self):
         return "ifelse(%s,%s,%s)" % (self.condition,self.block,self.if_rest)
     
-    def type_check(self) -> None:
+    def type_check(self, scope: Scope, ongoingloop: bool) -> None:
         if self.condition.type != BOOL:
             self.syntax_error(f'')
-        self.condition.type_check()
-        self.block.type_check()
-        if self.ifrest is not None: self.if_rest.type_check()
+        self.condition.type_check(scope)
+        self.block.type_check(scope, ongoingloop)
+        if self.ifrest is not None: self.if_rest.type_check(scope, ongoingloop)
 
 class StatementWhile(Statement):
     def __init__(self, location: List[int], condition, block):
@@ -277,11 +302,11 @@ class StatementWhile(Statement):
     def __str__(self):
         return "while(%s,%s)" % (self.condition,self.block)
     
-    def type_check(self) -> None:
-        self.condition.type_check()
+    def type_check(self, scope: Scope, ongoingloop: bool) -> None:
+        self.condition.type_check(scope)
         if self.condition.type != BOOL:
             self.syntax_error(f'')
-        self.block.type_check()
+        self.block.type_check(scope, True)
 
 class StatementJump(Statement):
     def __init__(self, location: List[int], keyword):
@@ -291,6 +316,7 @@ class StatementJump(Statement):
     def __str__(self):
         return "Jump(%s)" % (self.keyword)
     
-    def type_check(self) -> None:
-        pass
+    def type_check(self, scope: Scope, ongoingloop: bool) -> None:
+        if not ongoingloop:
+            self.syntax_error(f'')
 
