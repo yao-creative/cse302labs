@@ -1,7 +1,7 @@
 from doctest import Example
-from tkinter.messagebox import NO
-from typing import List, Tuple, Dict
+from typing import List, Tuple, Dict, Union
 from webbrowser import Opera
+
 
 """
 Authors: Yi Yao Tan 
@@ -61,11 +61,11 @@ class Scope:
     def add(self, variable: str, value: BX_TYPE) -> None:
         """ Adds a variable in the current scope """
         if self.scope_len() and self.exists(variable):
-            self.__scope_map[-1][variable] = value
+            self.__scope_map[-1][variable] = tvalue
 
 
 class Node:
-    def __init__(self, location):
+    def __init__(self, location: List[int]):
         self.location = location
     def __repr__(self):
         return self.__str__()
@@ -78,13 +78,13 @@ class Node:
 # ------------------------------------------------------------------------------#
 
 class Expression(Node):
-    def __init__(self,location):
+    def __init__(self,location: List[int]):
         super().__init__(location)
 
 class ExpressionBool(Expression):
-    def __init__(self,location, value):
+    def __init__(self,location: List[int], value: str):
         super().__init__(location)
-        self.value = value
+        self.value: str = value
         self.type = BOOL
 
     def __str__(self):
@@ -95,9 +95,9 @@ class ExpressionBool(Expression):
             self.syntax_error(f"{self.value} value must be 'true' or 'false'.")
 
 class ExpressionVar(Expression):
-    def __init__(self, location: List[int], name):
+    def __init__(self, location: List[int], name: str):
         super().__init__(location)
-        self.name = name
+        self.name: str = name
 
     def __str__(self):
         return "ExpressionVar({})".format(self.name)
@@ -182,13 +182,13 @@ class ExpressionOp(Expression):
 # ------------------------------------------------------------------------------#
 
 class Statement(Node):
-    def __init__(self,location):
+    def __init__(self,location: List[int]):
         super().__init__(location)
 
 class StatementBlock(Statement):
-    def __init__(self,location, statements):
+    def __init__(self,location: List[int], statements: List[Statement]):
         super().__init__(location)
-        self.statements = statements
+        self.statements: List[Statement] = statements
     
     def type_check(self, scope: Scope, ongoingloop: bool) -> None:
         scope.create_scope()
@@ -200,7 +200,7 @@ class StatementBlock(Statement):
         return "block(%s)" % (self.statements)
 
 class StatementVardecl(Statement):
-    def __init__(self,location, variable: ExpressionVar, type: BX_TYPE, init: Expression):
+    def __init__(self,location: List[int], variable: ExpressionVar, type: BX_TYPE, init: Expression):
         super().__init__(location)
         self.variable: ExpressionVar = variable
         self.type: BX_TYPE = type
@@ -220,13 +220,13 @@ class StatementVardecl(Statement):
         self.init.type_check(scope)
         
 class StatementPrint(Statement):
-    """Actually are are prints"""
-    def __init__(self, location: List[int], argument):
+    """Actually are prints"""
+    def __init__(self, location: List[int], argument: Expression):
         super().__init__(location)
-        self.argument = argument
+        self.argument: Expression = argument
     
     def __str__(self):
-        return "print({})".format(self.arguments)
+        return "print({})".format(self.argument)
     
     def type_check(self, scope: Scope, ongoingloop: bool) -> None:
         self.argument.type_check(scope)
@@ -234,10 +234,10 @@ class StatementPrint(Statement):
             self.syntax_error(f'')
 
 class StatementAssign(Statement):
-    def __init__(self, location: List[int], lvalue, rvalue):
+    def __init__(self, location: List[int], lvalue: str, rvalue: Expression):
         super().__init__(location)
-        self.lvalue = lvalue
-        self.rvalue = rvalue
+        self.lvalue: str = lvalue
+        self.rvalue: Expression = rvalue
     
     def __str__(self):
         return "StatementAssign(%s,%s)" % (self.lvalue,self.rvalue)
@@ -254,12 +254,12 @@ class StatementAssign(Statement):
 # ------------------------------------------------------------------------------#
 
 class StatementIfElse(Statement):
-    def __init__(self, location: List[int], condition: Expression, block, ifrest):
+    def __init__(self, location: List[int], condition: Expression, block : StatementBlock, ifrest):
         super().__init__(location)
         """if_body is a block, condition is an expression"""
         self.condition: Expression = condition
-        self.block = block 
-        self.if_rest = ifrest
+        self.block: StatementBlock = block 
+        self.if_rest:  Union[StatementIfElse, StatementBlock] = ifrest
     
     def __str__(self):
         return "ifelse(%s,%s,%s)" % (self.condition,self.block,self.if_rest)
@@ -272,10 +272,10 @@ class StatementIfElse(Statement):
         if self.ifrest is not None: self.if_rest.type_check(scope, ongoingloop)
 
 class StatementWhile(Statement):
-    def __init__(self, location: List[int], condition, block):
+    def __init__(self, location: List[int], condition: Expression, block: StatementBlock):
         super().__init__(location)
-        self.condition = condition
-        self.block = block
+        self.condition: Expression = condition
+        self.block: StatementBlock = block
     
     def __str__(self):
         return "while(%s,%s)" % (self.condition,self.block)
@@ -303,11 +303,11 @@ class StatementJump(Statement):
 # ------------------------------------------------------------------------------#
 
 class DeclProc(Node):
-    def __init__(self,location, name, arguments, returntype, body: StatementBlock, previous_functions = []):
+    def __init__(self,location: List[int], name : str, arguments, returntype: type, body: StatementBlock, previous_functions = []):
         super().__init__(location)
-        self.__name = name
+        self.__name: str = name
         self.__arguments = arguments
-        self.__returntype = returntype
+        self.__returntype: type = returntype
         self.__body: StatementBlock = body
         self.__scope = Scope()
     
