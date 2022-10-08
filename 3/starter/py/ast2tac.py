@@ -254,19 +254,19 @@ class AST_to_TAC_Generator:
 
         elif isinstance(expression, ExpressionOp):
             
-            if expression.operator == "&&":
+            if expression.operator == "logical-and":
                 Lmid = self.__code_state.generate_label()
                 self.__tmm_bool_expression_parse(expression.arguments[0], Lmid, Lfalse)
                 self.__emit(TAC_line("label", [Lmid], None).format())
                 self.__tmm_bool_expression_parse(expression.arguments[1], Ltrue, Lfalse)
                 
-            elif expression.operator == "||":
+            elif expression.operator == "logical-or":
                 Lmid = self.__code_state.generate_label()
                 self.__tmm_bool_expression_parse(expression.arguments[0], Ltrue, Lmid)
                 self.__emit(TAC_line("label", [Lmid], None).format())
                 self.__tmm_bool_expression_parse(expression.arguments[1], Ltrue, Lfalse)
                 
-            elif expression.operator == "!":
+            elif expression.operator == "not":
                 self.__tmm_bool_expression_parse(expression.arguments[0], Lfalse, Ltrue)
                 
             elif expression.operator in self.__macros.jump_map:
