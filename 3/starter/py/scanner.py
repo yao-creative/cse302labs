@@ -1,7 +1,7 @@
-from regex import R
 import ply.lex as lex
 import argparse
 import sys
+
 #words 
 reserved = {
     "main" : "MAIN",
@@ -32,31 +32,35 @@ tokens = ("PLUS", "MINUS", "SEMICOLON", "COLON", "LPAREN", "RPAREN", "IDENT", "N
 
 t_PLUS = r'\+'
 t_MINUS = r'-'
-t_SEMICOLON = r'\;'
-t_COLON = r'\:'
+t_MULTIPLY = r'\*'
+t_DIVIDE = r'/'
+t_PERCENT = r'%'
+
+t_EQUALS = r'='
+t_SEMICOLON = r';'
+t_COLON = r':'
 t_LPAREN = r'\('
 t_RPAREN = r'\)'
 t_LBRACE = r'\{'
 t_RBRACE = r'\}'
-t_EQUALS = r'\='
-t_MULTIPLY = r'\*'
-t_DIVIDE = r'/'
-t_PERCENT = r'\%'
-t_BITWISE_AND = r'\&'
+
+t_BITWISE_AND = r'&'
 t_BITWISE_OR = r'\|'
 t_BITWISE_XOR = r'\^'
-t_BITWISE_NEGATION = r'\~'
-t_LOGICAL_SHIFT_LEFT = r'\<\<'
-t_LOGICAL_SHIFT_RIGHT = r'\>\>'
-t_CMPE = r'\=\='
-t_CMPNE = r'\!\='
-t_CMPL = r'\<'
-t_CMPLE = r'\<\='
-t_CMPG = r'\>'
-t_CMPGE = r'\>\='
-t_AND = r'\&\&'
+t_BITWISE_NEGATION = r'~'
+t_LOGICAL_SHIFT_LEFT = r'<<'
+t_LOGICAL_SHIFT_RIGHT = r'>>'
+
+t_CMPE = r'=='
+t_CMPNE = r'!='
+t_CMPL = r'<'
+t_CMPLE = r'<='
+t_CMPG = r'>'
+t_CMPGE = r'>='
+
+t_AND = r'&&'
 t_OR = r'\|\|'
-t_NOT = r'\!'
+t_NOT = r'!'
 
 
 def t_IDENT(t):

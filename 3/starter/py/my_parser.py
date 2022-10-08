@@ -6,11 +6,17 @@ import sys
 import scanner
 import ply.lex as lex
 
+"""
+Authors: Yi Yao Tan 
+         Vrushank Agrawal
+"""
+
 unop_dict = {
     '!': "not",
     '-': "opposite",
     '~': "bitwise-negation"
 }
+
 binop_dict = {
                 '+': "addition",
                 '-': "substraction",
@@ -186,7 +192,7 @@ def p_error(p):
 
 parser = yacc.yacc()
 
-def parse_file(filename):
+def run_parser(filename):
     """Parse a file and return the AST"""
     with open(filename) as f:
         data = f.read()
@@ -196,7 +202,7 @@ def parse_file(filename):
     return result 
 
 if __name__ == "__main__":
-    res = parse_file(sys.argv[1])
+    res = run_parser(sys.argv[1])
     print(res)
     
 
