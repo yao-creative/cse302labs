@@ -129,7 +129,7 @@ class Code_State:
 
     
 # ------------------------------------------------------------------------------#
-# Typed Maximul Munch Class
+# Typed Maximal Munch Class
 # ------------------------------------------------------------------------------#
 
 class AST_to_TAC_Generator:
@@ -165,14 +165,14 @@ class AST_to_TAC_Generator:
             Lend = self.__code_state.generate_label()
             # treat the while loop condition
             self.__code_state.enter_loop(Lstart, Lend)
-            self.__emit(TAC_line(opcode="label", args=[Lstart], result=None))
+            self.__emit(TAC_line(opcode="label", args=[Lstart], result=None).format())
             self.__tmm_bool_expression_parse(statement.condition)
             # treat the body of while loop
-            self.__emit(TAC_line(opcode="label", args=[Lbody], result=None))
+            self.__emit(TAC_line(opcode="label", args=[Lbody], result=None).format())
             self.__tmm_statement_parse(statement.block)
-            self.__emit(TAC_line(opcode="jmp", args=[Lstart], result=None))
+            self.__emit(TAC_line(opcode="jmp", args=[Lstart], result=None).format())
             # treat while loop ending
-            self.__emit(TAC_line(opcode="label", args=[Lend], result=None))
+            self.__emit(TAC_line(opcode="label", args=[Lend], result=None).format())
             self.__code_state.exit_loop()
 
         elif isinstance(statement, StatementIfElse):
@@ -181,18 +181,18 @@ class AST_to_TAC_Generator:
             Lover = self.__code_state.generate_label()
             # treat condition of if stmt
             self.__tmm_bool_expression_parse(statement.condition, Ltrue, Lfalse)
-            self.__emit(TAC_line(opcode="label", args=[Ltrue], result=None))
+            self.__emit(TAC_line(opcode="label", args=[Ltrue], result=None).format())
             # treat block of if stmt
             self.__tmm_statement_parse(statement.block)
-            self.__emit(TAC_line(opcode="jmp", args=[Lover], result=None))
-            self.__emit(TAC_line(opcode="label", args=[Lfalse], result=None))
+            self.__emit(TAC_line(opcode="jmp", args=[Lover], result=None).format())
+            self.__emit(TAC_line(opcode="label", args=[Lfalse], result=None).format())
             # treat else part if exists
             if statement.if_rest is not None: self.__tmm_statement_parse(statement.if_rest)
-            self.__emit(TAC_line(opcode="jmp", args=[Lover], result=None))
+            self.__emit(TAC_line(opcode="jmp", args=[Lover], result=None).format())
 
         elif isinstance(statement, StatementJump):
             Ldestination = self.__code_state[statement.keyword]     # get the relevant label for jmp
-            self.__emit(TAC_line(opcode="jmp", args=[Ldestination], result=None))
+            self.__emit(TAC_line(opcode="jmp", args=[Ldestination], result=None).format())
 
         elif isinstance(statement, StatementVardecl):
             temp = self.__code_state.add_variable(statement.variable)
@@ -205,7 +205,7 @@ class AST_to_TAC_Generator:
         elif isinstance(statement, StatementPrint):
             temp = self.__code_state.fetch_temp(statement.argument)
             self.__tmm_int_expression_parse(statement.argument)
-            self.__emit(TAC_line(opcode="print", args=[temp], result=None))
+            self.__emit(TAC_line(opcode="print", args=[temp], result=None).format())
 
         else:       # should never reach here
             raise RuntimeError(f'Got unexpected statement {statement}')
@@ -216,13 +216,32 @@ class AST_to_TAC_Generator:
             raise RuntimeError(f'Expression must have type INT but has type {expression.type}')
         
         if isinstance(expression, ExpressionInt):
-            pass
+            opcode = "const"
+            args = [expression.value] 
+            self.__emit(TAC_line(opcode, args, temporary).format())
 
         elif isinstance(expression, ExpressionVar):
-            pass
+            opcode = "copy"
+            args = self.__code_state.fetch_temp(expression.name)
+            self.__emit(TAC_line(opcode, [args], temporary).format())
 
-        elif isinstance(expression, ExpressionOp):
-            pass
+        elif isinstance(expression, ExpressionOp) and len(expression.arguments) == 1:
+            #unary operator
+            opcode = self.__macros.operator_map[expression.operator]
+            subexpr_target = self.__code_state.generate_new_temp()
+            self.__tmm_int_expression_parse(expression.arguments[0], subexpr_target)
+            self.__emit(TAC_line(opcode, [subexpr_target], temporary).format()) 
+            
+        elif isinstance(expression, ExpressionOp) and len(expression.arguments) == 2:
+            opcode = self.__macros.operator_map[expression.operator]
+            subexpr_targets = [] 
+            for subexpr in expression.arguments: 
+                target = self.__code_state.generate_new_temp()
+                subexpr_targets.append(target)
+                self.__tmm_int_expression_parse(subexpr,target)
+            self.__emit(TAC_line(opcode, subexpr_targets, temporary).format())
+        else:       # should never reach here
+            raise RuntimeError(f'Got unexpected expression {expression}')
 
     def __tmm_bool_expression_parse(self, expression: Expression, Ltrue: str, Lfalse: str) -> None:
         """ parses the expression and builds its tac """
@@ -230,10 +249,43 @@ class AST_to_TAC_Generator:
             raise RuntimeError(f'Expression must have type BOOL but has type {expression.type}')
         
         if isinstance(expression, ExpressionBool):
-            pass
+            if expression.value: self.__emit(TAC_line("jmp", [Ltrue], None).format())
+            else: self.__emit(TAC_line("jmp", [Lfalse], None).format())
 
         elif isinstance(expression, ExpressionOp):
-            pass
+            
+            if expression.operator == "&&":
+                Lmid = self.__code_state.generate_label()
+                self.__tmm_bool_expression_parse(expression.arguments[0], Lmid, Lfalse)
+                self.__emit(TAC_line("label", [Lmid], None).format())
+                self.__tmm_bool_expression_parse(expression.arguments[1], Ltrue, Lfalse)
+                
+            elif expression.operator == "||":
+                Lmid = self.__code_state.generate_label()
+                self.__tmm_bool_expression_parse(expression.arguments[0], Ltrue, Lmid)
+                self.__emit(TAC_line("label", [Lmid], None).format())
+                self.__tmm_bool_expression_parse(expression.arguments[1], Ltrue, Lfalse)
+                
+            elif expression.operator == "!":
+                self.__tmm_bool_expression_parse(expression.arguments[0], Lfalse, Ltrue)
+                
+            elif expression.operator in self.__macros.jump_map:
+                subexpr_targets = [] 
+                for subexpr in expression.arguments: 
+                    target = self.__code_state.generate_new_temp()
+                    subexpr_targets.append(target)
+                    self.__tmm_int_expression_parse(subexpr,target)
+                self.__emit(TAC_line("sub", subexpr_targets.reverse(), None).format())
+                #e1 - e2 since assembly second argument is subtracted from first
+                self.__emit(TAC_line(self.__macros.jump_map[expression.operator], [Ltrue], None).format())
+                self.__emit(TAC_line("jmp", [Lfalse], None).format())
+        
+            else:
+                raise RuntimeError(f'Got unexpected boolean operator {expression.operator}')
+            
+        else:       # should never reach here
+            raise RuntimeError(f'Got unexpected expression {expression}')
+            
 
 
 # ------------------------------------------------------------------------------#

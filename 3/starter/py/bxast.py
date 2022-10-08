@@ -84,7 +84,7 @@ class Expression(Node):
 class ExpressionBool(Expression):
     def __init__(self,location: List[int], value: str):
         super().__init__(location)
-        self.value: str = value
+        self.value: BOOL = (value == "true")
         self.type = BOOL
 
     def __str__(self):
