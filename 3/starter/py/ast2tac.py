@@ -54,7 +54,7 @@ class Code_State:
         self.__temp_counter: int = 0
         self.__temps_by_scope: List = []
         self.__labels: list = []
-        self.__label_counter: int = []
+        self.__label_counter: int = 0
         self.__break_stack = []
         self.__continue_stack = []
 
@@ -137,7 +137,7 @@ class AST_to_TAC_Generator:
     def __init__(self, tree: DeclProc):
         self.__code_state: Code_State = Code_State("main")
         self.__code: DeclProc = tree
-        self.__instructions: List[TAC_line] = []
+        self.__instructions: List[Dict[TAC_line]] = []
         self.__macros: Code_Macro = Code_Macro
         self.__tmm_statement_parse(self.__code.get_body())
 
@@ -147,7 +147,7 @@ class AST_to_TAC_Generator:
     def tac_generator(self) -> json:
         """ Generates the tac file """
         return {"proc": '@'+self.__code.get_name(),
-                "body": [instr.format() for instr in self.__instructions],
+                "body": self.__instructions,
                 "temps": self.__code_state.get_temps(),
                 "labels": self.__code_state.get_labels()}
 
@@ -155,7 +155,7 @@ class AST_to_TAC_Generator:
         """ parses the statement and builds its tac """
         if isinstance(statement, StatementBlock):
             self.__code_state.enter_scope()
-            for stmt in statement:
+            for stmt in statement.statements:
                 self.__tmm_statement_parse(stmt)
             self.__code_state.exit_scope() 
 
@@ -203,8 +203,8 @@ class AST_to_TAC_Generator:
             self.__tmm_int_expression_parse(statement.rvalue, temp)
 
         elif isinstance(statement, StatementPrint):
-            temp = self.__code_state.fetch_temp(statement.argument)
-            self.__tmm_int_expression_parse(statement.argument)
+            temp = self.__code_state.generate_new_temp()
+            self.__tmm_int_expression_parse(statement.argument, temp)
             self.__emit(TAC_line(opcode="print", args=[temp], result=None).format())
 
         else:       # should never reach here
@@ -303,16 +303,16 @@ if __name__=="__main__":
     
     filename = args.filename[0]     # get the filename
 
-    with open(filename, 'r') as fp:             # read the bx code as text
-        code = fp.read()
+    # with open(filename, 'r') as fp:             # read the bx code as text
+    #     code = fp.read()
 
-    ast_: DeclProc = lexer_parser.run_parser(code)          # run lexer and parser
+    ast_: DeclProc = lexer_parser.run_parser(filename)          # run lexer and parser
     if ast_ is None: 
         raise SyntaxError("Could not compile ast")          # exit if error occured while parsing 
-    ast_.type_check()                                       # check syntax
+    # ast_.type_check()                                       # check syntax
     print('reached tac json')
     tac_ = AST_to_TAC_Generator(ast_)   # convert ast code to json
     print("tac json created")
     tac_filename = filename[:-2] + 'tac.json'   # get new file name
     with open(tac_filename, 'w') as fp:         # save the file
-        json.dump(tac_.tac_generator(), fp, indent=3)
+        json.dump(tac_.tac_generator(), fp) #, indent=3
