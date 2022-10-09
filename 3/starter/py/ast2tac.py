@@ -275,7 +275,7 @@ class AST_to_TAC_Generator:
                     target = self.__code_state.generate_new_temp()
                     subexpr_targets.append(target)
                     self.__tmm_int_expression_parse(subexpr,target)
-                self.__emit(TAC_line("sub", subexpr_targets.reverse(), None).format())
+                self.__emit(TAC_line("sub", subexpr_targets, None).format())
                 #e1 - e2 since assembly second argument is subtracted from first
                 self.__emit(TAC_line(self.__macros.jump_map[expression.operator], [Ltrue], None).format())
                 self.__emit(TAC_line("jmp", [Lfalse], None).format())
