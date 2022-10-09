@@ -61,7 +61,7 @@ class Scope:
     def add(self, variable: str, value: BX_TYPE) -> None:
         """ Adds a variable in the current scope """
         if self.scope_len() and self.exists(variable):
-            self.__scope_map[-1][variable] = tvalue
+            self.__scope_map[-1][variable] = value
 
 
 class Node:
@@ -90,7 +90,7 @@ class ExpressionBool(Expression):
     def __str__(self):
         return "bool(%s)" % (self.value)
     
-    def type_check(self, scope: Scope, ongoingloop: bool) -> None:   # We should never reach here
+    def type_check(self, scope: Scope) -> None:   # We should never reach here
         if self.value not in ("true", "false"):
             self.syntax_error(f"{self.value} value must be 'true' or 'false'.")
 
@@ -318,8 +318,8 @@ class DeclProc(Node):
             self.syntax_error(" main function cannot have arguments")
         if self.__returntype != None:
             self.syntax_error(" main function cannot have a return type")
-        for statement in self.__body:
-            statement.type_check(self.__scope)
+        for statement in self.__body.statements:
+            statement.type_check(self.__scope, False)
     
     def __str__(self):
         return "proc(%s,%s,%s,%s)" % (self.__name, self.__arguments, self.__returntype, self.__body)
