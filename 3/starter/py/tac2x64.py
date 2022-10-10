@@ -264,8 +264,17 @@ class tac2x64:
 # main function drivers
 # ------------------------------------------------------------------------------#
 
-def compile_tac(fname):
+def compile_tac(fname: str) -> None:
+    """ reads tac json file and converts it to x64 assembly """
+    # Open file and check if it has correct structure
+    tac_jsn = None
+    with open(fname, 'rb') as fp:
+        tac_jsn = json.load(fp)
 
+    convert_instr_to_asm(tac_jsn)
+
+def convert_instr_to_asm(fname: str, tac_jsn: list) -> None:
+    """ Converts tac instructions list to assembly """
     # Check if fileformat is correct
     if fname.endswith('.tac.json'):
         rname = fname[:-9]
@@ -273,12 +282,9 @@ def compile_tac(fname):
         rname = fname[:-5]
     else:
         raise ValueError(f'{fname} is not of the correct format .tac.json or .json')
-    
-    # Open file and check if it has correct structure
-    tac_jsn = None
-    with open(fname, 'rb') as fp:
-        tac_jsn = json.load(fp)
+
     assert isinstance(tac_jsn, list) and len(tac_jsn) == 1, f'Invalid list structure of the input file\n {tac_jsn}'
+    
     tac_jsn = tac_jsn[0]
     assert 'proc' in tac_jsn and tac_jsn['proc'] == '@main', f'Invalid function in {tac_jsn}'
     

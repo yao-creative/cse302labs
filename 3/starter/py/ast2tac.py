@@ -54,7 +54,7 @@ class Code_State:
         self.__temp_counter: int = 0
         self.__temps_by_scope: List = []
         self.__labels: list = []
-        self.__label_counter: int = []
+        self.__label_counter: int = 0
         self.__break_stack = []
         self.__continue_stack = []
 
@@ -137,25 +137,25 @@ class AST_to_TAC_Generator:
     def __init__(self, tree: DeclProc):
         self.__code_state: Code_State = Code_State("main")
         self.__code: DeclProc = tree
-        self.__instructions: List[TAC_line] = []
+        self.__instructions: List[Dict[TAC_line]] = []
         self.__macros: Code_Macro = Code_Macro
         self.__tmm_statement_parse(self.__code.get_body())
 
     def __emit(self, instr: TAC_line) -> None:
         self.__instructions.append(instr)
 
-    def tac_generator(self) -> json:
+    def tac_generator(self) -> List[dict]:
         """ Generates the tac file """
-        return {"proc": '@'+self.__code.get_name(),
-                "body": [instr.format() for instr in self.__instructions],
+        return [{"proc": '@'+self.__code.get_name(),
+                "body": self.__instructions,
                 "temps": self.__code_state.get_temps(),
-                "labels": self.__code_state.get_labels()}
+                "labels": self.__code_state.get_labels()}]
 
     def __tmm_statement_parse(self, statement) -> None:
         """ parses the statement and builds its tac """
         if isinstance(statement, StatementBlock):
             self.__code_state.enter_scope()
-            for stmt in statement:
+            for stmt in statement.statements:
                 self.__tmm_statement_parse(stmt)
             self.__code_state.exit_scope() 
 
@@ -203,8 +203,8 @@ class AST_to_TAC_Generator:
             self.__tmm_int_expression_parse(statement.rvalue, temp)
 
         elif isinstance(statement, StatementPrint):
-            temp = self.__code_state.fetch_temp(statement.argument)
-            self.__tmm_int_expression_parse(statement.argument)
+            temp = self.__code_state.generate_new_temp()
+            self.__tmm_int_expression_parse(statement.argument, temp)
             self.__emit(TAC_line(opcode="print", args=[temp], result=None).format())
 
         else:       # should never reach here
@@ -216,17 +216,14 @@ class AST_to_TAC_Generator:
             raise RuntimeError(f'Expression must have type INT but has type {expression.type}')
         
         if isinstance(expression, ExpressionInt):
-            opcode = "const"
-            args = [expression.value] 
-            self.__emit(TAC_line(opcode, args, temporary).format())
+            self.__emit(TAC_line("const", [expression.value], temporary).format())
 
         elif isinstance(expression, ExpressionVar):
-            opcode = "copy"
-            args = self.__code_state.fetch_temp(expression.name)
-            self.__emit(TAC_line(opcode, [args], temporary).format())
+            temp = self.__code_state.fetch_temp(expression.name)
+            if temp != temporary:
+                self.__emit(TAC_line("copy", [args], temporary).format())
 
         elif isinstance(expression, ExpressionOp) and len(expression.arguments) == 1:
-            #unary operator
             opcode = self.__macros.operator_map[expression.operator]
             subexpr_target = self.__code_state.generate_new_temp()
             self.__tmm_int_expression_parse(expression.arguments[0], subexpr_target)
@@ -234,12 +231,13 @@ class AST_to_TAC_Generator:
             
         elif isinstance(expression, ExpressionOp) and len(expression.arguments) == 2:
             opcode = self.__macros.operator_map[expression.operator]
-            subexpr_targets = [] 
+            subexpr_targets = []
             for subexpr in expression.arguments: 
                 target = self.__code_state.generate_new_temp()
                 subexpr_targets.append(target)
-                self.__tmm_int_expression_parse(subexpr,target)
+                self.__tmm_int_expression_parse(subexpr, target)
             self.__emit(TAC_line(opcode, subexpr_targets, temporary).format())
+        
         else:       # should never reach here
             raise RuntimeError(f'Got unexpected expression {expression}')
 
@@ -253,7 +251,6 @@ class AST_to_TAC_Generator:
             else: self.__emit(TAC_line("jmp", [Lfalse], None).format())
 
         elif isinstance(expression, ExpressionOp):
-            
             if expression.operator == "logical-and":
                 Lmid = self.__code_state.generate_label()
                 self.__tmm_bool_expression_parse(expression.arguments[0], Lmid, Lfalse)
@@ -274,10 +271,12 @@ class AST_to_TAC_Generator:
                 for subexpr in expression.arguments: 
                     target = self.__code_state.generate_new_temp()
                     subexpr_targets.append(target)
-                    self.__tmm_int_expression_parse(subexpr,target)
-                self.__emit(TAC_line("sub", subexpr_targets, None).format())
+                    self.__tmm_int_expression_parse(subexpr, target)
+                temp_result = self.__code_state.generate_new_temp()
+                self.__emit(TAC_line("sub", subexpr_targets, temp_result).format())
                 #e1 - e2 since assembly second argument is subtracted from first
-                self.__emit(TAC_line(self.__macros.jump_map[expression.operator], [Ltrue], None).format())
+                self.__emit(TAC_line(self.__macros.jump_map[expression.operator], 
+                                    [temp_result, Ltrue], None).format())
                 self.__emit(TAC_line("jmp", [Lfalse], None).format())
         
             else:
@@ -295,6 +294,25 @@ class AST_to_TAC_Generator:
 import argparse
 import my_parser as lexer_parser
 
+def source_to_tac(filename: str) -> json:
+    ast_: DeclProc = lexer_parser.run_parser(filename)          # run lexer and parser
+    if ast_ is None: 
+        raise SyntaxError("Could not compile ast")          # exit if error occured while parsing 
+    
+    ast_.type_check()                                       # check syntax
+    print('reached tac json')
+    tac_ = AST_to_TAC_Generator(ast_)   # convert ast code to json
+    print("tac json created")
+
+    return tac_
+
+def write_tacfile(tac_instr: json) -> None:
+    """ Writes a tac json to the system """
+    tac_filename = filename[:-2] + 'tac.json'   # get new file name
+    with open(tac_filename, 'w') as fp:         # save the file
+        json.dump(tac_instr.tac_generator(), fp) #, indent=3
+
+
 if __name__=="__main__":
 
     parser = argparse.ArgumentParser(description='Get method for conversion and filetype.')
@@ -303,16 +321,6 @@ if __name__=="__main__":
     
     filename = args.filename[0]     # get the filename
 
-    with open(filename, 'r') as fp:             # read the bx code as text
-        code = fp.read()
+    tac_instr = source_to_tac(filename)  # get the tac instr
 
-    ast_: DeclProc = lexer_parser.run_parser(code)          # run lexer and parser
-    if ast_ is None: 
-        raise SyntaxError("Could not compile ast")          # exit if error occured while parsing 
-    ast_.type_check()                                       # check syntax
-    print('reached tac json')
-    tac_ = AST_to_TAC_Generator(ast_)   # convert ast code to json
-    print("tac json created")
-    tac_filename = filename[:-2] + 'tac.json'   # get new file name
-    with open(tac_filename, 'w') as fp:         # save the file
-        json.dump(tac_.tac_generator(), fp, indent=3)
+    write_tacfile(tac_instr)
