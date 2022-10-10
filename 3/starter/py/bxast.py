@@ -1,13 +1,11 @@
-from doctest import Example
-from typing import List, Tuple, Dict, Union
-from webbrowser import Opera
-
+from typing import List, Tuple, Dict, Union, Any
 
 """
 Authors: Yi Yao Tan 
          Vrushank Agrawal
 """
 class Operations:
+    """ A class that declares all operations for global use """
     _binops_int: tuple = ("addition", "substraction", "multiplication",
                         "division", "modulus", "bitwise-and", "bitwise-or", 
                         "bitwise-xor", "logical-shift-left", "logical-shift-right")
@@ -25,6 +23,13 @@ class Operations:
 
 class BX_TYPE:
     """ Class of all the data types in BX """
+
+    def getType(__name: str) -> Any:
+        if __name == "int":
+            return BX_TYPE.INT
+        elif __name == "bool":
+            return BX_TYPE.BOOL
+
     class INT: 
         """ Class of INT type """
         def __str__(self) -> str:
@@ -34,9 +39,6 @@ class BX_TYPE:
         """ Class of BOOL type """
         def __str__(self) -> str:
             return "bool"
-
-INT = BX_TYPE.INT
-BOOL = BX_TYPE.BOOL
 
 class Scope:
     def __init__(self) -> None:
@@ -48,17 +50,19 @@ class Scope:
 
     def create_scope(self) -> None:
         """ appends a new scope when a block is entered"""
+        # print("SCOPE CREATED")
         self.__scope_map.append({})
 
     def delete_scope(self) -> None:
         """ pops a scope when exiting a block """
+        # print("SCOPE DELETED")
         self.__scope_map.pop()
 
     def exists(self, variable: str) -> bool:
         """ Checks if a variable exists in current scope """
         return variable in self.__scope_map[-1]
 
-    def add(self, variable: str, value: BX_TYPE) -> None:
+    def add(self, variable: str, value: BX_TYPE = BX_TYPE.INT) -> None:
         """ Adds a variable in the current scope """
         if self.scope_len() and self.exists(variable):
             self.__scope_map[-1][variable] = value
@@ -84,8 +88,8 @@ class Expression(Node):
 class ExpressionBool(Expression):
     def __init__(self,location: List[int], value: str):
         super().__init__(location)
-        self.value: BOOL = (value == "true")
-        self.type = BOOL
+        self.value: BX_TYPE.BOOL = value
+        self.type = BX_TYPE.BOOL
 
     def __str__(self):
         return "bool(%s)" % (self.value)
@@ -103,15 +107,17 @@ class ExpressionVar(Expression):
         return "ExpressionVar({})".format(self.name)
 
     def type_check(self, scope: Scope) -> None:
-        if self.name not in self.declared_ids:
-            self.syntax_error(" variable yet not declared")
+        if scope.exists(self.name):
+            self.syntax_error(f" variable already declared")
+        else:
+            scope.add(self.name)
 
 class ExpressionInt(Expression):
     def __init__(self, location: List[int], value):
         super().__init__(location)
         self.value = value
         self._max = 1<<63
-        self.type = INT
+        self.type = BX_TYPE.INT
 
     def __str__(self):
         return "ExpressionInt({})".format(self.value)
@@ -140,24 +146,24 @@ class ExpressionOp(Expression):
     def _type_init(self) -> None:
         """ Initializes the result and argument type based on argument input """
         if self.operator in self.operations._binops_int:
-            self.expected_argument_type = (INT, INT)
-            self.type = INT
+            self.expected_argument_type = (BX_TYPE.INT, BX_TYPE.INT)
+            self.type = BX_TYPE.INT
         
         elif self.operator in self.operations._binops_bool:
-            self.expected_argument_type = (BOOL, BOOL)
-            self.type = BOOL
+            self.expected_argument_type = (BX_TYPE.BOOL, BX_TYPE.BOOL)
+            self.type = BX_TYPE.BOOL
 
         elif self.operator in self.operations._binops_cmp:
-            self.expected_argument_type = (INT, INT)
-            self.type = BOOL
+            self.expected_argument_type = (BX_TYPE.INT, BX_TYPE.INT)
+            self.type = BX_TYPE.BOOL
         
         elif self.operator in self.operations._unops_int:
-            self.expected_argument_type = (INT,)
-            self.type = INT
+            self.expected_argument_type = (BX_TYPE.INT,)
+            self.type = BX_TYPE.INT
 
         elif self.operator in self.operations._unops_bool:
-            self.expected_argument_type = (BOOL,)
-            self.type = BOOL
+            self.expected_argument_type = (BX_TYPE.BOOL,)
+            self.type = BX_TYPE.BOOL
 
         else:       # this should not happen
             self.syntax_error(f"Unkown operator {self.operator}")
@@ -189,8 +195,10 @@ class StatementBlock(Statement):
     def __init__(self,location: List[int], statements: List[Statement]):
         super().__init__(location)
         self.statements: List[Statement] = statements
+        # print("Created BLOCK class")
     
     def type_check(self, scope: Scope, ongoingloop: bool) -> None:
+        # print("entered BLOCK type_check")
         scope.create_scope()
         for statement in self.statements:
             statement.type_check(scope, ongoingloop)
@@ -203,20 +211,20 @@ class StatementVardecl(Statement):
     def __init__(self,location: List[int], variable: ExpressionVar, type: BX_TYPE, init: Expression):
         super().__init__(location)
         self.variable: ExpressionVar = variable
-        self.type: BX_TYPE = type
+        self.type: BX_TYPE = BX_TYPE.getType(type)
         self.init: Expression = init 
     
     def __str__(self):
         return "vardecl(%s,%s,%s)" % (self.name,self.ty,self.init)
 
     def type_check(self, scope: Scope, ongoingloop: bool) -> None:
-        if self.type != INT:    # shouldn't be possible but anyways
-            self.syntax_error(f'{self.name} should have type {str(INT)} \
+        if self.type != BX_TYPE.INT:    # shouldn't be possible but anyways
+            self.syntax_error(f'{self.variable} should have type {str(BX_TYPE.INT)} \
                                 but has type {self.type}')
-        if scope.exists(self.name):
+        if scope.exists(self.variable):
             self.syntax_error(" variable already declared")
         else:
-            scope.add(self.name, self.type)
+            scope.add(self.variable, self.type)
         self.init.type_check(scope)
         
 class StatementPrint(Statement):
@@ -230,7 +238,7 @@ class StatementPrint(Statement):
     
     def type_check(self, scope: Scope, ongoingloop: bool) -> None:
         self.argument.type_check(scope)
-        if self.argument.type != INT:
+        if self.argument.type != BX_TYPE.INT:
             self.syntax_error(f'')
 
 class StatementAssign(Statement):
@@ -265,7 +273,7 @@ class StatementIfElse(Statement):
         return "ifelse(%s,%s,%s)" % (self.condition,self.block,self.if_rest)
     
     def type_check(self, scope: Scope, ongoingloop: bool) -> None:
-        if self.condition.type != BOOL:
+        if self.condition.type != BX_TYPE.BOOL:
             self.syntax_error(f'')
         self.condition.type_check(scope)
         self.block.type_check(scope, ongoingloop)
@@ -282,7 +290,7 @@ class StatementWhile(Statement):
     
     def type_check(self, scope: Scope, ongoingloop: bool) -> None:
         self.condition.type_check(scope)
-        if self.condition.type != BOOL:
+        if self.condition.type != BX_TYPE.BOOL:
             self.syntax_error(f'')
         self.block.type_check(scope, True)
 
@@ -318,8 +326,7 @@ class DeclProc(Node):
             self.syntax_error(" main function cannot have arguments")
         if self.__returntype != None:
             self.syntax_error(" main function cannot have a return type")
-        for statement in self.__body.statements:
-            statement.type_check(self.__scope, False)
+        self.__body.type_check(self.__scope, False)
     
     def __str__(self):
         return "proc(%s,%s,%s,%s)" % (self.__name, self.__arguments, self.__returntype, self.__body)

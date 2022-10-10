@@ -1,6 +1,7 @@
 import sys, json, argparse
 import ast2tac
 import tac2x64
+from ast2tac import AST_to_TAC_Generator
 
 if __name__=="__main__":
 
@@ -16,7 +17,7 @@ if __name__=="__main__":
     
     filename = args.filename[0]     # get the filename
     
-    if args.compile_tac:
+    if args.compiletac:
         if not filename.endswith('.tac.json'):
             print(f'File {filename} is not a tac json file')
             sys.exit(1)
@@ -28,7 +29,8 @@ if __name__=="__main__":
         print(f'File {filename} is not a bx file')
         sys.exit(1)
 
-    tac_instr = ast2tac.source_to_tac(filename)
+    tac_: AST_to_TAC_Generator = ast2tac.source_to_tac(filename)
+    tac_instr = tac_.tac_generator()
     if args.keeptac:
         ast2tac.write_tacfile(tac_instr)
         if args.stoptac:

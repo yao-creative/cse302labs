@@ -212,7 +212,7 @@ class AST_to_TAC_Generator:
 
     def __tmm_int_expression_parse(self, expression: Expression, temporary: str) -> None:
         """ parses the expression and builds its tac """
-        if expression.type != INT:
+        if expression.type != BX_TYPE.INT:
             raise RuntimeError(f'Expression must have type INT but has type {expression.type}')
         
         if isinstance(expression, ExpressionInt):
@@ -243,7 +243,7 @@ class AST_to_TAC_Generator:
 
     def __tmm_bool_expression_parse(self, expression: Expression, Ltrue: str, Lfalse: str) -> None:
         """ parses the expression and builds its tac """
-        if expression.type != BOOL:
+        if expression.type != BX_TYPE.BOOL:
             raise RuntimeError(f'Expression must have type BOOL but has type {expression.type}')
         
         if isinstance(expression, ExpressionBool):

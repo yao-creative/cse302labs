@@ -11,13 +11,13 @@ Authors: Yi Yao Tan
          Vrushank Agrawal
 """
 
-unop_dict = {
+__unop_dict = {
     '!': "not",
     '-': "opposite",
     '~': "bitwise-negation"
 }
 
-binop_dict = {
+__binop_dict = {
                 '+': "addition",
                 '-': "substraction",
                 '*': "multiplication",
@@ -39,7 +39,6 @@ binop_dict = {
 }
 
 lexer = lex.lex(module=scanner)
-declared_ids =[]
 previous_functions = []
 precedence = (
     ('left', 'OR'),
@@ -91,12 +90,11 @@ def p_statement(p):
 
 def p_vardecl(p):
     """vardecl : VAR IDENT EQUALS expression COLON INT SEMICOLON"""
-    p[0] = StatementVardecl([p.lineno(0), p.lexpos(0)],p[2],"int",p[4],declared_ids)
-    declared_ids.append(p[2])
+    p[0] = StatementVardecl([p.lineno(0), p.lexpos(0)],p[2],"int",p[4])
 
 def p_assign(p):
     """assign : IDENT EQUALS expression SEMICOLON"""
-    p[0] = StatementAssign([p.lineno(0), p.lexpos(0)],p[1],p[3],declared_ids)
+    p[0] = StatementAssign([p.lineno(0), p.lexpos(0)],p[1],p[3])
 def p_print(p):
     """print : PRINT LPAREN expression RPAREN SEMICOLON"""
     p[0] = StatementPrint([p.lineno(0), p.lexpos(0)],p[3])
@@ -160,23 +158,23 @@ def p_expression(p):
         elif isinstance(p[1], int):
             p[0] = ExpressionInt([p.lineno(0), p.lexpos(0)],p[1])
         elif isinstance(p[1], str):
-            p[0] = ExpressionVar([p.lineno(0), p.lexpos(0)],p[1],declared_ids)
+            p[0] = ExpressionVar([p.lineno(0), p.lexpos(0)],p[1])
         else:
             raise SyntaxError("Invalid expression at line: " + str(p.lineno(0)))
 
     elif len(p) == 3:
-        if p[1] not in unop_dict:
+        if p[1] not in __unop_dict:
             raise SyntaxError("Invalid unary operator at line: " + str(p.lineno(0)))
-        op = unop_dict[p[1]]
+        op = __unop_dict[p[1]]
         p[0] = ExpressionOp([p.lineno(0), p.lexpos(0)], op, [p[2]])
 
     elif len(p) == 4:
         if p[1] == "(":
             p[0] = p[2]
         else:
-            if p[2] not in binop_dict:
+            if p[2] not in __binop_dict:
                 raise SyntaxError("Invalid binary operator at line: " + str(p.lineno(0)))
-            op = binop_dict.get(p[2])
+            op = __binop_dict.get(p[2])
             p[0] = ExpressionOp([p.lineno(0), p.lexpos(0)], op, [p[1], p[3]])
     else:
         raise ParseError("Invalid expression with too many arguments at line: " + str(p.lineno(0)))
