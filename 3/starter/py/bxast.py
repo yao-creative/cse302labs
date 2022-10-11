@@ -102,6 +102,7 @@ class ExpressionVar(Expression):
     def __init__(self, location: List[int], name: str):
         super().__init__(location)
         self.name: str = name
+        self.type: BX_TYPE = BX_TYPE.INT        # We only allow int decl in BX
 
     def __str__(self):
         return "ExpressionVar({})".format(self.name)
@@ -267,7 +268,7 @@ class StatementIfElse(Statement):
         """if_body is a block, condition is an expression"""
         self.condition: Expression = condition
         self.block: StatementBlock = block 
-        self.if_rest:  Union[StatementIfElse, StatementBlock] = ifrest
+        self.if_rest:  Union[StatementIfElse, StatementBlock, None] = ifrest
     
     def __str__(self):
         return "ifelse(%s,%s,%s)" % (self.condition,self.block,self.if_rest)
@@ -277,7 +278,7 @@ class StatementIfElse(Statement):
             self.syntax_error(f'')
         self.condition.type_check(scope)
         self.block.type_check(scope, ongoingloop)
-        if self.ifrest is not None: self.if_rest.type_check(scope, ongoingloop)
+        if self.if_rest is not None: self.if_rest.type_check(scope, ongoingloop)
 
 class StatementWhile(Statement):
     def __init__(self, location: List[int], condition: Expression, block: StatementBlock):

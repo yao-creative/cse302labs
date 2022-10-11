@@ -36,4 +36,4 @@ if __name__=="__main__":
         if args.stoptac:
             sys.exit(0)
         
-    tac2x64.compile_tac(tac_instr, filename)
+    tac2x64.convert_instr_to_asm(filename[:-3], tac_instr)

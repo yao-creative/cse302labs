@@ -76,24 +76,24 @@ class Code_State:
         self.__temps.append(temp)
         return temp
 
-    def fetch_temp(self, variable: ExpressionVar) -> str:
+    def fetch_temp(self, variable: str) -> str:
         """ Returns a temp if it exists otherwise creates and returns one """
         self.__check_scope(variable)
         # We traverse the scopes from the last to check if variable is defined bottom up
         for scope in self.__temps_by_scope[::-1]:
-            if variable.name in scope:
-                return scope[variable.name]
+            if variable in scope:
+                return scope[variable]
         # otherwise we create a new temp and add it in the innermost scope
         else:
             temp = self.generate_new_temp()
-            self.__temps_by_scope[-1][variable.name] = temp
+            self.__temps_by_scope[-1][variable] = temp
             return temp
     
     def add_variable(self, variable: ExpressionVar) -> str:
         """ adds a temporary for the vardecl in code """
         self.__check_scope(variable)
         temp = self.generate_new_temp()
-        self.__temps_by_scope[-1][variable.name] = temp
+        self.__temps_by_scope[-1][variable] = temp
         return temp
 
     def generate_label(self) -> str:
@@ -221,7 +221,7 @@ class AST_to_TAC_Generator:
         elif isinstance(expression, ExpressionVar):
             temp = self.__code_state.fetch_temp(expression.name)
             if temp != temporary:
-                self.__emit(TAC_line("copy", [args], temporary).format())
+                self.__emit(TAC_line("copy", [temp], temporary).format())
 
         elif isinstance(expression, ExpressionOp) and len(expression.arguments) == 1:
             opcode = self.__macros.operator_map[expression.operator]
