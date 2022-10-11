@@ -60,11 +60,15 @@ class Scope:
 
     def exists(self, variable: str) -> bool:
         """ Checks if a variable exists in current scope """
-        return variable in self.__scope_map[-1]
+        print(self.__scope_map)
+        for scope in self.__scope_map[::-1]:
+            if variable in scope:
+                return True
+        return False
 
     def add(self, variable: str, value: BX_TYPE = BX_TYPE.INT) -> None:
         """ Adds a variable in the current scope """
-        if self.scope_len() and self.exists(variable):
+        if self.scope_len():
             self.__scope_map[-1][variable] = value
 
 
@@ -108,8 +112,8 @@ class ExpressionVar(Expression):
         return "ExpressionVar({})".format(self.name)
 
     def type_check(self, scope: Scope) -> None:
-        if scope.exists(self.name):
-            self.syntax_error(f" variable already declared")
+        if not scope.exists(self.name):
+            self.syntax_error(f" variable not defined")
         else:
             scope.add(self.name)
 
@@ -222,10 +226,11 @@ class StatementVardecl(Statement):
         if self.type != BX_TYPE.INT:    # shouldn't be possible but anyways
             self.syntax_error(f'{self.variable} should have type {str(BX_TYPE.INT)} \
                                 but has type {self.type}')
+        # print("Entered vardecl typecheck")
         if scope.exists(self.variable):
             self.syntax_error(" variable already declared")
         else:
-            scope.add(self.variable, self.type)
+            scope.add(self.variable.name, self.type)
         self.init.type_check(scope)
         
 class StatementPrint(Statement):
@@ -243,18 +248,18 @@ class StatementPrint(Statement):
             self.syntax_error(f'')
 
 class StatementAssign(Statement):
-    def __init__(self, location: List[int], lvalue: str, rvalue: Expression):
+    def __init__(self, location: List[int], lvalue: ExpressionVar, rvalue: Expression):
         super().__init__(location)
-        self.lvalue: str = lvalue
+        self.lvalue: ExpressionVar = lvalue
         self.rvalue: Expression = rvalue
     
     def __str__(self):
         return "StatementAssign(%s,%s)" % (self.lvalue,self.rvalue)
     
     def type_check(self, scope: Scope, ongoingloop: bool) -> None:
-        if not scope.exists(self.lvalue):
+        if not scope.exists(self.lvalue.name):
             self.syntax_error(f" variable not yet declared")
-        self.rvalue.type_check()
+        self.rvalue.type_check(scope)
         if self.lvalue.type != self.rvalue.type:
             self.syntax_error(f'')
 

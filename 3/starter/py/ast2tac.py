@@ -53,7 +53,7 @@ class Code_State:
         self.__temp_counter: int = 0
         self.__temps_by_scope: List = []
         self.__labels: list = []
-        self.__label_counter: int = 0
+        # self.__label_counter: int = 0
         self.__break_stack = []
         self.__continue_stack = []
 
@@ -97,8 +97,8 @@ class Code_State:
 
     def generate_label(self) -> str:
         """ generates a new label """
-        label = f'%.L{self.__label_counter}'
-        self.__label_counter += 1
+        label = f'%.L{self.__temp_counter}'
+        self.__temp_counter += 1
         self.__labels.append(label)
         return label
 
@@ -198,7 +198,7 @@ class AST_to_TAC_Generator:
             self.__tmm_int_expression_parse(statement.init, temp)
 
         elif isinstance(statement, StatementAssign):
-            temp = self.__code_state.fetch_temp(statement.lvalue)
+            temp = self.__code_state.fetch_temp(statement.lvalue.name)
             self.__tmm_int_expression_parse(statement.rvalue, temp)
 
         elif isinstance(statement, StatementPrint):

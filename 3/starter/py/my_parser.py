@@ -90,14 +90,19 @@ def p_statement(p):
 
 def p_vardecl(p):
     """vardecl : VAR IDENT EQUALS expression COLON INT SEMICOLON"""
-    p[0] = StatementVardecl([p.lineno(0), p.lexpos(0)],p[2],"int",p[4])
+    p[0] = StatementVardecl([p.lineno(0), p.lexpos(0)],
+                            ExpressionVar([p.lineno(0), p.lexpos(0)],p[2]),
+                            "int",p[4])
 
 def p_assign(p):
     """assign : IDENT EQUALS expression SEMICOLON"""
-    p[0] = StatementAssign([p.lineno(0), p.lexpos(0)],p[1],p[3])
+    p[0] = StatementAssign([p.lineno(0), p.lexpos(0)],
+    ExpressionVar([p.lineno(0), p.lexpos(0)],p[1]),p[3])
+
 def p_print(p):
     """print : PRINT LPAREN expression RPAREN SEMICOLON"""
     p[0] = StatementPrint([p.lineno(0), p.lexpos(0)],p[3])
+    
 def p_ifelse(p):
     """ifelse : IF LPAREN expression RPAREN block ifrest"""
     p[0] = StatementIfElse([p.lineno(0), p.lexpos(0)],p[3],p[5],p[6])
