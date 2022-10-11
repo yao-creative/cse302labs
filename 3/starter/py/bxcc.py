@@ -32,8 +32,9 @@ if __name__=="__main__":
     tac_: AST_to_TAC_Generator = ast2tac.source_to_tac(filename)
     tac_instr = tac_.tac_generator()
     if args.keeptac:
-        ast2tac.write_tacfile(tac_instr)
-        if args.stoptac:
-            sys.exit(0)
+        ast2tac.write_tacfile(filename, tac_instr)
+    
+    if args.stoptac:
+        sys.exit(0)
         
     tac2x64.convert_instr_to_asm(filename[:-3], tac_instr)

@@ -302,15 +302,16 @@ def source_to_tac(filename: str) -> json:
     ast_.type_check()                                       # check syntax
     print('reached tac json')
     tac_ = AST_to_TAC_Generator(ast_)   # convert ast code to json
-    print("tac json created")
+    print("tac object created")
 
     return tac_
 
-def write_tacfile(tac_instr: json) -> None:
+def write_tacfile(fname: str, tac_instr: List) -> None:
     """ Writes a tac json to the system """
-    tac_filename = filename[:-2] + 'tac.json'   # get new file name
+    tac_filename = fname[:-2] + 'tac.json'   # get new file name
     with open(tac_filename, 'w') as fp:         # save the file
-        json.dump(tac_instr.tac_generator(), fp) #, indent=3
+        json.dump(tac_instr, fp) #, indent=3
+    print("tac json file written")
 
 
 if __name__=="__main__":
@@ -323,4 +324,4 @@ if __name__=="__main__":
 
     tac_instr = source_to_tac(filename)  # get the tac instr
 
-    write_tacfile(tac_instr)
+    write_tacfile(filename, tac_instr)
