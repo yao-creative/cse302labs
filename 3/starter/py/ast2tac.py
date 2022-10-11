@@ -311,7 +311,7 @@ def write_tacfile(fname: str, tac_instr: List) -> None:
     tac_filename = fname[:-2] + 'tac.json'   # get new file name
     with open(tac_filename, 'w') as fp:         # save the file
         json.dump(tac_instr, fp) #, indent=3
-    print("tac json file written")
+    print(f"tac json file {tac_filename} written")
 
 
 if __name__=="__main__":
