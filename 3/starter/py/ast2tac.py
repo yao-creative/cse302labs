@@ -166,16 +166,16 @@ class AST_to_TAC_Generator:
             Lend = self.__code_state.generate_label()
             # treat the while loop condition
             self.__code_state.enter_loop(Lhead, Lend)
-            print(f'while head label is {Lhead}')
+            # print(f'while head label is {Lhead}')
             self.__emit(TAC_line(opcode="label", args=[Lhead], result=None).format())
             self.__tmm_bool_expression_parse(statement.condition, Lbody, Lend)
             # treat the body of while loop
-            print(f'while body label is {Lbody}')
+            # print(f'while body label is {Lbody}')
             self.__emit(TAC_line(opcode="label", args=[Lbody], result=None).format())
             self.__tmm_statement_parse(statement.block)
             self.__emit(TAC_line(opcode="jmp", args=[Lhead], result=None).format())
             # treat while loop ending
-            print(f'while end label is {Lend}')
+            # print(f'while end label is {Lend}')
             self.__emit(TAC_line(opcode="label", args=[Lend], result=None).format())
             self.__code_state.exit_loop()
 
@@ -185,22 +185,22 @@ class AST_to_TAC_Generator:
             Lover = self.__code_state.generate_label()
             # treat condition of if stmt
             self.__tmm_bool_expression_parse(statement.condition, Ltrue, Lfalse)
-            print(f'if true label is {Ltrue}')
+            # print(f'if true label is {Ltrue}')
             self.__emit(TAC_line(opcode="label", args=[Ltrue], result=None).format())
             # treat block of if stmt
             self.__tmm_statement_parse(statement.block)
-            print(f'if over label is {Lover}')
+            # print(f'if over label is {Lover}')
             self.__emit(TAC_line(opcode="jmp", args=[Lover], result=None).format())
-            print(f'if false label is {Lfalse}')
+            # print(f'if false label is {Lfalse}')
             self.__emit(TAC_line(opcode="label", args=[Lfalse], result=None).format())
             # treat else part if exists
             if statement.if_rest is not None: self.__tmm_statement_parse(statement.if_rest)
             self.__emit(TAC_line(opcode="label", args=[Lover], result=None).format())
 
         elif isinstance(statement, StatementJump):
-            print(f"Jump stmt is {statement.keyword}")
+            # print(f"Jump stmt is {statement.keyword}")
             Ldestination = self.__code_state[statement.keyword]     # get the relevant label for jmp
-            print(f"Jump stmt destination is {Ldestination}")
+            # print(f"Jump stmt destination is {Ldestination}")
             self.__emit(TAC_line(opcode="jmp", args=[Ldestination], result=None).format())
 
         elif isinstance(statement, StatementVardecl):

@@ -65,7 +65,7 @@ class Scope:
 
     def exists(self, variable: str) -> bool:
         """ Checks if a variable exists in current scope """
-        print(self.__scope_map)
+        # print(self.__scope_map)
         for scope in self.__scope_map[::-1]:
             if variable in scope:
                 return True
