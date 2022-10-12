@@ -73,9 +73,9 @@ class Code_State:
         self.__check_scope(variable)
         # We traverse the scopes from the last to check if variable is defined bottom up
         for scope in self.__temps_by_scope[::-1]:
-            print(f"Scope is {scope}")
+            # print(f"Scope is {scope}")
             if variable in scope:
-                print(f" variable = {variable} and temp = {scope[variable]}")
+                # print(f" variable = {variable} and temp = {scope[variable]}")
                 return scope[variable]
         # otherwise we create a new temp and add it in the innermost scope
         else:
@@ -161,17 +161,17 @@ class AST_to_TAC_Generator:
             self.__code_state.exit_scope() 
 
         elif isinstance(statement, StatementWhile):
-            Lstart = self.__code_state.generate_label()
+            Lhead = self.__code_state.generate_label()
             Lbody = self.__code_state.generate_label()
             Lend = self.__code_state.generate_label()
             # treat the while loop condition
-            self.__code_state.enter_loop(Lstart, Lend)
-            self.__emit(TAC_line(opcode="label", args=[Lstart], result=None).format())
-            self.__tmm_bool_expression_parse(statement.condition, Lstart, Lend)
+            self.__code_state.enter_loop(Lhead, Lend)
+            self.__emit(TAC_line(opcode="label", args=[Lhead], result=None).format())
+            self.__tmm_bool_expression_parse(statement.condition, Lbody, Lend)
             # treat the body of while loop
             self.__emit(TAC_line(opcode="label", args=[Lbody], result=None).format())
             self.__tmm_statement_parse(statement.block)
-            self.__emit(TAC_line(opcode="jmp", args=[Lstart], result=None).format())
+            self.__emit(TAC_line(opcode="jmp", args=[Lhead], result=None).format())
             # treat while loop ending
             self.__emit(TAC_line(opcode="label", args=[Lend], result=None).format())
             self.__code_state.exit_loop()
@@ -182,16 +182,17 @@ class AST_to_TAC_Generator:
             Lover = self.__code_state.generate_label()
             # treat condition of if stmt
             self.__tmm_bool_expression_parse(statement.condition, Ltrue, Lfalse)
-            self.__emit(TAC_line(opcode="label", args=[Lfalse], result=None).format())
+            self.__emit(TAC_line(opcode="label", args=[Ltrue], result=None).format())
             # treat block of if stmt
             self.__tmm_statement_parse(statement.block)
             self.__emit(TAC_line(opcode="jmp", args=[Lover], result=None).format())
-            self.__emit(TAC_line(opcode="label", args=[Ltrue], result=None).format())
+            self.__emit(TAC_line(opcode="label", args=[Lfalse], result=None).format())
             # treat else part if exists
             if statement.if_rest is not None: self.__tmm_statement_parse(statement.if_rest)
             self.__emit(TAC_line(opcode="jmp", args=[Lover], result=None).format())
 
         elif isinstance(statement, StatementJump):
+            print(f"Jump stmt is {statement.keyword}")
             Ldestination = self.__code_state[statement.keyword]     # get the relevant label for jmp
             self.__emit(TAC_line(opcode="jmp", args=[Ldestination], result=None).format())
 
