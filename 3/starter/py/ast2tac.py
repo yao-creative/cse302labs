@@ -186,13 +186,13 @@ class AST_to_TAC_Generator:
             # treat condition of if stmt
             self.__tmm_bool_expression_parse(statement.condition, Ltrue, Lfalse)
             print(f'if true label is {Ltrue}')
-            self.__emit(TAC_line(opcode="label", args=[Lfalse], result=None).format())
+            self.__emit(TAC_line(opcode="label", args=[Ltrue], result=None).format())
             # treat block of if stmt
             self.__tmm_statement_parse(statement.block)
             print(f'if over label is {Lover}')
             self.__emit(TAC_line(opcode="jmp", args=[Lover], result=None).format())
             print(f'if false label is {Lfalse}')
-            self.__emit(TAC_line(opcode="label", args=[Ltrue], result=None).format())
+            self.__emit(TAC_line(opcode="label", args=[Lfalse], result=None).format())
             # treat else part if exists
             if statement.if_rest is not None: self.__tmm_statement_parse(statement.if_rest)
             self.__emit(TAC_line(opcode="label", args=[Lover], result=None).format())
