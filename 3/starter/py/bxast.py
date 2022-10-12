@@ -40,6 +40,11 @@ class BX_TYPE:
         def __str__(self) -> str:
             return "bool"
 
+        # def __getitem__(type) -> str:
+        #     if type == "True":
+        #         return "true"
+        #     else: return "false"
+
 class Scope:
     def __init__(self) -> None:
         self.__scope_map: List[Dict[str, BX_TYPE]] = []
@@ -90,16 +95,16 @@ class Expression(Node):
         super().__init__(location)
 
 class ExpressionBool(Expression):
-    def __init__(self,location: List[int], value: str):
+    def __init__(self,location: List[int], value: bool):
         super().__init__(location)
-        self.value: BX_TYPE.BOOL = value
+        self.value: bool = value
         self.type = BX_TYPE.BOOL
 
     def __str__(self):
         return "bool(%s)" % (self.value)
     
     def type_check(self, scope: Scope) -> None:   # We should never reach here
-        if self.value not in ("true", "false"):
+        if self.value not in (True, False):
             self.syntax_error(f"{self.value} value must be 'true' or 'false'.")
 
 class ExpressionVar(Expression):
