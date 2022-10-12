@@ -73,7 +73,9 @@ class Code_State:
         self.__check_scope(variable)
         # We traverse the scopes from the last to check if variable is defined bottom up
         for scope in self.__temps_by_scope[::-1]:
+            print(f"Scope is {scope}")
             if variable in scope:
+                print(f" variable = {variable} and temp = {scope[variable]}")
                 return scope[variable]
         # otherwise we create a new temp and add it in the innermost scope
         else:
@@ -83,9 +85,9 @@ class Code_State:
     
     def add_variable(self, variable: ExpressionVar) -> str:
         """ adds a temporary for the vardecl in code """
-        self.__check_scope(variable)
+        self.__check_scope(variable.name)
         temp = self.generate_new_temp()
-        self.__temps_by_scope[-1][variable] = temp
+        self.__temps_by_scope[-1][variable.name] = temp
         return temp
 
     def generate_new_temp(self) -> str:
