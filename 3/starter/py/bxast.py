@@ -1,3 +1,4 @@
+from ast import arguments
 from typing import List, Tuple, Dict, Union, Any
 
 """
@@ -186,11 +187,14 @@ class ExpressionOp(Expression):
 
         for index, arg in enumerate(self.arguments):
             arg.type_check(scope)
+            print(self.arguments)
+            print(self.operations)
+            print(self.operator)
+            print('\n')
             arg_type = self.arguments[index].type
             expected_type = self.expected_argument_type[index]
             if arg_type != expected_type:
-                self.syntax_error(f"Argument {index+1} for operation {self.operator} should \
-                                    have type {expected_type} but has {arg_type}")
+                self.syntax_error(f"Argument {index+1} for operation {self.operator} should have type {expected_type} but has {arg_type}")
 
         
 # ------------------------------------------------------------------------------#
