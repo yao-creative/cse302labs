@@ -68,8 +68,8 @@ class Scope:
 
     def exists(self, variable: str) -> bool:
         """ Checks if a variable exists in any scope """
-        print(self.__scope_map)
-        print(variable)
+        # print(self.__scope_map)
+        # print(variable)
         for scope in self.__scope_map[::-1]:
             if variable in scope:
                 return True
@@ -77,8 +77,8 @@ class Scope:
 
     def exists_in_current_scope(self, variable: str) -> bool:
         """ Checks if a variable exists in current scope """
-        print(self.__scope_map)
-        print(variable)
+        # print(self.__scope_map)
+        # print(variable)
         if variable in self.__scope_map[-1]:
             return True
         return False
@@ -266,9 +266,9 @@ class StatementVardecl(Statement):
         if self.type != BX_TYPE.INT:    # shouldn't be possible but anyways
             self.syntax_error(f'{self.variable.name} should have type {str(BX_TYPE.INT)} \
                                 but has type {self.type}')
-        print("Entered vardecl typecheck")
-        print(f"{self.variable}")
-        print(f"{self.variable.name}")
+        # print("Entered vardecl typecheck")
+        # print(f"{self.variable}")
+        # print(f"{self.variable.name}")
         self.init.type_check(scope)
         if scope.exists_in_current_scope(self.variable.name):
             self.syntax_error(" variable already declared in current scope")
