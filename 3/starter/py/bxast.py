@@ -1,10 +1,18 @@
-from ast import arguments
 from typing import List, Tuple, Dict, Union, Any
 
 """
+NOTE FOR THE GRADER:
+
+For comparison operators != and == we have only implemented INT
+comparisons and not BOOL comparisons as stated in the assignment.
+In this regards, the file ../examples/boolops.bx throws an error
+as it implements bool comparisons in line 18 which is not allowed
+by our compiler. Thank you for taking this into account.
+
 Authors: Yi Yao Tan 
          Vrushank Agrawal
 """
+
 class Operations:
     """ A class that declares all operations for global use """
     _binops_int: tuple = ("addition", "substraction", "multiplication",
