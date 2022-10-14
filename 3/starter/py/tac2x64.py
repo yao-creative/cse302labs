@@ -266,22 +266,20 @@ class tac2x64:
 
 def compile_tac(fname: str) -> None:
     """ reads tac json file and converts it to x64 assembly """
-    # Open file and check if it has correct structure
-    tac_jsn = None
+    if fname.endswith('.tac.json'):
+        read_name = fname[:-9]
+    elif fname.endswith('.json'):
+        read_name = fname[:-5]
+    else:
+        raise ValueError(f'{fname} is not of the correct format .tac.json or .json')
+
     with open(fname, 'rb') as fp:
         tac_jsn = json.load(fp)
-
-    convert_instr_to_asm(tac_jsn)
+    convert_instr_to_asm(read_name, tac_jsn)
 
 def convert_instr_to_asm(fname: str, tac_jsn: list) -> None:
     """ Converts tac instructions list to assembly """
     # Check if fileformat is correct
-    if fname.endswith('.tac.json'):
-        rname = fname[:-9]
-    elif fname.endswith('.json'):
-        rname = fname[:-5]
-    else:
-        raise ValueError(f'{fname} is not of the correct format .tac.json or .json')
 
     assert isinstance(tac_jsn, list) and len(tac_jsn) == 1, f'Invalid list structure of the input file\n {tac_jsn}'
     
@@ -296,11 +294,11 @@ def convert_instr_to_asm(fname: str, tac_jsn: list) -> None:
                f'main:']
     
     # Save assembly code and create executable
-    xname = rname + '.exe'
-    sname = rname + '.s'
-    with open(sname, 'w') as afp:
+    exe_name = fname + '.exe'
+    asm_name = fname + '.s'
+    with open(asm_name, 'w') as afp:
         print(*asm, file=afp, sep='\n')
-    os.system(f'gcc -o {xname} {sname} bx_runtime.c')
+    os.system(f'gcc -o {exe_name} {asm_name} bx_runtime.c')
     print(f"Compilation succesful for {fname}")
 
 if __name__ == '__main__':

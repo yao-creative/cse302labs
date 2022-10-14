@@ -48,13 +48,12 @@ class Code_State:
     """ The class keeps track of helper information 
         needed to track TAC stmt generation """
 
-    def __init__(self, func: str) -> None:
-        self.__func_name: str = func
+    def __init__(self) -> None:
         self.__temps: dict = []
         self.__temp_counter: int = 0
         self.__temps_by_scope: List = []
         self.__labels: list = []
-        self.__label_counter: int = 0
+        # self.__label_counter: int = 0
         self.__break_stack = []
         self.__continue_stack = []
 
@@ -69,6 +68,28 @@ class Code_State:
         if len(self.__temps_by_scope) == 0:
             raise RuntimeError(f'Variable {variable} is defined out of scope')
 
+    def fetch_temp(self, variable: str) -> str:
+        """ Returns a temp if it exists otherwise creates and returns one """
+        # self.__check_scope(variable)
+        # We traverse the scopes from the last to check if variable is defined bottom up
+        for scope in self.__temps_by_scope[::-1]:
+            # print(f"Scope is {scope}")
+            if variable in scope:
+                # print(f" variable = {variable} and temp = {scope[variable]}")
+                return scope[variable]
+        # otherwise we create a new temp and add it in the innermost scope
+        else:
+            temp = self.generate_new_temp()
+            self.__temps_by_scope[-1][variable] = temp
+            return temp
+    
+    def add_variable(self, variable: ExpressionVar) -> str:
+        """ adds a temporary for the vardecl in code """
+        self.__check_scope(variable.name)
+        temp = self.generate_new_temp()
+        self.__temps_by_scope[-1][variable.name] = temp
+        return temp
+
     def generate_new_temp(self) -> str:
         """ Creates and returns a new temp """
         temp = f'%{self.__temp_counter}'
@@ -76,30 +97,10 @@ class Code_State:
         self.__temps.append(temp)
         return temp
 
-    def fetch_temp(self, variable: ExpressionVar) -> str:
-        """ Returns a temp if it exists otherwise creates and returns one """
-        self.__check_scope(variable)
-        # We traverse the scopes from the last to check if variable is defined bottom up
-        for scope in self.__temps_by_scope[::-1]:
-            if variable.name in scope:
-                return scope[variable.name]
-        # otherwise we create a new temp and add it in the innermost scope
-        else:
-            temp = self.generate_new_temp()
-            self.__temps_by_scope[-1][variable.name] = temp
-            return temp
-    
-    def add_variable(self, variable: ExpressionVar) -> str:
-        """ adds a temporary for the vardecl in code """
-        self.__check_scope(variable)
-        temp = self.generate_new_temp()
-        self.__temps_by_scope[-1][variable.name] = temp
-        return temp
-
     def generate_label(self) -> str:
         """ generates a new label """
-        label = f'%.L{self.__label_counter}'
-        self.__label_counter += 1
+        label = f'%.L{self.__temp_counter}'
+        self.__temp_counter += 1
         self.__labels.append(label)
         return label
 
@@ -135,7 +136,7 @@ class Code_State:
 class AST_to_TAC_Generator:
     """ Takes the AST tree and converts it to TAC """
     def __init__(self, tree: DeclProc):
-        self.__code_state: Code_State = Code_State("main")
+        self.__code_state: Code_State = Code_State()
         self.__code: DeclProc = tree
         self.__instructions: List[Dict[TAC_line]] = []
         self.__macros: Code_Macro = Code_Macro
@@ -160,18 +161,21 @@ class AST_to_TAC_Generator:
             self.__code_state.exit_scope() 
 
         elif isinstance(statement, StatementWhile):
-            Lstart = self.__code_state.generate_label()
+            Lhead = self.__code_state.generate_label()
             Lbody = self.__code_state.generate_label()
             Lend = self.__code_state.generate_label()
             # treat the while loop condition
-            self.__code_state.enter_loop(Lstart, Lend)
-            self.__emit(TAC_line(opcode="label", args=[Lstart], result=None).format())
-            self.__tmm_bool_expression_parse(statement.condition)
+            self.__code_state.enter_loop(Lhead, Lend)
+            # print(f'while head label is {Lhead}')
+            self.__emit(TAC_line(opcode="label", args=[Lhead], result=None).format())
+            self.__tmm_bool_expression_parse(statement.condition, Lbody, Lend)
             # treat the body of while loop
+            # print(f'while body label is {Lbody}')
             self.__emit(TAC_line(opcode="label", args=[Lbody], result=None).format())
             self.__tmm_statement_parse(statement.block)
-            self.__emit(TAC_line(opcode="jmp", args=[Lstart], result=None).format())
+            self.__emit(TAC_line(opcode="jmp", args=[Lhead], result=None).format())
             # treat while loop ending
+            # print(f'while end label is {Lend}')
             self.__emit(TAC_line(opcode="label", args=[Lend], result=None).format())
             self.__code_state.exit_loop()
 
@@ -181,17 +185,22 @@ class AST_to_TAC_Generator:
             Lover = self.__code_state.generate_label()
             # treat condition of if stmt
             self.__tmm_bool_expression_parse(statement.condition, Ltrue, Lfalse)
+            # print(f'if true label is {Ltrue}')
             self.__emit(TAC_line(opcode="label", args=[Ltrue], result=None).format())
             # treat block of if stmt
             self.__tmm_statement_parse(statement.block)
+            # print(f'if over label is {Lover}')
             self.__emit(TAC_line(opcode="jmp", args=[Lover], result=None).format())
+            # print(f'if false label is {Lfalse}')
             self.__emit(TAC_line(opcode="label", args=[Lfalse], result=None).format())
             # treat else part if exists
             if statement.if_rest is not None: self.__tmm_statement_parse(statement.if_rest)
-            self.__emit(TAC_line(opcode="jmp", args=[Lover], result=None).format())
+            self.__emit(TAC_line(opcode="label", args=[Lover], result=None).format())
 
         elif isinstance(statement, StatementJump):
+            # print(f"Jump stmt is {statement.keyword}")
             Ldestination = self.__code_state[statement.keyword]     # get the relevant label for jmp
+            # print(f"Jump stmt destination is {Ldestination}")
             self.__emit(TAC_line(opcode="jmp", args=[Ldestination], result=None).format())
 
         elif isinstance(statement, StatementVardecl):
@@ -199,7 +208,7 @@ class AST_to_TAC_Generator:
             self.__tmm_int_expression_parse(statement.init, temp)
 
         elif isinstance(statement, StatementAssign):
-            temp = self.__code_state.generate_new_temp()
+            temp = self.__code_state.fetch_temp(statement.lvalue.name)
             self.__tmm_int_expression_parse(statement.rvalue, temp)
 
         elif isinstance(statement, StatementPrint):
@@ -212,7 +221,7 @@ class AST_to_TAC_Generator:
 
     def __tmm_int_expression_parse(self, expression: Expression, temporary: str) -> None:
         """ parses the expression and builds its tac """
-        if expression.type != INT:
+        if expression.type != BX_TYPE.INT:
             raise RuntimeError(f'Expression must have type INT but has type {expression.type}')
         
         if isinstance(expression, ExpressionInt):
@@ -221,7 +230,7 @@ class AST_to_TAC_Generator:
         elif isinstance(expression, ExpressionVar):
             temp = self.__code_state.fetch_temp(expression.name)
             if temp != temporary:
-                self.__emit(TAC_line("copy", [args], temporary).format())
+                self.__emit(TAC_line("copy", [temp], temporary).format())
 
         elif isinstance(expression, ExpressionOp) and len(expression.arguments) == 1:
             opcode = self.__macros.operator_map[expression.operator]
@@ -243,12 +252,14 @@ class AST_to_TAC_Generator:
 
     def __tmm_bool_expression_parse(self, expression: Expression, Ltrue: str, Lfalse: str) -> None:
         """ parses the expression and builds its tac """
-        if expression.type != BOOL:
+        if expression.type != BX_TYPE.BOOL:
             raise RuntimeError(f'Expression must have type BOOL but has type {expression.type}')
         
         if isinstance(expression, ExpressionBool):
-            if expression.value: self.__emit(TAC_line("jmp", [Ltrue], None).format())
-            else: self.__emit(TAC_line("jmp", [Lfalse], None).format())
+            if expression.value: 
+                self.__emit(TAC_line("jmp", [Ltrue], None).format())
+            else: 
+                self.__emit(TAC_line("jmp", [Lfalse], None).format())
 
         elif isinstance(expression, ExpressionOp):
             if expression.operator == "logical-and":
@@ -302,15 +313,16 @@ def source_to_tac(filename: str) -> json:
     ast_.type_check()                                       # check syntax
     print('reached tac json')
     tac_ = AST_to_TAC_Generator(ast_)   # convert ast code to json
-    print("tac json created")
+    print("tac object created")
 
     return tac_
 
-def write_tacfile(tac_instr: json) -> None:
+def write_tacfile(fname: str, tac_instr: List) -> None:
     """ Writes a tac json to the system """
-    tac_filename = filename[:-2] + 'tac.json'   # get new file name
+    tac_filename = fname[:-2] + 'tac.json'   # get new file name
     with open(tac_filename, 'w') as fp:         # save the file
-        json.dump(tac_instr.tac_generator(), fp) #, indent=3
+        json.dump(tac_instr, fp) #, indent=3
+    print(f"tac json file {tac_filename} written")
 
 
 if __name__=="__main__":
@@ -323,4 +335,4 @@ if __name__=="__main__":
 
     tac_instr = source_to_tac(filename)  # get the tac instr
 
-    write_tacfile(tac_instr)
+    write_tacfile(filename, tac_instr)
