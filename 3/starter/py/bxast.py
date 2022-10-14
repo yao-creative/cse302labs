@@ -255,14 +255,14 @@ class StatementVardecl(Statement):
 
     def type_check(self, scope: Scope, ongoingloop: bool) -> None:
         if self.type != BX_TYPE.INT:    # shouldn't be possible but anyways
-            self.syntax_error(f'{self.variable} should have type {str(BX_TYPE.INT)} \
+            self.syntax_error(f'{self.variable.name} should have type {str(BX_TYPE.INT)} \
                                 but has type {self.type}')
         # print("Entered vardecl typecheck")
-        if scope.exists(self.variable):
+        self.init.type_check(scope)
+        if scope.exists(self.variable.name):
             self.syntax_error(" variable already declared")
         else:
             scope.add(self.variable.name, self.type)
-        self.init.type_check(scope)
         
 class StatementPrint(Statement):
     """Actually are prints"""

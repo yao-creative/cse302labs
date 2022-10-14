@@ -15,7 +15,7 @@
 # done
 
 # test all error files
-# for file in $(find ../regression -name "*.tac.json"); do
+# for file in $(find ../regression -name "*.bx"); do
 #     echo $file 
-#     python3 tac2x64.py $file
+#     python3 bxcc.py $file
 # done
