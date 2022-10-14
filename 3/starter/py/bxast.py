@@ -67,11 +67,20 @@ class Scope:
         self.__scope_map.pop()
 
     def exists(self, variable: str) -> bool:
-        """ Checks if a variable exists in current scope """
-        # print(self.__scope_map)
+        """ Checks if a variable exists in any scope """
+        print(self.__scope_map)
+        print(variable)
         for scope in self.__scope_map[::-1]:
             if variable in scope:
                 return True
+        return False
+
+    def exists_in_current_scope(self, variable: str) -> bool:
+        """ Checks if a variable exists in current scope """
+        print(self.__scope_map)
+        print(variable)
+        if variable in self.__scope_map[-1]:
+            return True
         return False
 
     def add(self, variable: str, value: BX_TYPE = BX_TYPE.INT) -> None:
@@ -86,7 +95,7 @@ class Node:
     def __repr__(self):
         return self.__str__()
     def syntax_error(self,error):
-        msg = f"\033[0;37m in line {self.location[0]}\n {error}"
+        msg = f"\033[0;37m in line {self.location[0]} {error}"
         raise SyntaxError(msg)
 
 # ------------------------------------------------------------------------------#
@@ -191,10 +200,10 @@ class ExpressionOp(Expression):
         # real_expected_type = [None] * len(self.arguments)
         for index, arg in enumerate(self.arguments):
             arg.type_check(scope)
-            print(self.arguments)
-            print(self.operations)
-            print(self.operator)
-            print('\n')
+            # print(self.arguments)
+            # print(self.operations)
+            # print(self.operator)
+            # print('\n')
             arg_type = self.arguments[index].type
             
             # if self.operator in self.operations._binops_int_bool:
@@ -257,10 +266,12 @@ class StatementVardecl(Statement):
         if self.type != BX_TYPE.INT:    # shouldn't be possible but anyways
             self.syntax_error(f'{self.variable.name} should have type {str(BX_TYPE.INT)} \
                                 but has type {self.type}')
-        # print("Entered vardecl typecheck")
+        print("Entered vardecl typecheck")
+        print(f"{self.variable}")
+        print(f"{self.variable.name}")
         self.init.type_check(scope)
-        if scope.exists(self.variable.name):
-            self.syntax_error(" variable already declared")
+        if scope.exists_in_current_scope(self.variable.name):
+            self.syntax_error(" variable already declared in current scope")
         else:
             scope.add(self.variable.name, self.type)
         

@@ -1,11 +1,11 @@
 # shell script to test all examples
 
 # # test on all files
-# for file in $(find ../examples -name "*.tac.json"); do
-#     echo $file 
-#     python3 tac2x64.py $file
-#     echo -e '\n'
-# done
+for file in $(find ../examples -name "*.bx"); do
+    echo $file 
+    python3 bxcc.py $file
+    echo -e '\n'
+done
 
 # run all executables
 # for file in $(find ../examples -name "*.exe"); do
