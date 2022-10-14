@@ -11,6 +11,7 @@ class Operations:
                         "division", "modulus", "bitwise-and", "bitwise-or", 
                         "bitwise-xor", "logical-shift-left", "logical-shift-right")
     # _binops_int_bool: tuple = ("cmpe", "cmpne")
+    #_binops_cmp: tuple = ("cmpl", "cmple", "cmpge", "cmpg") delete line below
     _binops_cmp: tuple = ("cmpl", "cmple", "cmpge", "cmpg", "cmpe", "cmpne")
     _binops_bool: tuple = ("logical-and", "logical-or")
     _binops: tuple = _binops_bool + _binops_cmp + _binops_int
