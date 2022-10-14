@@ -10,6 +10,8 @@ class Operations:
     _binops_int: tuple = ("addition", "substraction", "multiplication",
                         "division", "modulus", "bitwise-and", "bitwise-or", 
                         "bitwise-xor", "logical-shift-left", "logical-shift-right")
+    # _binops_int_bool: tuple = ("cmpe", "cmpne")
+    #_binops_cmp: tuple = ("cmpl", "cmple", "cmpge", "cmpg") delete line below
     _binops_cmp: tuple = ("cmpl", "cmple", "cmpge", "cmpg", "cmpe", "cmpne")
     _binops_bool: tuple = ("logical-and", "logical-or")
     _binops: tuple = _binops_bool + _binops_cmp + _binops_int
@@ -102,7 +104,7 @@ class ExpressionBool(Expression):
         self.type = BX_TYPE.BOOL
 
     def __str__(self):
-        return "bool(%s)" % (self.value)
+        return "ExpressionBool(%s)" % (self.value)
     
     def type_check(self, scope: Scope) -> None:   # We should never reach here
         if self.value not in (True, False):
@@ -159,7 +161,9 @@ class ExpressionOp(Expression):
         if self.operator in self.operations._binops_int:
             self.expected_argument_type = (BX_TYPE.INT, BX_TYPE.INT)
             self.type = BX_TYPE.INT
-        
+        # elif self.operator in self.operations._binops_int_bool:
+        #     self.expected_argument_type = [(BX_TYPE.INT, BX_TYPE.INT),(BX_TYPE.BOOL, BX_TYPE.BOOL)]
+        #     self.type = BX_TYPE.BOOL
         elif self.operator in self.operations._binops_bool:
             self.expected_argument_type = (BX_TYPE.BOOL, BX_TYPE.BOOL)
             self.type = BX_TYPE.BOOL
@@ -171,7 +175,7 @@ class ExpressionOp(Expression):
         elif self.operator in self.operations._unops_int:
             self.expected_argument_type = (BX_TYPE.INT,)
             self.type = BX_TYPE.INT
-
+        
         elif self.operator in self.operations._unops_bool:
             self.expected_argument_type = (BX_TYPE.BOOL,)
             self.type = BX_TYPE.BOOL
@@ -184,7 +188,7 @@ class ExpressionOp(Expression):
         if len(self.arguments) != len(self.expected_argument_type):
             self.syntax_error(f"{self.operator} takes {len(self.expected_argument_type)} \
                                 arguments got {len(self.arguments)}")
-
+        # real_expected_type = [None] * len(self.arguments)
         for index, arg in enumerate(self.arguments):
             arg.type_check(scope)
             print(self.arguments)
@@ -192,10 +196,28 @@ class ExpressionOp(Expression):
             print(self.operator)
             print('\n')
             arg_type = self.arguments[index].type
+            
+            # if self.operator in self.operations._binops_int_bool:
+            #     no_match = True
+            #     for type_tup in self.expected_argument_type:
+            #         expected_type = type_tup[index]
+            #         if arg_type == expected_type:
+            #             no_match = False
+            #             real_expected_type[index] = expected_type
+            #             break
+            #     if no_match: self.syntax_error(f"Argument {index+1} for operation {self.operator} should have type {expected_type} but has {arg_type}")
+               
+            # else: 
             expected_type = self.expected_argument_type[index]
             if arg_type != expected_type:
                 self.syntax_error(f"Argument {index+1} for operation {self.operator} should have type {expected_type} but has {arg_type}")
+                    
+        # if self.operator in self.operations._binops_int_bool:
+        #     self.expected_argument_type = tuple(real_expected_type)
+        # correct the expected type for the operation
+            
 
+       
         
 # ------------------------------------------------------------------------------#
 # Statement Classes
@@ -287,7 +309,7 @@ class StatementIfElse(Statement):
     def __str__(self):
         return "ifelse(%s,%s,%s)" % (self.condition,self.block,self.if_rest)
     
-    def type_check(self, scope: Scope, ongoingloop: bool) -> None:
+    def type_check(self, scope: Scope, ongoingloop: bool) -> None:        
         if self.condition.type != BX_TYPE.BOOL:
             self.syntax_error(f'')
         self.condition.type_check(scope)
