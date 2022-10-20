@@ -1,7 +1,7 @@
 from my_parser import parse_file
 from ast2tac import TAC_proc
 import sys
-from tac2asm import compile_tac
+from tac2x64 import compile_tac
 
 def main():
     if len(sys.argv) != 4:
