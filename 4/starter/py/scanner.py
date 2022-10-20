@@ -17,7 +17,8 @@ reserved = {
     "true": "TRUE",
     "false": "FALSE",
     "break": "BREAK",
-    "continue": "CONTINUE"
+    "continue": "CONTINUE",
+    "return": "RETURN"
 }
 
 #Symbols
