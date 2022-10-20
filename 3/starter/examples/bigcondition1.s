@@ -3,7 +3,7 @@
 main:
 	pushq %rbp
 	movq %rsp, %rbp
-	subq $16, %rsp
+	subq $32, %rsp
 	/*   jmp %.L20 [TAC] */
 	/* --jmp .main.L20-- */
 	/*  %.L20: [TAC] */
@@ -1241,26 +1241,30 @@ main:
 	/*  %.L310: [TAC] */
 .main.L310:
 	/*   jmp %.L0 [TAC] */
-	jmp .main.L0
-	/*  %.L1: [TAC] */
-.main.L1:
-	/*   %312 = const -42 [TAC] */
-	movq $-42, -8(%rbp)
-	/*   print %312 [TAC] */
-	movq -8(%rbp), %rdi
-	callq __bx_print_int
-	/*   jmp %.L2 [TAC] */
-	jmp .main.L2
+	/* --jmp .main.L0-- */
 	/*  %.L0: [TAC] */
 .main.L0:
-	/*   %313 = const 42 [TAC] */
+	/*   %312 = const 42 [TAC] */
+	movq $42, -8(%rbp)
+	/*   print %312 [TAC] */
+	movq -8(%rbp), %rdi
+	callq bx_print_int
+	/*   jmp %.L2 [TAC] */
+	jmp .main.L2
+	/*  %.L1: [TAC] */
+.main.L1:
+	/*   %314 = const 42 [TAC] */
 	movq $42, -16(%rbp)
+	/*   %313 = neg %314 [TAC] */
+	movq -16(%rbp), %r11
+	negq %r11
+	movq %r11, -24(%rbp)
 	/*   print %313 [TAC] */
-	movq -16(%rbp), %rdi
-	callq __bx_print_int
+	movq -24(%rbp), %rdi
+	callq bx_print_int
 	/*  %.L2: [TAC] */
 .main.L2:
 	movq %rbp, %rsp
 	popq %rbp
-	xorl %eax, %eax
+	movq $0, %rax
 	retq
