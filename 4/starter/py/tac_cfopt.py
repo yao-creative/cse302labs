@@ -1,28 +1,7 @@
 import sys, argparse
+import cfg
 from typing import List
 
-# ------------------------------------------------------------------------------#
-# Block Class
-# ------------------------------------------------------------------------------#
-
-class Block:
-    """ Class for every block in TAC instr """
-    def __init__(self, instr: List[dict]) -> None:
-        self.__instr: List[dict] = instr
-
-    def block_label(self) -> str:
-        """ Returns the name of the block's label """
-        return self.__instr[0]["args"]
-
-    def add_jmp(self, label: str) -> None:
-        """ Adds a jmp instr to the end of block """
-        self.__instr.append({"opcode": "jmp",
-                             "args": [label],
-                             "result": None})
-
-    def last_instr(self) -> str:
-        """ Returns the opcode of the last instr """
-        return self.__instr[-1]["opcode"]
 
 # ------------------------------------------------------------------------------#
 # Basic Block Creator Class
@@ -37,8 +16,8 @@ class Basic_Block_Creator:
             "jnl", "jnle",]
 
     def __init__(self, func_name: str, tac_instr: List[str], label: str) -> None:
-        self.__func_name : str = func_name
-        self.__tac_instr : List[dict] = tac_instr
+        self.__func_name: str = func_name
+        self.__tac_instr: List[dict] = tac_instr
         self.__num_instr: int = len(self.__tac_instr)
         self.__label_counter: int = int(label)+1
         self.__updated_tac_instr: List[dict] = self.__add_labels()
