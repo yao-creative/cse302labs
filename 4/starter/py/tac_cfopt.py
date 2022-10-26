@@ -10,10 +10,7 @@ from typing import List
 class Basic_Block_Creator:
     """ Creates Basic Block structure """
     
-    jccs = ["jmp",
-            "jz", "jnz", 
-            "jl", "jle",
-            "jnl", "jnle",]
+    jccs = Block.jccs
 
     def __init__(self, func_name: str, tac_instr: List[str], label: str) -> None:
         self.__func_name: str = func_name
