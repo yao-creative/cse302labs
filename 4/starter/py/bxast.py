@@ -114,6 +114,8 @@ class Param(Node):
         super().__init__(location)
         self.name: str = name
         self.type: BX_TYPE = ty     
+    def __str__(self):
+        return f"Param({self.name}, {self.type})"
 class ListParams:
     def __init__(self, params: List[Param], ty: BX_TYPE):
         self.params: List[Param] = params 
@@ -127,6 +129,7 @@ class ListParams:
             self.add_param(location, name)
     def return_params_list(self):
         return self.params
+    
 
 class Expression(Node):
     def __init__(self,location: List[int]):
@@ -441,7 +444,6 @@ class DeclProc(Node):
         self.__body.type_check(self.__scope, False)
     
     def __str__(self):
-        print(f"string declproc")
         return "proc(%s,%s,%s,%s)" % (self.__name, self.__arguments, self.__returntype, self.__body)
 
     def get_name(self) -> str:

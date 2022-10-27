@@ -64,29 +64,24 @@ def p_program(p):
     
 def p_declstar(p):
     """declstar : 
-                | declstar decl"""
-    print(f"entered declstar")
+                | declstar decl"""           
     if len(p) == 1:
-        print(f"declstar length 1")
         p[0] = []
     else:
-        print(f"declstar length greater than 1")
         p[0] = p[1]
         p[0].append(p[2])
-    print(f"declstar: {p[0]}")
+    # print(f"declstar: {p[0]}")
         
 def p_decl(p):
     """decl : vardecl
             | procdecl"""
-    print(f"decl: {p[1]}")
+    # print(f"decl: {p[1]}")
     p[0] = p[1]
     
           
 def p_procdecl(p):
     """procdecl : DEF IDENT LPAREN paramstar RPAREN type block"""
-    print(f"entered procdecl")
     p[0]: DeclProc = DeclProc([p.lineno(0), p.lexpos(0)], p[2], p[4], p[6], p[7])
-    print(f"procdecl! {p[0]}")
     
 def p_type(p):
     """type : 
@@ -95,7 +90,7 @@ def p_type(p):
     if len(p) == 1:
         p[0] = "void"
     else:
-        p[0] = p[1]
+        p[0] = p[2]
         
 def p_paramstar(p):
     """paramstar : 
@@ -111,10 +106,10 @@ def p_paramstar(p):
     print(f"paramstar: {p[0]}")
 
 def p_param(p):
-    """param : identstar COLON type"""
-    lp = ListParams([], p[3])
+    """param : identstar type"""
+    lp = ListParams([], p[2])
     print(f"identstar p[2]: {p[2]}")
-    lp.add_multi_param(p[2])
+    lp.add_multi_param(p[1])
     p[0] = lp.return_params_list()
     
 
@@ -199,7 +194,7 @@ def p_return(p):
 
     
 def p_vardecl(p):
-    """vardecl : VAR varinits COLON type SEMICOLON"""
+    """vardecl : VAR varinits type SEMICOLON"""
     listvardecl = ListVarDecl([], p[4])
     vars = p[1]
     listvardecl.add_multi_var(vars)
@@ -310,9 +305,9 @@ def run_parser(filename):
     """Parse a file and return the AST"""
     with open(filename) as f:
         data = f.read()
-    
+
     result = parser.parse(data, lexer=lexer,tracking=True)
-    # print(result)
+    print(result)
     return result 
 
 if __name__ == "__main__":
