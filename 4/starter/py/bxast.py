@@ -237,30 +237,11 @@ class ExpressionOp(Expression):
         # real_expected_type = [None] * len(self.arguments)
         for index, arg in enumerate(self.arguments):
             arg.type_check(scope)
-            # print(self.arguments)
-            # print(self.operations)
-            # print(self.operator)
-            # print('\n')
             arg_type = self.arguments[index].type
-            
-            # if self.operator in self.operations._binops_int_bool:
-            #     no_match = True
-            #     for type_tup in self.expected_argument_type:
-            #         expected_type = type_tup[index]
-            #         if arg_type == expected_type:
-            #             no_match = False
-            #             real_expected_type[index] = expected_type
-            #             break
-            #     if no_match: self.syntax_error(f"Argument {index+1} for operation {self.operator} should have type {expected_type} but has {arg_type}")
-               
             # else: 
             expected_type = self.expected_argument_type[index]
             if arg_type != expected_type:
                 self.syntax_error(f"Argument {index+1} for operation {self.operator} should have type {expected_type} but has {arg_type}")
-                    
-        # if self.operator in self.operations._binops_int_bool:
-        #     self.expected_argument_type = tuple(real_expected_type)
-        # correct the expected type for the operation
 class ListVarDecl:
     def __init__(self, vars: List[ExpressionVar], ty: BX_TYPE):
         self.vars: List[ExpressionVar] = vars 
@@ -285,6 +266,8 @@ class Prog(Node):
     def __init__(self,location: List[int], functions: List[str]):
         super().__init__(location)
         self.functions: List[str] = functions
+    def __str__(self):
+        return "Prog(%s)" % (self.functions)
 class Decl(Node):
     def __init__(self,location: List[int]):
         super().__init__(location)
@@ -412,7 +395,7 @@ class StatementWhile(Statement):
         super().__init__(location)
         self.condition: Expression = condition
         self.block: StatementBlock = block
-    
+        
     def __str__(self):
         return "while(%s,%s)" % (self.condition,self.block)
     
@@ -443,6 +426,7 @@ class DeclProc(Node):
         super().__init__(location)
         self.__name: str = name
         self.__arguments: List[Param] = arguments
+        # print(f"__name: {name} __arguments: {arguments}")
         self.__returntype: type = returntype
         self.__body: StatementBlock = body
         self.__scope = Scope()
@@ -457,6 +441,7 @@ class DeclProc(Node):
         self.__body.type_check(self.__scope, False)
     
     def __str__(self):
+        print(f"string declproc")
         return "proc(%s,%s,%s,%s)" % (self.__name, self.__arguments, self.__returntype, self.__body)
 
     def get_name(self) -> str:

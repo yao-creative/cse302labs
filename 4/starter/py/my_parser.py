@@ -11,6 +11,7 @@ Authors: Yi Yao Tan
          Vrushank Agrawal
 """
 
+
 __unop_dict = {
     '!': "not",
     '-': "opposite",
@@ -57,60 +58,71 @@ precedence = (
 
 def p_program(p):
     """program : declstar"""
-    p[0] = Prog(p[1],[])
+    # print(f"entered program p[1]: {p[1]}")
+    p[0] = Prog([p.lineno(0), p.lexpos(0)],p[1])
+    # print(f"program: {p[0]}")
     
 def p_declstar(p):
     """declstar : 
                 | declstar decl"""
+    print(f"entered declstar")
     if len(p) == 1:
+        print(f"declstar length 1")
         p[0] = []
     else:
+        print(f"declstar length greater than 1")
         p[0] = p[1]
         p[0].append(p[2])
+    print(f"declstar: {p[0]}")
         
 def p_decl(p):
     """decl : vardecl
             | procdecl"""
+    print(f"decl: {p[1]}")
     p[0] = p[1]
     
           
 def p_procdecl(p):
-    """procdecl : DEF IDENT LPAREN param RPAREN type block
-                | DEF IDENT LPAREN param paramstar RPAREN type block"""
-    if len(p) == 8:
-        p[0]: DeclProc = DeclProc([p.lineno(0), p.lexpos(0)], p[2], p[4], p[6], p[7])
-    else: 
-        p[0]: DeclProc = DeclProc([p.lineno(0), p.lexpos(0)], p[2], p[4] + p[5], p[7], p[8])
-        
+    """procdecl : DEF IDENT LPAREN paramstar RPAREN type block"""
+    print(f"entered procdecl")
+    p[0]: DeclProc = DeclProc([p.lineno(0), p.lexpos(0)], p[2], p[4], p[6], p[7])
+    print(f"procdecl! {p[0]}")
+    
 def p_type(p):
     """type : 
-            | BOOL
-            | INT"""
+            | COLON BOOL
+            | COLON INT"""
     if len(p) == 1:
         p[0] = "void"
     else:
         p[0] = p[1]
+        
 def p_paramstar(p):
     """paramstar : 
-                | paramstar param"""
+                 | param
+                 | param COMMA paramstar"""
+    print(f"entered paramstar")
     if len(p) == 1:
-        p[0]: List[Param] = []
-    else:
-        p[0] = p[1] + p[2]
+        p[0] = []
+    if len(p) == 2:
+        p[0] = p[1]
+    elif len(p) == 4:
+        p[0] = p[1] + p[3]
+    print(f"paramstar: {p[0]}")
 
 def p_param(p):
-    """param : IDENT identstar COLON type"""
+    """param : identstar COLON type"""
     lp = ListParams([], p[3])
-    lp.add_param([p.lineno(0), p.lexpos(0)], p[1])
+    print(f"identstar p[2]: {p[2]}")
     lp.add_multi_param(p[2])
     p[0] = lp.return_params_list()
     
 
 def p_identstar(p):
-    """identstar : 
-                | identstar COMMA IDENT"""
-    if len(p) == 1:
-        p[0] = []
+    """identstar : IDENT
+                 | identstar COMMA IDENT"""
+    if len(p) == 2:
+        p[0] = [([p.lineno(0), p.lexpos(0)], p[1])]
     else:
         p[0] = p[1]
         p[0].append(([p.lineno(0), p.lexpos(0)], p[3]))
@@ -281,8 +293,10 @@ def p_binop(p):
              | AND          
              | OR           """
     p[0] = p[1]
+    
 def p_error(p):
     if p:
+        print(f"error: {p}")
         print(f"Syntax error: at token at line: {p.lineno}")
         # Just discard the token and tell the parser it's okay.
 
@@ -296,14 +310,13 @@ def run_parser(filename):
     """Parse a file and return the AST"""
     with open(filename) as f:
         data = f.read()
-
+    
     result = parser.parse(data, lexer=lexer,tracking=True)
     # print(result)
     return result 
 
 if __name__ == "__main__":
     res = run_parser(sys.argv[1])
-    print(res)
     
 
 
