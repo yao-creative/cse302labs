@@ -1,5 +1,5 @@
 import sys, argparse
-import cfg
+from cfg import *
 from typing import List
 
 
