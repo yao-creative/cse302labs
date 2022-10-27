@@ -99,7 +99,7 @@ def p_paramstar(p):
         p[0] = p[1] + p[2]
 
 def p_param(p):
-    """param : IDENT identstar COLON ty"""
+    """param : IDENT identstar COLON type"""
     lp = ListParams([], p[3])
     lp.add_param([p.lineno(0), p.lexpos(0)], p[1])
     lp.add_multi_param(p[2])
@@ -270,8 +270,8 @@ def p_binop(p):
              | BITWISE_AND  
              | BITWISE_OR   
              | BITWISE_XOR  
-             | LOGICAL_SHIFT
-             | LOGICAL_SHIFT
+             | LOGICAL_SHIFT_LEFT
+             | LOGICAL_SHIFT_RIGHT
              | CMPE         
              | CMPNE        
              | CMPL         
