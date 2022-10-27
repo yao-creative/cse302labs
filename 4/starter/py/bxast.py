@@ -271,6 +271,14 @@ class Prog(Node):
         self.functions: List[str] = functions
     def __str__(self):
         return "Prog(%s)" % (self.functions)
+    def type_check(self, scope: Scope) -> None:
+        has_main = False
+        for function in self.functions:
+            if function.name == "main":
+                has_main = True
+            function.type_check(scope)
+        if not has_main:
+            self.syntax_error("No main function defined")
 class Decl(Node):
     def __init__(self,location: List[int]):
         super().__init__(location)
