@@ -298,6 +298,7 @@ class CFG:
     def __coalesce(self) -> None:
         """ Coalesce two blocks if one succ and one pred """
         self.__update_pred_edges()
+        
         # we go bottom-up because if two blocks can be coalesced then 
         # the bottom block is shifted to the one above. This is faster to
         # implement than top-bottom where we'll need to run nested for loop 
@@ -310,17 +311,20 @@ class CFG:
                 # the current block will be deleted in UCE
                 self.__blocks[index-1] = self.__coalesce_blocks(block, prev_block)
             index -= 1
+        
         # remove dead blocks now
         self.__uce()
 
     def __jmp_thread(self) -> None:
         """ Implement jmp threading for uncond jumps """
+        
         # we implement some algorithmic idea as in coalescing
         index = self.__num_blocks - 1
         while index > 1:
             block = self.__blocks[index]
             prev_block = self.__blocks[index-1]
             self.__thread(prev_block, block)
+        
         self.__coalesce()
 
     def __jmp_modification(self) -> None:
@@ -328,17 +332,18 @@ class CFG:
         for block in self.__blocks:
             self.__check_jcc(block)
 
+        # update succ for each block
         for block in self.__blocks:
             block.update_successors()
 
         self.__jmp_thread()
 
-    # ---------------------------------------------------------------------------#
-    # Serialization
-
     def optimization(self) -> None:
         """ Carry out CFG optimizations """
         self.__jmp_modification()
+
+    # ---------------------------------------------------------------------------#
+    # Serialization
 
     def __serialize(self) -> List[Block]:
         """ Serialisation from CFG to TAC """

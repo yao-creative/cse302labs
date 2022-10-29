@@ -1,3 +1,4 @@
+import json
 import sys, argparse
 from cfg import *
 from typing import List
@@ -116,6 +117,7 @@ if __name__ == "__main__":
     args = parser.parse_args(sys.argv[1:])
     
     filename = args.filename[0]     # get the filename
+    assert(filename[-5:] == ".json"), f"Wrong format for input file {filename}"
 
     with open(filename, 'r') as fp: # save the file
         tac_instr = fp.read()
@@ -123,4 +125,11 @@ if __name__ == "__main__":
     if len(tac_instr["labels"]):
         label = tac_instr["labels"][-1][3:]
 
-    basic_blocks = CFG_creator(tac_instr["proc"][1:], tac_instr["body"], label)
+    basic_blocks = CFG_creator(tac_instr["proc"][1:], tac_instr["body"], label).return_blocks()
+    cfg = CFG(basic_blocks)
+    cfg.optimization()
+    serialized_tac = cfg.serialized_tac()
+
+    sname = "serialized" + filename
+    with open(sname, "w") as fp:
+        json.dump(serialized_tac, fp, indent=3)
