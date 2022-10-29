@@ -1,4 +1,4 @@
-from operator import imod
+from tkinter.messagebox import NO
 from typing import List, Set, Dict, Union
 
 # ------------------------------------------------------------------------------#
@@ -15,6 +15,7 @@ class Block:
 
     def __init__(self, instr: List[dict]) -> None:
         self.__instrs: List[dict] = instr
+        self.__label: str = self.__instrs[0]["args"]
         self.__successors: list = []
         self.__update_successors()
         self.__pred: list = []
@@ -45,12 +46,16 @@ class Block:
         """ Add instrs to the block for coalesce """
         self.__instrs += instrs
 
+    def change_jmp_instr(self, label: str) -> None:
+        """ Changes args param of the last jmp instr """
+        self.__instrs[-1]["args"] = [label]
+
     # ---------------------------------------------------------------------------#
     # Label helpers
 
     def block_label(self) -> str:
         """ Returns the name of the block's label """
-        return self.__instrs[0]["args"]
+        return self.__label
 
     def __update_successors(self) -> None:
         """ updates all successors for the block """
@@ -98,6 +103,7 @@ class CFG:
         self.__update_prev()
         self.__labels_to_blocks: Dict[str, Block] = {block.block_label(): block for block in self.__blocks}
         self.__predecessors: dict = {block.block_label(): [] for block in self.__blocks}
+        self.__deleted_labels: Set[str] = set()
 
     # ---------------------------------------------------------------------------#
     # Helper functions
@@ -131,13 +137,13 @@ class CFG:
         return blocks
 
     def __coalesce_blocks(self, block1: Block, block2: Block) -> Block:
-        """ Coalesce and return the given blocks """
+        """ Coalesce and return the first block """
         block1.remove_last_jmp()
         block1.add_instrs(block2.instructions())
         return block1
 
     def __coalescable(self, block1: Block, block2: Block) -> bool:
-        """ Checks if given blocks can be coalesced """
+        """ Checks if given blocks are coalescable """
         if block1.has_one_succ() and block2.has_one_pred():
             if block1.ret_successors()[0] == block2.ret_predecessors()[0]:
                 return True
@@ -149,6 +155,13 @@ class CFG:
         del self.__successors[block.block_label()]
         self.__update_next()
         self.__entry_block = self.__blocks[0]
+
+    def __thread(self, block1: Block, block2: Block) -> None:
+        """ Threads two blocks """
+        if len(block2.instructions()) == 1:
+            if block2.last_instr() == "label" and block1.last_instr() == "label":
+                if block1.instructions()[-1]["args"][-1] == block2.block_label():
+                    block1.change_jmp_instr(block2.instructions()[-1]["args"][-1])
 
     # ---------------------------------------------------------------------------#
     # CFG Operations
@@ -169,17 +182,42 @@ class CFG:
                 to_delete.append(block)
         for block in to_delete:
             self.__del_block(block)
+            self.__deleted_labels.add(block.block_label().replace(".main", "%"))
 
-    def __coalescing(self) -> None:
-        """ Colaesce two blokcs if one succ and one pred """
+    def __coalesce(self) -> None:
+        """ Coalesce two blocks if one succ and one pred """
         self.__update_prev()
-        index = 0
-        while index < self.__num_blocks:
+        # we go bottom up because if two blocks can
+        # be coalesced then the bottom block is shifted
+        # to the one above. This is hence is faster to
+        # implement than if we go top to bottom where
+        # we will need to run a nested for loop 
+        index = self.__num_blocks-1
+        while index > 1:
             block = self.__blocks[index]
-            next_block = self.__blocks[index+1]
-            if self.__coalescable(block, next_block):
-                new_block = self.__coalesce_blocks(block, next_block)
+            prev_block = self.__blocks[index-1]
+            if self.__coalescable(prev_block, block):
+                # update the prev_block
+                # the current block will be deleted in UCE
+                self.__blocks[index-1] = self.__coalesce_blocks(block, prev_block)
+            index -= 1
+        # remove dead blocks now
+        self.__uce()
 
+    def __jmp_thread(self) -> None:
+        """ Implement jmp threading for uncond jumps """
+        # we implement some algorithmic idea as in coalescing
+        index = self.__num_blocks - 1
+        while index > 1:
+            block = self.__blocks[index]
+            prev_block = self.__blocks[index-1]
+            self.__thread(prev_block, block)
+        # coalesce blocks
+        self.__coalesce()
+
+    def __jmp_modification(self) -> None:
+        """ Converts cond jmps to uncond jmps """
+        
 
     # ---------------------------------------------------------------------------#
     # Serialization
