@@ -3,7 +3,6 @@ import sys, argparse
 from cfg import *
 from typing import List
 
-
 # ------------------------------------------------------------------------------#
 # Basic Block Creator Class
 # ------------------------------------------------------------------------------#
@@ -16,10 +15,10 @@ class CFG_creator:
     def __init__(self, func_name: str, tac_instr: List[str], label: str) -> None:
         self.__func_name: str = func_name
         self.__tac_instr: List[dict] = tac_instr
-        self.__num_instr: int = len(self.__tac_instr)
         self.__label_counter: int = int(label)+1
+        self.__new_labels: List[str] = list()
         self.__updated_tac_instr: List[dict] = self.__add_labels()
-        self.__new_labels: List[str] = []
+        self.__num_instr: int = len(self.__updated_tac_instr)
         self.__blocks: List[Block] = self.__block_inference()
 
     def __create_new_label(self) -> str:
@@ -46,12 +45,13 @@ class CFG_creator:
         # parse tac instr to add lable after each jcc
         for index, instr in enumerate(self.__tac_instr):
             if instr["opcode"] in self.jccs:
-                if index < self.__num_instr:
+                if index < len(self.__tac_instr):
                     # if the next instruction is not already a label then add one
                     if self.__tac_instr[index+1]["opcode"] != "label":
                         new_tac_instr.append(self.__create_label_instr(self.__create_new_label()))
                     else:
                         new_tac_instr.append(instr)
+                        print("hi")
 
         # add exit label
         new_tac_instr.append(self.__create_label_instr("exit"))
@@ -71,15 +71,14 @@ class CFG_creator:
                 current_block_instr.append(instr)
             
             # Create a block until a ret instr and assert last instr is ret
-            elif index == self.__num_instr or instr["opcode"] == "ret":
-                assert(instr["opcode"] == "ret"), f'Last instr not a ret {instr}'
+            elif index == self.__num_instr-1 or instr["opcode"] == "ret":
+                assert(instr["opcode"] == "ret"), f'Last instr not a ret {self.__updated_tac_instr}'
                 current_block_instr.append(instr)
                 blocks.append(Block(current_block_instr))
                 current_block_instr = []
 
-            # end a block if next instr is label and assert curr instr is a jcc
+            # end a block if next instr is label
             elif self.__updated_tac_instr[index+1]["opcode"] == "label":
-                assert(instr["opcode"] in self.jccs), f'Block does not end with jcc instr: {instr}'
                 current_block_instr.append(instr)
                 blocks.append(Block(current_block_instr))
                 current_block_instr = []
@@ -105,7 +104,6 @@ class CFG_creator:
         """ Returns the list of blocks """
         return self.__blocks
 
-
 # ------------------------------------------------------------------------------#
 # Main function
 # ------------------------------------------------------------------------------#
@@ -122,13 +120,15 @@ if __name__ == "__main__":
     with open(filename, 'r') as fp: # save the file
         tac_instr = fp.read()
 
-    if len(tac_instr["labels"]):
-        label = tac_instr["labels"][-1][3:]
-
-    basic_blocks = CFG_creator(tac_instr["proc"][1:], tac_instr["body"], label).return_blocks()
-    cfg = CFG(basic_blocks)
-    cfg.optimization()
-    serialized_tac = cfg.serialized_tac()
+    serialized_tac = []
+    for proc in tac_instr:
+        if len(tac_instr["labels"]):
+            label = proc["labels"][-1][3:]
+        assert proc["proc"][0] == '@'
+        basic_blocks = CFG_creator(proc["proc"][1:], proc["body"], label).return_blocks()
+        cfg = CFG(basic_blocks)
+        cfg.optimization()
+        serialized_tac.append(cfg.serialized_tac())
 
     sname = "serialized" + filename
     with open(sname, "w") as fp:

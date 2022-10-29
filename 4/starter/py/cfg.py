@@ -69,7 +69,7 @@ class Block:
         """ Returns cond jmps list with instr indexes """
         return self.__cond_jmps
 
-    def jcc_with_temp(self, temp: str) -> List[int, dict]:
+    def jcc_with_temp(self, temp: str) -> List[Tuple[int, dict]]:
         """ Checks and returns all jcc instr with the temp """
         cond_jmps = self.get_cond_jmps()
         jccs_with_temp = []
@@ -145,7 +145,8 @@ class Block:
 class CFG:
     """ Creates CFG representation for internal use """
 
-    def __init__(self, blocks: List[Block]) -> None:
+    def __init__(self, blocks: List[Block], func_name: str) -> None:
+        self.__proc_name: str = func_name
         self.__blocks: List[Block] = blocks
         self.__num_blocks: int = len(self.__blocks)
         self.__entry_block: Block = self.__blocks[0]
@@ -275,7 +276,7 @@ class CFG:
     # ---------------------------------------------------------------------------#
     # CFG Operations
 
-    def __uce(self) -> None:
+    def uce(self) -> None:
         """ Unreachable Code Elimination """
         self.__update_pred_edges()
         self.__update_edges()
@@ -295,7 +296,7 @@ class CFG:
             self.__del_block(block)
             self.__deleted_labels.add(block.block_label().replace(".main", "%"))
 
-    def __coalesce(self) -> None:
+    def coalesce(self) -> None:
         """ Coalesce two blocks if one succ and one pred """
         self.__update_pred_edges()
         
@@ -313,9 +314,9 @@ class CFG:
             index -= 1
         
         # remove dead blocks now
-        self.__uce()
+        self.uce()
 
-    def __jmp_thread(self) -> None:
+    def jmp_thread(self) -> None:
         """ Implement jmp threading for uncond jumps """
         
         # we implement some algorithmic idea as in coalescing
@@ -325,9 +326,9 @@ class CFG:
             prev_block = self.__blocks[index-1]
             self.__thread(prev_block, block)
         
-        self.__coalesce()
+        self.coalesce()
 
-    def __jmp_modification(self) -> None:
+    def jmp_cond_mod(self) -> None:
         """ Converts cond jmps to uncond jmps """
         for block in self.__blocks:
             self.__check_jcc(block)
@@ -336,11 +337,11 @@ class CFG:
         for block in self.__blocks:
             block.update_successors()
 
-        self.__jmp_thread()
+        self.jmp_thread()
 
     def optimization(self) -> None:
         """ Carry out CFG optimizations """
-        self.__jmp_modification()
+        self.jmp_cond_mod()
 
     # ---------------------------------------------------------------------------#
     # Serialization
@@ -369,3 +370,16 @@ class CFG:
         for block in blocks:
             tac_instrs += block.instructions()
         return tac_instrs
+
+    # ---------------------------------------------------------------------------#
+    # Getter functions for unit tests
+
+    def get_blocks(self) -> List[Block]:
+        return self.__blocks
+
+    def get_label_to_blocks(self) -> Dict[str, Block]:
+        return self.__labels_to_blocks
+
+    def get_edges(self) -> Dict[str, List[str]]:
+        self.__update_edges()
+        return self.__successors
