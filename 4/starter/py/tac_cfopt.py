@@ -117,7 +117,7 @@ if __name__ == "__main__":
     
     filename = args.filename[0]     # get the filename
 
-    with open(filename, 'r') as fp:         # save the file
+    with open(filename, 'r') as fp: # save the file
         tac_instr = fp.read()
 
     if len(tac_instr["labels"]):
