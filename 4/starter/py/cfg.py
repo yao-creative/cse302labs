@@ -1,5 +1,4 @@
-from tkinter.messagebox import NO
-from typing import List, Set, Dict, Union
+from typing import List, Set, Dict, Tuple
 
 # ------------------------------------------------------------------------------#
 # Block Class
@@ -17,20 +16,23 @@ class Block:
         self.__instrs: List[dict] = instr
         self.__label: str = self.__instrs[0]["args"]
         self.__successors: list = []
-        self.__update_successors()
+        self.update_successors()
         self.__pred: list = []
+        self.__cond_jmps: List[Tuple[int, dict]] = list()
+        self.update_cond_jmps()
 
     # ---------------------------------------------------------------------------#
     # Instr helpers
 
     def add_jmp(self, label: str) -> None:
         """ Adds a jmp instr to the end of block """
-        self.__instrs.append({"opcode": "jmp",
-                              "args": [label],
-                              "result": None})
+        if len(self.__instrs > 0):
+            assert(self.__instrs[-1]["opcode"] != "jmp"), f"a jmp instr already exists {self.__instrs[-1]}"
+        self.__instrs.append({"opcode": "jmp", "args": [label], "result": None})
 
     def last_instr(self) -> str:
         """ Returns the opcode of the last instr """
+        assert(len(self.__instrs) > 0), f"There are no instr in: {self}"
         return self.__instrs[-1]["opcode"]
 
     def remove_last_jmp(self) -> None:
@@ -46,9 +48,48 @@ class Block:
         """ Add instrs to the block for coalesce """
         self.__instrs += instrs
 
-    def change_jmp_instr(self, label: str) -> None:
-        """ Changes args param of the last jmp instr """
-        self.__instrs[-1]["args"] = [label]
+    def update_cond_jmps(self) -> List[Tuple[int, dict]]:
+        """ Returns list of all cond jumps """
+        cond_js = []
+        js = self.jccs.remove("jmp")
+        for index, instr in enumerate(self.__instrs):
+            if instr["opcode"] in js:
+                cond_js.append((index, instr))
+        self.__cond_jmps = cond_js
+
+    def get_cond_jmps(self) -> List[Tuple[int, dict]]:
+        """ Returns cond jmps list with instr indexes """
+        return self.__cond_jmps
+
+    def jcc_with_temp(self, temp: str) -> List[int, dict]:
+        """ Checks if any jcc instr has the temp """
+        cond_jmps = self.get_cond_jmps()
+        jccs_with_temp = []
+        for index, instr in cond_jmps:
+            if instr["args"][0] == temp:
+                return jccs_with_temp.append((index, instr))
+        return jccs_with_temp
+
+    def is_temp_modified(self, start_index: int, stop_index: int, temp: str) -> bool:
+        """ Checks if the temp has been modified in the prev instr """
+        assert(start_index <= stop_index), f"start_index cannot be greater than stop_index for temp: {temp}"
+        assert(stop_index < len(self.__instrs)), f"stop_index cannot be greater than instrs len for temp: {temp}"
+        for i in range(start_index, stop_index):
+            if self.__instrs[i]["result"] == temp:
+                return True 
+        return False
+
+    def del_after_cond_jmp(self, index: int) -> None:
+        """ Removes all code after cond jmp """
+        self.__instrs = self.__instrs[:index]
+    
+    def del_cond_jmp(self, index: int) -> None:
+        """ Deletes the cond jmp at given index """
+        assert(index < len(self.__instrs)), f"Instr index: {index} out of range for {self.__instrs}"
+        if index == len(self.__instrs)-1:
+            self.__instrs = self.__instrs[:index]
+        else:
+            self.__instrs = self.__instrs[:index] + self.__instrs[index+1:]
 
     # ---------------------------------------------------------------------------#
     # Label helpers
@@ -57,7 +98,7 @@ class Block:
         """ Returns the name of the block's label """
         return self.__label
 
-    def __update_successors(self) -> None:
+    def update_successors(self) -> None:
         """ updates all successors for the block """
         dest = []
         for instr in self.__instrs:
@@ -72,7 +113,7 @@ class Block:
 
     def ret_successors(self) -> list:
         """ Returns all successors for current block """
-        self.__update_successors()
+        self.update_successors()
         return self.__successors
 
     def ret_predecessors(self) -> list:
@@ -99,8 +140,8 @@ class CFG:
         self.__num_blocks: int = len(self.__blocks)
         self.__entry_block: Block = self.__blocks[0]
         self.__successors: Dict[str, set] = dict()
-        self.__update_next()
-        self.__update_prev()
+        self.__update_edges()
+        self.__update_pred_edges()
         self.__labels_to_blocks: Dict[str, Block] = {block.block_label(): block for block in self.__blocks}
         self.__predecessors: dict = {block.block_label(): [] for block in self.__blocks}
         self.__deleted_labels: Set[str] = set()
@@ -108,15 +149,15 @@ class CFG:
     # ---------------------------------------------------------------------------#
     # Helper functions
 
-    def __update_next(self) -> None:
+    def __update_edges(self) -> None:
         """ Updates all edges in cfg blocks """
         edges = {}
         for block in self.__blocks:
             edges[block.block_label()] = block.successors()
         self.__successors = edges
 
-    def __update_prev(self) -> None:
-        """ Updates the predecessor graph {label: [label]}"""
+    def __update_pred_edges(self) -> None:
+        """ Updates the pred graph in the blocks """
         pred_graph = dict()
         for block in self.__blocks:
             for label in block.successors():
@@ -126,13 +167,14 @@ class CFG:
             self.__labels_to_blocks[lab].set_pred(preds)
 
     def __next(self, label: str) -> List[str]:
-        """ Returns the successor labels of the current label """
-        self.__update_next()
+        """ Returns the succ labels of the curr label """
+        self.__update_edges()
         return self.__successors[label]
 
     def __prev(self, block: Block) -> List[Block]:
         """ Returns the predecessor blocks for the current block """
         pred_labels = self.__predecessors[block.block_label()]
+        return pred_labels
         blocks = [self.__labels_to_blocks[lab] for lab in pred_labels]
         return blocks
 
@@ -153,7 +195,7 @@ class CFG:
         """ Delete the given block """
         self.__blocks.remove(block)
         del self.__successors[block.block_label()]
-        self.__update_next()
+        self.__update_edges()
         self.__entry_block = self.__blocks[0]
 
     def __thread(self, block1: Block, block2: Block) -> None:
@@ -161,13 +203,71 @@ class CFG:
         if len(block2.instructions()) == 1:
             if block2.last_instr() == "label" and block1.last_instr() == "label":
                 if block1.instructions()[-1]["args"][-1] == block2.block_label():
-                    block1.change_jmp_instr(block2.instructions()[-1]["args"][-1])
+                    block1.remove_last_jmp()
+                    block1.add_jmp(block2.instructions()[-1]["args"][-1])
+
+    __jcc_direct_implication = {"jz":["jz"], "jnz":["jnz"],
+                    "jl":["jl", "jle", "jnz"], "jle":["jle"],
+                    "jnl":["jnl"], "jnle":["jnle", "jnl", "jnz"],}
+
+    __jcc_neg_implications = {"jz":["jl", "jnle", "jnz"], "jnz":["jz"],
+                 "jl":["jnl", "jnle", "jz"], "jle":["jnle"],
+                 "jnl":["jl"], "jnle":["jz", "jl", "jle"],}
+
+    def __check_jcc(self, block: Block) -> None:
+        """ Checks if block has removable cond jmp """
+        jcc_instrs = block.get_cond_jmps()
+        for index, instr in jcc_instrs:
+            dest_block = self.__labels_to_blocks[instr["args"][-1]]
+            temp = instr["args"][0]
+            jcc = instr["opcode"]
+            
+            # check if dest block has only one pred
+            if self.__prev(dest_block) != dest_block.block_label():
+                break
+            # check if any jcc uses the temp for comparison
+            jccs_with_temp = dest_block.jcc_with_temp(temp)
+            if jccs_with_temp == []: 
+                break
+            
+            # need to check if temp is modified in a range of instr
+            prev_index = 0
+            # need to delete neg jcc instrs that will always be False
+            instr_index_to_delete = []
+            
+            for dest_index, dest_instr in jccs_with_temp:
+                # if the temp has modified befor jcc instr then break
+                if dest_block.is_temp_modified(prev_index, dest_index, temp):
+                    break
+                
+                # if jcc instr is a direct implication then it will be True
+                if dest_instr["opcode"] in self.__jcc_direct_implication[jcc]:
+                    dest_lab = dest_instr["args"][-1]
+                    block.del_after_cond_jmp(dest_index)
+                    block.add_jmp(dest_lab)
+                    break
+                
+                # if jcc instr is a direct neg implication then it will be False
+                if dest_instr["opcode"] in self.__jcc_neg_implications[jcc]:
+                    instr_index_to_delete.append(dest_index)
+                
+                prev_index = dest_index+1
+
+            # delete False cond jmps in reverse
+            for index in instr_index_to_delete[::-1]:
+                dest_block.del_cond_jmp(index)
+
+            # update cond jmps list in the block
+            dest_block.update_cond_jmps()
+
 
     # ---------------------------------------------------------------------------#
     # CFG Operations
 
     def __uce(self) -> None:
         """ Unreachable Code Elimination """
+        self.__update_pred_edges()
+        self.__update_edges()
         visited_blocks = {self.__entry_block.block_label()}
         to_visit = self.__entry_block.ret_successors()
         while len(to_visit) > 0:
@@ -186,12 +286,10 @@ class CFG:
 
     def __coalesce(self) -> None:
         """ Coalesce two blocks if one succ and one pred """
-        self.__update_prev()
-        # we go bottom up because if two blocks can
-        # be coalesced then the bottom block is shifted
-        # to the one above. This is hence is faster to
-        # implement than if we go top to bottom where
-        # we will need to run a nested for loop 
+        self.__update_pred_edges()
+        # we go bottom-up because if two blocks can be coalesced then 
+        # the bottom block is shifted to the one above. This is faster to
+        # implement than top-bottom where we'll need to run nested for loop 
         index = self.__num_blocks-1
         while index > 1:
             block = self.__blocks[index]
@@ -212,15 +310,24 @@ class CFG:
             block = self.__blocks[index]
             prev_block = self.__blocks[index-1]
             self.__thread(prev_block, block)
-        # coalesce blocks
         self.__coalesce()
 
     def __jmp_modification(self) -> None:
         """ Converts cond jmps to uncond jmps """
-        
+        for block in self.__blocks:
+            self.__check_jcc(block)
+
+        for block in self.__blocks:
+            block.update_successors()
+
+        self.__jmp_thread()
 
     # ---------------------------------------------------------------------------#
     # Serialization
+
+    def optimization(self) -> None:
+        """ Carry out CFG optimizations """
+        self.__jmp_modification()
 
     def __serialize(self) -> List[Block]:
         """ Serialisation from CFG to TAC """
@@ -228,7 +335,6 @@ class CFG:
         scheduled: List[Block] = list()
         next_labels = curr_block.successors()
         successors: Set[str] = set()
-        
         while curr_block is not None:
             scheduled.append(curr_block)
             for label in next_labels:
@@ -238,7 +344,6 @@ class CFG:
                 next_labels = curr_block.successors()
             else:
                 curr_block = None
-
         return scheduled
 
     def serialized_tac(self) -> List[dict]:

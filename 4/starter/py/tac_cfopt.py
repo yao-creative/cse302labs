@@ -7,8 +7,8 @@ from typing import List
 # Basic Block Creator Class
 # ------------------------------------------------------------------------------#
 
-class Basic_Block_Creator:
-    """ Creates Basic Block structure """
+class CFG_creator:
+    """ Creates Basic Block structure for CFG """
     
     jccs = Block.jccs
 
@@ -123,4 +123,4 @@ if __name__ == "__main__":
     if len(tac_instr["labels"]):
         label = tac_instr["labels"][-1][3:]
 
-    basic_blocks = Basic_Block_Creator(tac_instr["proc"][1:], tac_instr["body"], label)
+    basic_blocks = CFG_creator(tac_instr["proc"][1:], tac_instr["body"], label)
