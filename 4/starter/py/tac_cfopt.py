@@ -94,7 +94,7 @@ class CFG_creator:
             if not index: continue
             # add jmp to curr block in prev block if not a jmp
             if blocks[index-1].last_instr_opcode() != "jmp":
-                blocks[index-1].add_jmp(block.block_label())
+                blocks[index-1].add_jmp(block.get_block_label())
 
         # assert all blocks end with jmp
         for block in blocks:
@@ -135,6 +135,6 @@ if __name__ == "__main__":
         cfg.optimization()
         serialized_tac.append(cfg.serialized_tac())
 
-    sname = "serialized" + filename
+    sname = filename[:-5] + ".serial.json"
     with open(sname, "w") as fp:
         json.dump(serialized_tac, fp, indent=3)

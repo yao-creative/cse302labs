@@ -22,7 +22,7 @@ class Block:
         self.__successors: List[str] = []
         self.__pred: List[str] = []
         self.__cond_jmps: List[Tuple[int, dict]] = list()
-        self.update_cond_jmps_and_succ()
+        self.update_cond_jmps()
 
     # ---------------------------------------------------------------------------#
     # Instr helpers
@@ -59,17 +59,12 @@ class Block:
     # ---------------------------------------------------------------------------#
     # jcc instr helpers
 
-    def update_cond_jmps_and_succ(self) -> None:
-        """ Updates list of all cond jumps and successors """
+    def update_cond_jmps(self) -> None:
+        """ Updates list of all cond jumps """
         cond_js = []
-        dest = []
         for index, instr in enumerate(self.__instrs):
             if instr["opcode"] in self.__no_jmp_jccs:
                 cond_js.append((index, instr))
-            if instr["opcode"] in self.jccs:
-                if instr["args"][-1] not in dest:
-                    dest.append(instr["args"][-1])
-        self.__successors = dest
         self.__cond_jmps = cond_js
 
     def get_cond_jmps(self) -> List[Tuple[int, dict]]:
@@ -111,11 +106,15 @@ class Block:
     # ---------------------------------------------------------------------------#
     # Label helpers
 
-    def block_label(self) -> str:
+    def get_block_label(self) -> str:
         """ Returns the name of the block's label """
         return self.__label
 
-    def set_pred(self, preds: list) -> str:
+    def set_succ(self, succ: List[str]) -> None:
+        """ Sets the predecessor for the curr block """
+        self.__successors = succ
+
+    def set_pred(self, preds: List[str]) -> None:
         """ Sets the predecessor for the curr block """
         self.__pred = preds
 
@@ -149,7 +148,7 @@ class CFG:
         self.__num_blocks: int = len(self.__blocks)
         self.__entry_block: Block = self.__blocks[0]
         self.__successors: Dict[str, List[str]] = dict()
-        self.__labels_to_blocks: Dict[str, Block] = {block.block_label(): block for block in self.__blocks}
+        self.__labels_to_blocks: Dict[str, Block] = {block.get_block_label(): block for block in self.__blocks}
         self.__predecessors: Dict[str, List[str]] = dict()
         self.__deleted_labels: Set[str] = set()
         self.__update_graph()
@@ -161,16 +160,22 @@ class CFG:
         """ Updates all edges in cfg blocks """
         edges = {}
         for block in self.__blocks:
-            edges[block.block_label()] = block.successors()
+            dest = []
+            for instr in block.instructions():
+                if instr["opcode"] in Block.jccs:
+                    if instr["args"][-1] not in dest:
+                        dest.append(instr["args"][-1])
+            edges[block.get_block_label()] = dest
+            block.set_succ(dest)
         self.__successors = edges
 
     def __update_pred_edges(self) -> None:
         """ Updates the pred graph in the blocks """
-        pred_graph = {block.block_label(): [] for block in self.__blocks}
+        pred_graph = {block.get_block_label(): [] for block in self.__blocks}
         for block in self.__blocks:
             for label in block.successors():
                 assert(label in pred_graph), f"unidentified block label {label}"
-                pred_graph[label] += block.block_label()
+                pred_graph[label] += block.get_block_label()
         self.__predecessors = pred_graph
 
         # update pred list in every block
@@ -195,7 +200,7 @@ class CFG:
         """ Delete the given block because it has no pred """
         self.__blocks.remove(block)
         self.__num_blocks = len(self.__blocks)
-        del self.__labels_to_blocks[block.block_label()]
+        del self.__labels_to_blocks[block.get_block_label()]
         self.__entry_block = self.__blocks[0]
 
     def __coalesce_blocks(self, block1: Block, block2: Block) -> Block:
@@ -219,9 +224,9 @@ class CFG:
         # block2 can only have 2 instr including label
         if len(block2.instructions()) == 2:
             # block2 can only have one pred
-            if len(self.__prev(block2.block_label())) == 1:
+            if len(self.__prev(block2.get_block_label())) == 1:
                 # the two blocks should be connected to each other
-                if block1.last_instr_label() == block2.block_label():
+                if block1.last_instr_label() == block2.get_block_label():
                     assert(block1.last_instr_opcode() == "jmp"), f"Last instr in block is not jmp: {block2.instructions()}"
                     assert(block2.last_instr_opcode() == "jmp"), f"Last instr in block is not jmp: {block2.instructions()}"
                     block1.remove_last_jmp()
@@ -283,30 +288,32 @@ class CFG:
             for index in instr_index_to_delete[::-1]:
                 dest_block.del_cond_jmp(index)
 
-        # update cond jmps list in the block
-        dest_block.update_cond_jmps_and_succ()
+            # update cond jmps list in the block
+            dest_block.update_cond_jmps()
 
     # ---------------------------------------------------------------------------#
     # CFG Operations
 
     def __uce(self) -> None:
         """ Unreachable Code Elimination """
-        visited_blocks = {self.__entry_block.block_label()}
+        visited_blocks = {self.__entry_block.get_block_label()}
         to_visit = self.__entry_block.successors()
+        # mark UC
         while len(to_visit) > 0:
             label = to_visit.pop()
             if label not in visited_blocks:
                 visited_blocks.add(label)
-                to_visit.extend(self.__next(label))
-
+                for lab in self.__next(label):
+                    if lab != label and lab not in to_visit: 
+                        to_visit.append(lab)
+        # now delete UC
         to_delete = []
         for block in self.__blocks:
-            if block.block_label() not in visited_blocks:
+            if block.get_block_label() not in visited_blocks:
                 to_delete.append(block)
         for block in to_delete:
+            self.__deleted_labels.add(block.get_block_label())
             self.__del_block(block)
-            self.__deleted_labels.add(block.block_label())
-
 
     def __coalesce(self) -> None:
         """ Coalesce two blocks if one succ and one pred """
@@ -358,17 +365,16 @@ class CFG:
         """ Serialisation from CFG to TAC """
         curr_block: Block = self.__entry_block 
         scheduled: List[Block] = list()
-        next_labels = curr_block.successors()
-        successors: Set[str] = set()
-        while curr_block is not None:
+        # In our code, all blocks end with jmp or ret instrs
+        # hence, we only need to string them together
+        while True:
             scheduled.append(curr_block)
-            for label in next_labels:
-                successors.add(self.__labels_to_blocks[label])
-            if successors:
-                curr_block = successors.pop()
-                next_labels = curr_block.successors()
-            else:
-                curr_block = None
+            last_instr: str = curr_block.last_instr_opcode()
+            if last_instr == "ret":
+                break
+            assert(last_instr == "jmp"), f"Last instr is not jmp: {curr_block.instructions()[-1]}"
+            next_lab = curr_block.last_instr_label()
+            curr_block = self.__labels_to_blocks[next_lab]
         return scheduled
 
     def serialized_tac(self) -> List[dict]:
