@@ -18,7 +18,7 @@ class Block:
 
     def __init__(self, instr: List[dict]) -> None:
         self.__instrs: List[dict] = instr
-        self.__label: str = self.__instrs[0]["args"]
+        self.__label: str = self.__instrs[0]["args"][0]
         self.__successors: List[str] = []
         self.__pred: List[str] = []
         self.__cond_jmps: List[Tuple[int, dict]] = list()
@@ -154,16 +154,12 @@ class CFG:
         self.__num_blocks: int = len(self.__blocks)
         self.__entry_block: Block = self.__blocks[0]
         self.__successors: Dict[str, List[str]] = dict()
-        self.__labels_to_blocks: Dict[str, Block] = self.__label_to_block_mapper()
+        self.__labels_to_blocks: Dict[str, Block] = {block.block_label(): block for block in self.__blocks}
         self.__predecessors: Dict[str, List[str]] = dict()
         self.__deleted_labels: Set[str] = set()
 
     # ---------------------------------------------------------------------------#
     # Helper functions
-
-    def __label_to_block_mapper(self) -> Dict[str, Block]:
-        """ Creates a map for labels to their block """
-        return {block.block_label(): block for block in self.__blocks}
 
     def __update_edges(self) -> None:
         """ Updates all edges in cfg blocks """
@@ -235,7 +231,7 @@ class CFG:
                  "jnl":["jl"], "jnle":["jz", "jl", "jle"],}
 
     def __check_jcc(self, block: Block) -> None:
-        """ Checks if block has removable cond jmp """
+        """ Checks and updates block if it has removable cond jmp """
         jcc_instrs = block.get_cond_jmps()
         for index, instr in jcc_instrs:
             dest_block = self.__labels_to_blocks[instr["args"][-1]]
@@ -283,7 +279,7 @@ class CFG:
     # ---------------------------------------------------------------------------#
     # CFG Operations
 
-    def uce(self) -> None:
+    def __uce(self) -> None:
         """ Unreachable Code Elimination """
         self.__update_pred_edges()
         self.__update_edges()
@@ -303,7 +299,7 @@ class CFG:
             self.__del_block(block)
             self.__deleted_labels.add(block.block_label().replace(".main", "%"))
 
-    def coalesce(self) -> None:
+    def __coalesce(self) -> None:
         """ Coalesce two blocks if one succ and one pred """
         self.__update_pred_edges()
         
@@ -321,9 +317,9 @@ class CFG:
             index -= 1
         
         # remove dead blocks now
-        self.uce()
+        self.__uce()
 
-    def jmp_thread(self) -> None:
+    def __jmp_thread(self) -> None:
         """ Implement jmp threading for uncond jumps """
         
         # we implement some algorithmic idea as in coalescing
@@ -332,10 +328,11 @@ class CFG:
             block = self.__blocks[index]
             prev_block = self.__blocks[index-1]
             self.__thread(prev_block, block)
+            index -= 1
         
-        self.coalesce()
+        self.__coalesce()
 
-    def jmp_cond_mod(self) -> None:
+    def __jmp_cond_mod(self) -> None:
         """ Converts cond jmps to uncond jmps """
         for block in self.__blocks:
             self.__check_jcc(block)
@@ -344,11 +341,11 @@ class CFG:
         for block in self.__blocks:
             block.update_successors()
 
-        self.jmp_thread()
+        self.__jmp_thread()
 
     def optimization(self) -> None:
         """ Carry out CFG optimizations """
-        self.jmp_cond_mod()
+        self.__jmp_cond_mod()
 
     # ---------------------------------------------------------------------------#
     # Serialization
@@ -362,7 +359,7 @@ class CFG:
         while curr_block is not None:
             scheduled.append(curr_block)
             for label in next_labels:
-                successors.add(self.__labels_to_blocks(label))
+                successors.add(self.__labels_to_blocks[label])
             if successors:
                 curr_block = successors.pop()
                 next_labels = curr_block.successors()
@@ -390,3 +387,15 @@ class CFG:
     def get_edges(self) -> Dict[str, List[str]]:
         self.__update_edges()
         return self.__successors
+
+    def uce(self) -> None:
+        self.__uce()
+
+    def coalesce(self) -> None:
+        self.__coalesce()
+    
+    def jmp_thread(self) -> None:
+        self.__jmp_thread()
+    
+    def jmp_cond_mod(self) -> None:
+        self.__jmp_cond_mod()
