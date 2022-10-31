@@ -23,7 +23,7 @@ class CFG_creator:
 
     def __create_new_label(self) -> str:
         """ Create and return a new label """
-        label = f".{self.__func_name}.L{self.__label_counter}"
+        label = f"{self.__label_counter}"
         self.__label_counter += 1
         return label
 
@@ -49,13 +49,11 @@ class CFG_creator:
                     # if the next instruction is not already a label then add one
                     if self.__tac_instr[index+1]["opcode"] != "label":
                         new_tac_instr.append(self.__create_label_instr(self.__create_new_label()))
-                    else:
-                        new_tac_instr.append(instr)
-                        print("hi")
+
+            new_tac_instr.append(instr)
 
         # add exit label
         new_tac_instr.append(self.__create_label_instr("exit"))
-
         return new_tac_instr
 
     def __block_inference(self) -> List[Block]:
@@ -118,12 +116,13 @@ if __name__ == "__main__":
     assert(filename[-5:] == ".json"), f"Wrong format for input file {filename}"
 
     with open(filename, 'r') as fp: # save the file
-        tac_instr = fp.read()
+        tac_instr = json.load(fp)
 
     serialized_tac = []
     for proc in tac_instr:
-        if len(tac_instr["labels"]):
-            label = proc["labels"][-1][3:]
+        # if len(tac_instr["labels"]):
+        #     label = proc["labels"][-1][3:]
+        label = 0
         assert proc["proc"][0] == '@'
         basic_blocks = CFG_creator(proc["proc"][1:], proc["body"], label).return_blocks()
         cfg = CFG(basic_blocks)
