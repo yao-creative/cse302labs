@@ -78,7 +78,7 @@ class Block:
         for index, instr in cond_jmps:
             assert(instr["opcode"] in self.jccs), f"Wrong instr in cond_jmps: {instr}"
             if instr["args"][0] == temp:
-                return jccs_with_temp.append((index, instr))
+                jccs_with_temp.append((index, instr))
         return jccs_with_temp
 
     def is_temp_modified(self, start_index: int, stop_index: int, temp: str) -> bool:
@@ -246,19 +246,25 @@ class CFG:
     def __check_jcc(self, block: Block) -> None:
         """ Checks and updates block if it has removable cond jmp """
         jcc_instrs = block.get_cond_jmps()
+        # print(jcc_instrs)
         for index, instr in jcc_instrs:
             dest_block_lab = instr["args"][-1]
             dest_block = self.__labels_to_blocks[dest_block_lab]
             temp = instr["args"][0]         # temporary compared in the jcc instr
             jcc = instr["opcode"]           # jcc command
             
+            # print(self.__prev(dest_block_lab))
+            # print(block.get_block_label())
+
             # if dest block has > one pred we can't modify the instr
-            if self.__prev(dest_block_lab) != [dest_block_lab]:
+            if self.__prev(dest_block_lab) != [block.get_block_label()]:
                 break
             
-            # if no cc in the dest block uses the temp for comparison, we can skip
+            # if no jcc in the dest block uses the temp for comparison, we can skip
+            # print(dest_block)
             jccs_with_temp = dest_block.jcc_with_temp(temp)
-            if jccs_with_temp == []: 
+            # print(jccs_with_temp)
+            if jccs_with_temp == []:
                 break
             
             # need to check if temp is modified in any dest instr before jcc
@@ -283,6 +289,7 @@ class CFG:
                 # if jcc instr is a direct neg implication then it will be False
                 if dest_instr["opcode"] in self.__jcc_neg_implications[jcc]:
                     # add the instr to be deleted later
+                    # print(dest_index, dest_instr)
                     instr_index_to_delete.append(dest_index)
                 
                 prev_index = dest_index+1
@@ -318,9 +325,11 @@ class CFG:
             self.__deleted_labels.add(block.get_block_label())
             self.__del_block(block)
 
-        # for block in self.__blocks:
-        #     print(block.instructions())
+        for block in self.__blocks:
+            print(block.instructions())
+        print("UCE done", '\n')
 
+        self.__update_graph()
 
     def __coalesce(self) -> None:
         """ Coalesce two blocks if one succ and one pred """
@@ -336,8 +345,9 @@ class CFG:
             index -= 1
             
         self.__update_graph()
-        # for block in self.__blocks:
-        #     print(block.instructions())
+        for block in self.__blocks:
+            print(block.instructions())
+        print("Coalesce done", '\n')
         # remove dead blocks now
         self.__uce()
 
@@ -353,6 +363,10 @@ class CFG:
             
         self.__update_graph()
         # coalesce blocks now
+        for block in self.__blocks:
+            print(block.instructions())
+        print("jmp thread done", '\n')
+        self.__uce()
         self.__coalesce()
 
     def __jmp_cond_mod(self) -> None:
@@ -361,12 +375,16 @@ class CFG:
             self.__check_jcc(block)
         
         self.__update_graph()
+        for block in self.__blocks:
+            print(block.instructions())
+        print("jmp cond done", '\n')
+
+        self.__uce()
         self.__jmp_thread()
 
     def optimization(self) -> None:
         """ Carry out CFG optimizations """
         self.__jmp_cond_mod()
-        # self.__coalesce()
         exit(0)
 
     # ---------------------------------------------------------------------------#
