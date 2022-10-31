@@ -44,13 +44,11 @@ class CFG_creator:
         
         # parse tac instr to add lable after each jcc
         for index, instr in enumerate(self.__tac_instr):
-            if instr["opcode"] in self.jccs:
-                if index < len(self.__tac_instr):
-                    # if the next instruction is not already a label then add one
-                    if self.__tac_instr[index+1]["opcode"] != "label":
-                        new_tac_instr.append(self.__create_label_instr(self.__create_new_label()))
-
             new_tac_instr.append(instr)
+            if instr["opcode"] in self.jccs:
+                # if the next instruction is not already a label then add one
+                if self.__tac_instr[index+1]["opcode"] != "label":
+                    new_tac_instr.append(self.__create_label_instr(self.__create_new_label()))
 
         # # add exit label
         # new_tac_instr.append(self.__create_label_instr("exit"))

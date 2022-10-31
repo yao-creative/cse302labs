@@ -104,7 +104,7 @@ class testCoalescing(unittest.TestCase):
             self.cfg1 = self.prepfile(fname1)
 
     def test_coalesce_blocks(self):
-        self.assertEqual(len(self.cfg1.get_blocks()), 5)
+        self.assertEqual(len(self.cfg1.get_blocks()), 7)
         self.cfg1.coalesce()
         self.assertEqual(len(self.cfg1.get_blocks()), 3)
     

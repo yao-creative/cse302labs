@@ -210,7 +210,7 @@ class CFG:
         """ Coalesce and return the first block """
         assert(block1.last_instr_opcode() == "jmp"), f"Last instr in block is not jmp: {block1.instructions()}"
         block1.remove_last_jmp()
-        block1.add_instrs(block2.instructions())
+        block1.add_instrs(block2.instructions()[1:])
         return block1
 
     def __coalescable(self, block1: Block, block2: Block) -> bool:
@@ -318,6 +318,10 @@ class CFG:
             self.__deleted_labels.add(block.get_block_label())
             self.__del_block(block)
 
+        # for block in self.__blocks:
+        #     print(block.instructions())
+
+
     def __coalesce(self) -> None:
         """ Coalesce two blocks if one succ and one pred """
         # we go bottom-up because if two blocks can be coalesced then 
@@ -332,6 +336,8 @@ class CFG:
             index -= 1
             
         self.__update_graph()
+        # for block in self.__blocks:
+        #     print(block.instructions())
         # remove dead blocks now
         self.__uce()
 
@@ -360,6 +366,8 @@ class CFG:
     def optimization(self) -> None:
         """ Carry out CFG optimizations """
         self.__jmp_cond_mod()
+        # self.__coalesce()
+        exit(0)
 
     # ---------------------------------------------------------------------------#
     # Serialization
