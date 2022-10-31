@@ -12,6 +12,10 @@ class Block:
             "jl", "jle",
             "jnl", "jnle",]
 
+    __no_jmp_jccs = ["jz", "jnz", 
+                   "jl", "jle",
+                   "jnl", "jnle",]
+
     def __init__(self, instr: List[dict]) -> None:
         self.__instrs: List[dict] = instr
         self.__label: str = self.__instrs[0]["args"]
@@ -26,7 +30,7 @@ class Block:
 
     def add_jmp(self, label: str) -> None:
         """ Adds a jmp instr to the end of block """
-        if len(self.__instrs > 0):
+        if len(self.__instrs) > 0:
             assert(self.__instrs[-1]["opcode"] != "jmp"), f"a jmp instr already exists {self.__instrs[-1]}"
         self.__instrs.append({"opcode": "jmp", "args": [label], "result": None})
 
@@ -59,9 +63,8 @@ class Block:
     def update_cond_jmps(self) -> List[Tuple[int, dict]]:
         """ Returns list of all cond jumps """
         cond_js = []
-        js = self.jccs.remove("jmp")
         for index, instr in enumerate(self.__instrs):
-            if instr["opcode"] in js:
+            if instr["opcode"] in self.__no_jmp_jccs:
                 cond_js.append((index, instr))
         self.__cond_jmps = cond_js
 
@@ -151,12 +154,16 @@ class CFG:
         self.__num_blocks: int = len(self.__blocks)
         self.__entry_block: Block = self.__blocks[0]
         self.__successors: Dict[str, List[str]] = dict()
-        self.__labels_to_blocks: Dict[str, Block] = {block.block_label(): block for block in self.__blocks}
+        self.__labels_to_blocks: Dict[str, Block] = self.__label_to_block_mapper()
         self.__predecessors: Dict[str, List[str]] = dict()
         self.__deleted_labels: Set[str] = set()
 
     # ---------------------------------------------------------------------------#
     # Helper functions
+
+    def __label_to_block_mapper(self) -> Dict[str, Block]:
+        """ Creates a map for labels to their block """
+        return {block.block_label(): block for block in self.__blocks}
 
     def __update_edges(self) -> None:
         """ Updates all edges in cfg blocks """

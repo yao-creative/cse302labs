@@ -52,8 +52,8 @@ class CFG_creator:
 
             new_tac_instr.append(instr)
 
-        # add exit label
-        new_tac_instr.append(self.__create_label_instr("exit"))
+        # # add exit label
+        # new_tac_instr.append(self.__create_label_instr("exit"))
         return new_tac_instr
 
     def __block_inference(self) -> List[Block]:
@@ -66,20 +66,24 @@ class CFG_creator:
             # append the first label instr and assert it is a label
             if not len(current_block_instr):
                 assert(instr["opcode"] == "label"), f'First instruction not a label {instr}'
-                current_block_instr.append(instr)
             
             # Create a block until a ret instr and assert last instr is ret
-            elif index == self.__num_instr-1 or instr["opcode"] == "ret":
-                assert(instr["opcode"] == "ret"), f'Last instr not a ret {self.__updated_tac_instr}'
+            if instr["opcode"] == "ret":
                 current_block_instr.append(instr)
+                # print(index)
+                # print(current_block_instr)
                 blocks.append(Block(current_block_instr))
                 current_block_instr = []
+                continue
 
             # end a block if next instr is label
-            elif self.__updated_tac_instr[index+1]["opcode"] == "label":
+            if self.__updated_tac_instr[index+1]["opcode"] == "label":
                 current_block_instr.append(instr)
+                # print(index)
+                # print(current_block_instr)
                 blocks.append(Block(current_block_instr))
                 current_block_instr = []
+                continue
 
             else:
                 current_block_instr.append(instr)
@@ -89,12 +93,14 @@ class CFG_creator:
             # skip for first block
             if not index: continue
             # add jmp to curr block in prev block if not a jmp
-            if blocks[index-1].last_instr() != "jmp":
+            if blocks[index-1].last_instr_opcode() != "jmp":
                 blocks[index-1].add_jmp(block.block_label())
 
         # assert all blocks end with jmp
         for block in blocks:
-            assert(block.last_instr() == "jmp"), f'Block does not end with jmp instr: {instr}'
+            # print(block.instructions())
+            assert(block.last_instr_opcode() == "jmp" \
+                    or block.last_instr_opcode() == "ret"), f'Block does not end with jmp or ret instr: {instr}'
 
         return blocks
 
@@ -125,7 +131,7 @@ if __name__ == "__main__":
         label = 0
         assert proc["proc"][0] == '@'
         basic_blocks = CFG_creator(proc["proc"][1:], proc["body"], label).return_blocks()
-        cfg = CFG(basic_blocks)
+        cfg = CFG(basic_blocks, proc["proc"][1:])
         cfg.optimization()
         serialized_tac.append(cfg.serialized_tac())
 
