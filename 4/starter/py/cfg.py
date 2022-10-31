@@ -19,8 +19,8 @@ class Block:
     def __init__(self, instr: List[dict]) -> None:
         self.__instrs: List[dict] = instr
         self.__label: str = self.__instrs[0]["args"][0]
-        self.__successors: List[str] = []
-        self.__pred: List[str] = []
+        self.__successors: List[str] = list()
+        self.__pred: List[str] = list()
         self.__cond_jmps: List[Tuple[int, dict]] = list()
         self.update_cond_jmps()
 
@@ -128,10 +128,12 @@ class Block:
 
     def has_one_succ(self) -> bool:
         """ If block has one succ return True """
+        # print("succ", self.__successors)
         return len(self.__successors) == 1
 
     def has_one_pred(self) -> bool:
         """ If blokc has one pred return True """
+        # print("pred", self.__pred)
         return len(self.__pred) == 1
 
 
@@ -175,9 +177,8 @@ class CFG:
         for block in self.__blocks:
             for label in block.successors():
                 assert(label in pred_graph), f"unidentified block label {label}"
-                pred_graph[label] += block.get_block_label()
+                pred_graph[label].append(block.get_block_label())
         self.__predecessors = pred_graph
-
         # update pred list in every block
         for lab, preds in pred_graph.items():
             self.__labels_to_blocks[lab].set_pred(preds)
@@ -195,6 +196,8 @@ class CFG:
         """ updates edges in the CFG graph """
         self.__update_edges()
         self.__update_pred_edges()
+        # print(self.__successors)
+        # print(self.__predecessors)
 
     def __del_block(self, block: Block) -> None:
         """ Delete the given block because it has no pred """
@@ -205,8 +208,7 @@ class CFG:
 
     def __coalesce_blocks(self, block1: Block, block2: Block) -> Block:
         """ Coalesce and return the first block """
-        assert(block1.last_instr_opcode() == "jmp"), f"Last instr in block is not jmp: {block2.instructions()}"
-        assert(block2.last_instr_opcode() == "jmp"), f"Last instr in block is not jmp: {block2.instructions()}"
+        assert(block1.last_instr_opcode() == "jmp"), f"Last instr in block is not jmp: {block1.instructions()}"
         block1.remove_last_jmp()
         block1.add_instrs(block2.instructions())
         return block1
@@ -215,8 +217,9 @@ class CFG:
         """ Checks if given blocks are coalescable """
         if block1.has_one_succ() and block2.has_one_pred():
             assert(block1.last_instr_opcode() == "jmp"), f"Last instr in block is not jmp: {block2.instructions()}"
-            if block1.successors()[0] == block2.predecessors()[0]:
-                return True
+            if block1.successors()[0] == block2.get_block_label():
+                if block2.predecessors()[0] == block1.get_block_label():
+                    return True
         return False
 
     def __thread(self, block1: Block, block2: Block) -> None:
@@ -325,10 +328,10 @@ class CFG:
             block = self.__blocks[index]
             prev_block = self.__blocks[index-1]
             if self.__coalescable(prev_block, block):
-                self.__blocks[index-1] = self.__coalesce_blocks(block, prev_block)
+                self.__blocks[index-1] = self.__coalesce_blocks(prev_block, block)
             index -= 1
             
-        self.__update_edges()
+        self.__update_graph()
         # remove dead blocks now
         self.__uce()
 
@@ -342,7 +345,7 @@ class CFG:
             self.__thread(prev_block, block)
             index -= 1
             
-        self.__update_edges()
+        self.__update_graph()
         # coalesce blocks now
         self.__coalesce()
 
@@ -350,8 +353,8 @@ class CFG:
         """ Jump threading to convert cond jmps to uncond jmps """     
         for block in self.__blocks:
             self.__check_jcc(block)
-            
-        self.__update_edges()
+        
+        self.__update_graph()
         self.__jmp_thread()
 
     def optimization(self) -> None:
@@ -365,6 +368,7 @@ class CFG:
         """ Serialisation from CFG to TAC """
         curr_block: Block = self.__entry_block 
         scheduled: List[Block] = list()
+        # print(self.__labels_to_blocks)
         # In our code, all blocks end with jmp or ret instrs
         # hence, we only need to string them together
         while True:
