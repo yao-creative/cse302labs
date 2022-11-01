@@ -4,7 +4,7 @@ import sys
 
 #words 
 reserved = {
-    "main" : "MAIN",
+    # "main" : "MAIN",
     "while": "WHILE",
     "print": "PRINT",
     "def" : "DEF",
@@ -17,14 +17,15 @@ reserved = {
     "true": "TRUE",
     "false": "FALSE",
     "break": "BREAK",
-    "continue": "CONTINUE"
+    "continue": "CONTINUE",
+    "return": "RETURN"
 }
 
 #Symbols
 #check to use NEGATIVE == UNARY MINUS
 tokens = ("PLUS", "MINUS", "SEMICOLON", "COLON", "LPAREN", "RPAREN", "IDENT", "NUMBER", 
         "LBRACE", "RBRACE", "EQUALS", "MULTIPLY", "DIVIDE",
-         "PERCENT", "BITWISE_AND", "BITWISE_OR", "BITWISE_XOR",
+         "PERCENT", "BITWISE_AND", "BITWISE_OR", "BITWISE_XOR", "COMMA",
          "BITWISE_NEGATION", "LOGICAL_SHIFT_LEFT", "LOGICAL_SHIFT_RIGHT",
          "CMPE", "CMPNE", "CMPL", "CMPLE", "CMPG", "CMPGE", "AND", "OR", "NOT") + tuple(reserved.values())
 
@@ -43,6 +44,7 @@ t_LPAREN = r'\('
 t_RPAREN = r'\)'
 t_LBRACE = r'\{'
 t_RBRACE = r'\}'
+t_COMMA = r','
 
 t_BITWISE_AND = r'&'
 t_BITWISE_OR = r'\|'

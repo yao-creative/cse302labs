@@ -133,24 +133,24 @@ def p_expression(p):
                   | TRUE
                   | FALSE
                   | LPAREN expression RPAREN
-                  | expression PLUS expression
-                  | expression MINUS expression
-                  | expression MULTIPLY expression
-                  | expression DIVIDE expression
-                  | expression PERCENT expression
-                  | expression BITWISE_AND expression
-                  | expression BITWISE_OR expression
-                  | expression BITWISE_XOR expression
+                  | expression PLUS         expression
+                  | expression MINUS        expression
+                  | expression MULTIPLY     expression
+                  | expression DIVIDE       expression
+                  | expression PERCENT      expression
+                  | expression BITWISE_AND  expression
+                  | expression BITWISE_OR   expression
+                  | expression BITWISE_XOR  expression
                   | expression LOGICAL_SHIFT_LEFT expression
                   | expression LOGICAL_SHIFT_RIGHT expression
-                  | expression CMPE expression
-                  | expression CMPNE expression
-                  | expression CMPL expression
-                  | expression CMPLE expression
-                  | expression CMPG expression
-                  | expression CMPGE expression
-                  | expression AND expression
-                  | expression OR expression
+                  | expression CMPE         expression
+                  | expression CMPNE        expression
+                  | expression CMPL         expression
+                  | expression CMPLE        expression
+                  | expression CMPG         expression
+                  | expression CMPGE        expression
+                  | expression AND          expression
+                  | expression OR           expression
                   | MINUS expression %prec UMINUS
                   | NOT expression
                   | BITWISE_NEGATION expression

@@ -240,7 +240,8 @@ class ExpressionOp(Expression):
 # Statement Classes
 # ------------------------------------------------------------------------------#
 
-class Statement(Node):
+        
+class Statement(Decl):
     def __init__(self,location: List[int]):
         super().__init__(location)
 
