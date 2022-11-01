@@ -1,0 +1,16 @@
+[
+   [
+      {
+         "opcode": "label",
+         "args": [
+            ".main.Lentry"
+         ],
+         "result": null
+      },
+      {
+         "opcode": "ret",
+         "args": [],
+         "result": "None"
+      }
+   ]
+]

@@ -1,0 +1,38 @@
+[
+   [
+      {
+         "opcode": "label",
+         "args": [
+            ".main.Lentry"
+         ],
+         "result": null
+      },
+      {
+         "opcode": "jz",
+         "args": [
+            "%1",
+            "%.L2"
+         ],
+         "result": null
+      },
+      {
+         "opcode": "jmp",
+         "args": [
+            "%.L20"
+         ],
+         "result": null
+      },
+      {
+         "opcode": "label",
+         "args": [
+            "%.L20"
+         ],
+         "result": null
+      },
+      {
+         "opcode": "ret",
+         "args": [],
+         "result": null
+      }
+   ]
+]

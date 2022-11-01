@@ -1,0 +1,52 @@
+[
+   [
+      {
+         "opcode": "label",
+         "args": [
+            ".main.Lentry"
+         ],
+         "result": null
+      },
+      {
+         "opcode": "jmp",
+         "args": [
+            "%.L4"
+         ],
+         "result": null
+      },
+      {
+         "opcode": "label",
+         "args": [
+            "%.L4"
+         ],
+         "result": null
+      },
+      {
+         "opcode": "jz",
+         "args": [
+            "%1",
+            "%.L4"
+         ],
+         "result": ""
+      },
+      {
+         "opcode": "jmp",
+         "args": [
+            ".main.L1"
+         ],
+         "result": null
+      },
+      {
+         "opcode": "label",
+         "args": [
+            ".main.L1"
+         ],
+         "result": null
+      },
+      {
+         "opcode": "ret",
+         "args": [],
+         "result": null
+      }
+   ]
+]

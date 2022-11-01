@@ -43,7 +43,7 @@
             {
                 "opcode": "jmp",
                 "args": [
-                    "%.l30"
+                    "%.L30"
                 ],
                 "result": "None"
             },

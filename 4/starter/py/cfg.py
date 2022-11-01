@@ -393,8 +393,6 @@ class CFG:
     # ---------------------------------------------------------------------------#
     # Serialization
 
-    # TODO add ret instr support
-
     def __serialize(self) -> List[Block]:
         """ Serialisation from CFG to TAC """
         curr_block: Block = self.__entry_block 
