@@ -272,27 +272,6 @@ class ListVarDecl:
 # Statement Classes
 # ------------------------------------------------------------------------------#
 
-class Decl(Node):
-    def __init__(self,location: List[int]):
-        super().__init__(location)
-
-class Prog(Node):
-    def __init__(self,location: List[int], functions: List[str]):
-        super().__init__(location)
-        self.functions: List[str] = functions
-    
-    def __str__(self):
-        return "Prog(%s)" % (self.functions)
-    
-    def type_check(self, scope: Scope) -> None:
-        has_main = False
-        for function in self.functions:
-            if function.name == "main":
-                has_main = True
-            function.type_check(scope)
-        if not has_main:
-            self.syntax_error("No main function defined")
-        
 class Statement(Node):
     def __init__(self,location: List[int]):
         super().__init__(location)
@@ -439,7 +418,7 @@ class StatementJump(Statement):
             self.syntax_error(f'')
 
 # ------------------------------------------------------------------------------#
-# Main Class
+# Main Classes
 # ------------------------------------------------------------------------------#
 
 class DeclProc(Node):
@@ -469,3 +448,25 @@ class DeclProc(Node):
 
     def get_body(self) -> StatementBlock:
         return self.__body
+
+class Decl(Node):
+    def __init__(self,location: List[int]):
+        super().__init__(location)
+
+class Prog(Node):
+    def __init__(self,location: List[int], functions: List[Union[DeclProc, Expression]]):
+        super().__init__(location)
+        self.functions: List[Union[DeclProc, Expression]] = functions
+    
+    def __str__(self):
+        return "Prog(%s)" % (self.functions)
+    
+    def type_check(self, scope: Scope) -> None:
+        has_main = False
+        for function in self.functions:
+            if function.name == "main":
+                has_main = True
+            function.type_check(scope)
+        if not has_main:
+            self.syntax_error("No main function defined")
+        
