@@ -11,6 +11,7 @@ Authors: Yi Yao Tan
          Vrushank Agrawal
 """
 
+
 __unop_dict = {
     '!': "not",
     '-': "opposite",
@@ -56,18 +57,71 @@ precedence = (
 ) 
 
 def p_program(p):
-    """program : DEF MAIN LPAREN RPAREN block"""
-    previous_functions.append(p[2])
-    if len(previous_functions) > 1:
-        raise SyntaxError("Too many main functions")
-    if p[2] != "main":
-        raise SyntaxError("Function is not main!")
-    p[0] = DeclProc([p.lineno(0), p.lexpos(0)], p[2], [], None, p[5], previous_functions)
+    """program : declstar"""
+    # print(f"entered program p[1]: {p[1]}")
+    p[0] = Prog([p.lineno(0), p.lexpos(0)],p[1])
+    # print(f"program: {p[0]}")
+    
+def p_declstar(p):
+    """declstar : 
+                | declstar decl"""           
+    if len(p) == 1:
+        p[0] = []
+    else:
+        p[0] = p[1]
+        p[0].append(p[2])
+    # print(f"declstar: {p[0]}")
+        
+def p_decl(p):
+    """decl : vardecl
+            | procdecl"""
+    # print(f"decl: {p[1]}")
+    p[0] = p[1]
+    
+          
+def p_procdecl(p):
+    """procdecl : DEF IDENT LPAREN paramstar RPAREN type block"""
+    p[0]: DeclProc = DeclProc([p.lineno(0), p.lexpos(0)], p[2], p[4], p[6], p[7])
+    
+def p_type(p):
+    """type : 
+            | COLON BOOL
+            | COLON INT"""
+    if len(p) == 1:
+        p[0] = "void"
+    else:
+        p[0] = p[2]
+        
+def p_paramstar(p):
+    """paramstar : 
+                 | param
+                 | param COMMA paramstar"""
+    print(f"entered paramstar")
+    if len(p) == 1:
+        p[0] = []
+    if len(p) == 2:
+        p[0] = p[1]
+    elif len(p) == 4:
+        p[0] = p[1] + p[3]
+    print(f"paramstar: {p[0]}")
 
-def p_block(p):
-    """block : LBRACE statementstar RBRACE"""
-    p[0] = StatementBlock([p.lineno(0), p.lexpos(0)],p[2])
+def p_param(p):
+    """param : identstar type"""
+    lp = ListParams([], p[2])
+    print(f"identstar p[2]: {p[2]}")
+    lp.add_multi_param(p[1])
+    p[0] = lp.return_params_list()
+    
 
+def p_identstar(p):
+    """identstar : IDENT
+                 | identstar COMMA IDENT"""
+    if len(p) == 2:
+        p[0] = [([p.lineno(0), p.lexpos(0)], p[1])]
+    else:
+        p[0] = p[1]
+        p[0].append(([p.lineno(0), p.lexpos(0)], p[3]))
+        
 def p_statementstar(p):
     """statementstar :
                      | statementstar statement"""
@@ -76,28 +130,31 @@ def p_statementstar(p):
     else:
         p[0] = p[1]
         p[0].append(p[2])
-
+        
 def p_statement(p):
     """statement : vardecl
+                 | eval
                  | assign
                  | print
                  | block
                  | ifelse
                  | while
                  | jump
+                 | return
                  """
     p[0] = p[1]
-
-def p_vardecl(p):
-    """vardecl : VAR IDENT EQUALS expression COLON INT SEMICOLON"""
-    p[0] = StatementVardecl([p.lineno(0), p.lexpos(0)],
-                            ExpressionVar([p.lineno(0), p.lexpos(0)],p[2]),
-                            "int",p[4])
-
+    
+def p_eval(p):
+    """eval : expression SEMICOLON"""
+    p[0] = StatementEval([p.lineno(0), p.lexpos(0)],p[1])
+    
+def p_block(p):
+    """block : LBRACE statementstar RBRACE"""
+    p[0] = StatementBlock([p.lineno(0), p.lexpos(0)],p[2])
+    
 def p_assign(p):
     """assign : IDENT EQUALS expression SEMICOLON"""
-    p[0] = StatementAssign([p.lineno(0), p.lexpos(0)],
-    ExpressionVar([p.lineno(0), p.lexpos(0)],p[1]),p[3])
+    p[0] = StatementAssign([p.lineno(0), p.lexpos(0)], p[1], p[3])
 
 def p_print(p):
     """print : PRINT LPAREN expression RPAREN SEMICOLON"""
@@ -127,33 +184,46 @@ def p_jump(p):
             | CONTINUE SEMICOLON"""
     p[0] = StatementJump([p.lineno(0), p.lexpos(0)],p[1])
 
+def p_return(p):
+    """return : RETURN SEMICOLON
+              | RETURN expression SEMICOLON"""
+    if len(p) == 3:
+        p[0] = StatementReturn([p.lineno(0), p.lexpos(0)],None)
+    else:
+        p[0] = StatementReturn([p.lineno(0), p.lexpos(0)],p[2])
+
+    
+def p_vardecl(p):
+    """vardecl : VAR varinits type SEMICOLON"""
+    listvardecl = ListVarDecl([], p[4])
+    vars = p[1]
+    listvardecl.add_multi_var(vars)
+    p[0] = listvardecl.return_vardecl_list()
+    
+def p_varinits(p):
+    """varinits : IDENT EQUALS expression varinitstar"""
+    p[0] =  [([p.lineno(0), p.lexpos(0)], p[1], p[3])] + p[4]
+
+def p_varinitstar(p):
+    """varinitstar : 
+                   | varinitstar COMMA IDENT EQUALS expression"""
+    if len(p) == 1:
+        p[0] = []
+    else:
+        p[0] = p[1]
+        p[0].append(([p.lineno(0), p.lexpos(0)], p[3], p[5]))
+        
 def p_expression(p):
     """expression : IDENT
                   | NUMBER
                   | TRUE
                   | FALSE
                   | LPAREN expression RPAREN
-                  | expression PLUS         expression
-                  | expression MINUS        expression
-                  | expression MULTIPLY     expression
-                  | expression DIVIDE       expression
-                  | expression PERCENT      expression
-                  | expression BITWISE_AND  expression
-                  | expression BITWISE_OR   expression
-                  | expression BITWISE_XOR  expression
-                  | expression LOGICAL_SHIFT_LEFT expression
-                  | expression LOGICAL_SHIFT_RIGHT expression
-                  | expression CMPE         expression
-                  | expression CMPNE        expression
-                  | expression CMPL         expression
-                  | expression CMPLE        expression
-                  | expression CMPG         expression
-                  | expression CMPGE        expression
-                  | expression AND          expression
-                  | expression OR           expression
+                  | expression binop expression
                   | MINUS expression %prec UMINUS
                   | NOT expression
                   | BITWISE_NEGATION expression
+                  | IDENT LPAREN expression expressionstar RPAREN
     """
     if len(p) == 2:
         if p[1] == "true":
@@ -173,7 +243,7 @@ def p_expression(p):
         op = __unop_dict[p[1]]
         p[0] = ExpressionOp([p.lineno(0), p.lexpos(0)], op, [p[2]])
 
-    elif len(p) == 4:
+    elif len(p) == 4: 
         if p[1] == "(":
             p[0] = p[2]
         else:
@@ -181,11 +251,47 @@ def p_expression(p):
                 raise SyntaxError("Invalid binary operator at line: " + str(p.lineno(0)))
             op = __binop_dict.get(p[2])
             p[0] = ExpressionOp([p.lineno(0), p.lexpos(0)], op, [p[1], p[3]])
+            
+    elif len(p) == 6: # function call
+        params = [p[3]] + p[4]
+        p[0] = ExpressionProcCall([p.lineno(0), p.lexpos(0)], p[1], params)
+        
     else:
         raise ParseError("Invalid expression with too many arguments at line: " + str(p.lineno(0)))
-
+    
+def p_expressionstar(p):
+    """expressionstar : 
+                      | expressionstar COMMA expression"""
+    if len(p) == 1:
+        p[0] = []
+    else:
+        p[0] = p[1]
+        p[0].append(p[3])
+        
+def p_binop(p):
+    """binop : PLUS         
+             | MINUS        
+             | MULTIPLY     
+             | DIVIDE       
+             | PERCENT      
+             | BITWISE_AND  
+             | BITWISE_OR   
+             | BITWISE_XOR  
+             | LOGICAL_SHIFT_LEFT
+             | LOGICAL_SHIFT_RIGHT
+             | CMPE         
+             | CMPNE        
+             | CMPL         
+             | CMPLE        
+             | CMPG         
+             | CMPGE        
+             | AND          
+             | OR           """
+    p[0] = p[1]
+    
 def p_error(p):
     if p:
+        print(f"error: {p}")
         print(f"Syntax error: at token at line: {p.lineno}")
         # Just discard the token and tell the parser it's okay.
 
@@ -201,12 +307,11 @@ def run_parser(filename):
         data = f.read()
 
     result = parser.parse(data, lexer=lexer,tracking=True)
-    # print(result)
+    print(result)
     return result 
 
 if __name__ == "__main__":
     res = run_parser(sys.argv[1])
-    print(res)
     
 
 

@@ -109,6 +109,27 @@ class Node:
 # ------------------------------------------------------------------------------#
 # Expression Classes
 # ------------------------------------------------------------------------------#
+class Param(Node):
+    def __init__(self, location: List[int], name: str, ty: BX_TYPE):
+        super().__init__(location)
+        self.name: str = name
+        self.type: BX_TYPE = ty     
+    def __str__(self):
+        return f"Param({self.name}, {self.type})"
+class ListParams:
+    def __init__(self, params: List[Param], ty: BX_TYPE):
+        self.params: List[Param] = params 
+        self.type: BX_TYPE = ty     
+    def add_param(self, location: List[int], name: str) -> None:
+        self.params.append(Param(location, name, self.type))
+        
+    def add_multi_param(self, l: List[Tuple[List[int], str]]) -> None:
+        """ Adds multiple parameter locations and names to the list of parameters """
+        for location, name in l:
+            self.add_param(location, name)
+    def return_params_list(self):
+        return self.params
+    
 
 class Expression(Node):
     def __init__(self,location: List[int]):
@@ -126,7 +147,18 @@ class ExpressionBool(Expression):
     def type_check(self, scope: Scope) -> None:   # We should never reach here
         if self.value not in (True, False):
             self.syntax_error(f"{self.value} value must be 'true' or 'false'.")
-
+            
+class ExpressionProcCall(Expression):
+    def __init__(self, location: List[int], name: str, params: List[Expression]):
+        super().__init__(location)
+        self.name: str = name
+        self.params: List[Expression] = params
+        self.type = None
+    def __str__(self):
+        return "ExpressionProcCall(%s, %s)" % (self.name, self.params)
+    def type_check(self, scope: Scope) -> None:
+        pass
+            
 class ExpressionVar(Expression):
     def __init__(self, location: List[int], name: str):
         super().__init__(location)
@@ -208,40 +240,50 @@ class ExpressionOp(Expression):
         # real_expected_type = [None] * len(self.arguments)
         for index, arg in enumerate(self.arguments):
             arg.type_check(scope)
-            # print(self.arguments)
-            # print(self.operations)
-            # print(self.operator)
-            # print('\n')
             arg_type = self.arguments[index].type
-            
-            # if self.operator in self.operations._binops_int_bool:
-            #     no_match = True
-            #     for type_tup in self.expected_argument_type:
-            #         expected_type = type_tup[index]
-            #         if arg_type == expected_type:
-            #             no_match = False
-            #             real_expected_type[index] = expected_type
-            #             break
-            #     if no_match: self.syntax_error(f"Argument {index+1} for operation {self.operator} should have type {expected_type} but has {arg_type}")
-               
             # else: 
             expected_type = self.expected_argument_type[index]
             if arg_type != expected_type:
                 self.syntax_error(f"Argument {index+1} for operation {self.operator} should have type {expected_type} but has {arg_type}")
-                    
-        # if self.operator in self.operations._binops_int_bool:
-        #     self.expected_argument_type = tuple(real_expected_type)
-        # correct the expected type for the operation
-            
+class ListVarDecl:
+    def __init__(self, vars: List[ExpressionVar], ty: BX_TYPE):
+        self.vars: List[ExpressionVar] = vars 
+        self.type: BX_TYPE = ty     
+        
+    def add_var(self, location: List[int], name: str, expression: Expression) -> None:
+        self.vars.append(StatementVardecl(location, name, self.type, expression))
+        
+    def add_multi_var(self, l: List[Tuple[List[int], str, Expression]]) -> None:
+        """ Adds multiple parameter locations and names to the list of parameters """
+        for location, name, expression in l:
+            self.add_var(location, name, expression)
+    def return_vardecl_list(self):
+        return self.vars                
 
        
         
 # ------------------------------------------------------------------------------#
 # Statement Classes
 # ------------------------------------------------------------------------------#
-
+class Prog(Node):
+    def __init__(self,location: List[int], functions: List[str]):
+        super().__init__(location)
+        self.functions: List[str] = functions
+    def __str__(self):
+        return "Prog(%s)" % (self.functions)
+    def type_check(self, scope: Scope) -> None:
+        has_main = False
+        for function in self.functions:
+            if function.name == "main":
+                has_main = True
+            function.type_check(scope)
+        if not has_main:
+            self.syntax_error("No main function defined")
+class Decl(Node):
+    def __init__(self,location: List[int]):
+        super().__init__(location)
         
-class Statement(Decl):
+class Statement(Node):
     def __init__(self,location: List[int]):
         super().__init__(location)
 
@@ -260,7 +302,30 @@ class StatementBlock(Statement):
 
     def __str__(self):
         return "block(%s)" % (self.statements)
-
+    
+class StatementEval(Statement):
+    def __init__(self,location: List[int], expression: Expression):
+        super().__init__(location)
+        self.expression: Expression = expression
+    
+    def type_check(self, scope: Scope, ongoingloop: bool) -> None:
+        self.expression.type_check(scope)
+        
+    def __str__(self):
+        return "eval(%s)" % (self.expression)
+    
+class StatementReturn(Statement):
+    def __init__(self,location: List[int], expression: Expression):
+        super().__init__(location)
+        self.expression: Expression = expression
+    
+    def type_check(self, scope: Scope, ongoingloop: bool) -> None:
+        if self.expression is not None:
+            self.expression.type_check(scope)
+        
+    def __str__(self):
+        return "return(%s)" % (self.expression)
+      
 class StatementVardecl(Statement):
     def __init__(self,location: List[int], variable: ExpressionVar, type: BX_TYPE, init: Expression):
         super().__init__(location)
@@ -341,7 +406,7 @@ class StatementWhile(Statement):
         super().__init__(location)
         self.condition: Expression = condition
         self.block: StatementBlock = block
-    
+        
     def __str__(self):
         return "while(%s,%s)" % (self.condition,self.block)
     
@@ -368,10 +433,11 @@ class StatementJump(Statement):
 # ------------------------------------------------------------------------------#
 
 class DeclProc(Node):
-    def __init__(self,location: List[int], name : str, arguments, returntype: type, body: StatementBlock, previous_functions = []):
+    def __init__(self,location: List[int], name : str, arguments: List[Param], returntype: type, body: StatementBlock):
         super().__init__(location)
         self.__name: str = name
-        self.__arguments = arguments
+        self.__arguments: List[Param] = arguments
+        # print(f"__name: {name} __arguments: {arguments}")
         self.__returntype: type = returntype
         self.__body: StatementBlock = body
         self.__scope = Scope()
