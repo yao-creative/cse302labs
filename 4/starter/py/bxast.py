@@ -19,7 +19,7 @@ class Operations:
                         "division", "modulus", "bitwise-and", "bitwise-or", 
                         "bitwise-xor", "logical-shift-left", "logical-shift-right")
     # _binops_int_bool: tuple = ("cmpe", "cmpne")
-    #_binops_cmp: tuple = ("cmpl", "cmple", "cmpge", "cmpg") delete line below
+    # _binops_cmp: tuple = ("cmpl", "cmple", "cmpge", "cmpg") delete line below
     _binops_cmp: tuple = ("cmpl", "cmple", "cmpge", "cmpg", "cmpe", "cmpne")
     _binops_bool: tuple = ("logical-and", "logical-or")
     _binops: tuple = _binops_bool + _binops_cmp + _binops_int
@@ -50,11 +50,6 @@ class BX_TYPE:
         """ Class of BOOL type """
         def __str__(self) -> str:
             return "bool"
-
-        # def __getitem__(type) -> str:
-        #     if type == "True":
-        #         return "true"
-        #     else: return "false"
 
 class Scope:
     def __init__(self) -> None:
@@ -96,12 +91,13 @@ class Scope:
         if self.scope_len():
             self.__scope_map[-1][variable] = value
 
-
 class Node:
     def __init__(self, location: List[int]):
         self.location = location
+    
     def __repr__(self):
         return self.__str__()
+    
     def syntax_error(self,error):
         msg = f"\033[0;37m in line {self.location[0]} {error}"
         raise SyntaxError(msg)
@@ -109,28 +105,34 @@ class Node:
 # ------------------------------------------------------------------------------#
 # Expression Classes
 # ------------------------------------------------------------------------------#
+
 class Param(Node):
     def __init__(self, location: List[int], name: str, ty: BX_TYPE):
         super().__init__(location)
         self.name: str = name
         self.type: BX_TYPE = ty     
+    
     def __str__(self):
         return f"Param({self.name}, {self.type})"
+
 class ListParams:
     def __init__(self, params: List[Param], ty: BX_TYPE):
         self.params: List[Param] = params 
         self.type: BX_TYPE = ty     
+    
     def add_param(self, location: List[int], name: str) -> None:
+        """ helper function to append param """
         self.params.append(Param(location, name, self.type))
         
     def add_multi_param(self, l: List[Tuple[List[int], str]]) -> None:
         """ Adds multiple parameter locations and names to the list of parameters """
         for location, name in l:
             self.add_param(location, name)
+    
     def return_params_list(self):
+        """ return list of declared params """
         return self.params
     
-
 class Expression(Node):
     def __init__(self,location: List[int]):
         super().__init__(location)
@@ -154,8 +156,10 @@ class ExpressionProcCall(Expression):
         self.name: str = name
         self.params: List[Expression] = params
         self.type = None
+    
     def __str__(self):
         return "ExpressionProcCall(%s, %s)" % (self.name, self.params)
+    
     def type_check(self, scope: Scope) -> None:
         pass
             
@@ -178,7 +182,7 @@ class ExpressionInt(Expression):
     def __init__(self, location: List[int], value):
         super().__init__(location)
         self.value = value
-        self._max = 1<<63
+        self.__max = 1<<63
         self.type = BX_TYPE.INT
 
     def __str__(self):
@@ -187,7 +191,7 @@ class ExpressionInt(Expression):
     def type_check(self, scope: Scope) -> None:
         if self.value < 0:
             self.syntax_error(" negative number")
-        if self.value >= self._max:
+        if self.value >= self.__max:
             self.syntax_error(" number too large")
 
 class ExpressionOp(Expression):
@@ -200,12 +204,12 @@ class ExpressionOp(Expression):
         self.type: BX_TYPE = None
         self.expected_argument_type: Tuple[BX_TYPE] = None
         self.operations: Operations = Operations
-        self._type_init()
+        self.__type_init()
     
     def __str__(self):
         return "ExpressionOp(%s,%s)" % (self.operator,self.arguments)
 
-    def _type_init(self) -> None:
+    def __type_init(self) -> None:
         """ Initializes the result and argument type based on argument input """
         if self.operator in self.operations._binops_int:
             self.expected_argument_type = (BX_TYPE.INT, BX_TYPE.INT)
@@ -232,7 +236,6 @@ class ExpressionOp(Expression):
         else:       # this should not happen
             self.syntax_error(f"Unkown operator {self.operator}")
 
-
     def type_check(self, scope: Scope) -> None:
         if len(self.arguments) != len(self.expected_argument_type):
             self.syntax_error(f"{self.operator} takes {len(self.expected_argument_type)} \
@@ -245,32 +248,42 @@ class ExpressionOp(Expression):
             expected_type = self.expected_argument_type[index]
             if arg_type != expected_type:
                 self.syntax_error(f"Argument {index+1} for operation {self.operator} should have type {expected_type} but has {arg_type}")
+
 class ListVarDecl:
     def __init__(self, vars: List[ExpressionVar], ty: BX_TYPE):
-        self.vars: List[ExpressionVar] = vars 
+        self.__vars: List[ExpressionVar] = vars 
         self.type: BX_TYPE = ty     
         
-    def add_var(self, location: List[int], name: str, expression: Expression) -> None:
-        self.vars.append(StatementVardecl(location, name, self.type, expression))
+    def __add_var(self, location: List[int], name: str, expression: Expression) -> None:
+        """ helper func to append var """
+        self.__vars.append(StatementVardecl(location, name, self.type, expression))
         
     def add_multi_var(self, l: List[Tuple[List[int], str, Expression]]) -> None:
         """ Adds multiple parameter locations and names to the list of parameters """
         for location, name, expression in l:
-            self.add_var(location, name, expression)
+            self.__add_var(location, name, expression)
+    
     def return_vardecl_list(self):
-        return self.vars                
+        """ Return list of declared variables """
+        return self.__vars
 
-       
-        
+
 # ------------------------------------------------------------------------------#
 # Statement Classes
 # ------------------------------------------------------------------------------#
+
+class Decl(Node):
+    def __init__(self,location: List[int]):
+        super().__init__(location)
+
 class Prog(Node):
     def __init__(self,location: List[int], functions: List[str]):
         super().__init__(location)
         self.functions: List[str] = functions
+    
     def __str__(self):
         return "Prog(%s)" % (self.functions)
+    
     def type_check(self, scope: Scope) -> None:
         has_main = False
         for function in self.functions:
@@ -279,9 +292,6 @@ class Prog(Node):
             function.type_check(scope)
         if not has_main:
             self.syntax_error("No main function defined")
-class Decl(Node):
-    def __init__(self,location: List[int]):
-        super().__init__(location)
         
 class Statement(Node):
     def __init__(self,location: List[int]):

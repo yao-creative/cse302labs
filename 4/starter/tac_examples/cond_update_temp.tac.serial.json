@@ -47,6 +47,49 @@
          "opcode": "ret",
          "args": [],
          "result": null
+      },
+      {
+         "opcode": "label",
+         "args": [
+            "%.L2"
+         ],
+         "result": null
+      },
+      {
+         "opcode": "copy",
+         "args": [
+            "10"
+         ],
+         "result": "%1"
+      },
+      {
+         "opcode": "jz",
+         "args": [
+            "%1",
+            "%.L3"
+         ],
+         "result": null
+      },
+      {
+         "opcode": "jmp",
+         "args": [
+            "%.L30"
+         ],
+         "result": null
+      },
+      {
+         "opcode": "label",
+         "args": [
+            "%.L3"
+         ],
+         "result": null
+      },
+      {
+         "opcode": "jmp",
+         "args": [
+            "%.L20"
+         ],
+         "result": null
       }
    ]
 ]

@@ -11,7 +11,6 @@ Authors: Yi Yao Tan
          Vrushank Agrawal
 """
 
-
 __unop_dict = {
     '!': "not",
     '-': "opposite",
@@ -77,7 +76,6 @@ def p_decl(p):
             | procdecl"""
     # print(f"decl: {p[1]}")
     p[0] = p[1]
-    
           
 def p_procdecl(p):
     """procdecl : DEF IDENT LPAREN paramstar RPAREN type block"""
@@ -111,7 +109,6 @@ def p_param(p):
     print(f"identstar p[2]: {p[2]}")
     lp.add_multi_param(p[1])
     p[0] = lp.return_params_list()
-    
 
 def p_identstar(p):
     """identstar : IDENT
@@ -192,7 +189,6 @@ def p_return(p):
     else:
         p[0] = StatementReturn([p.lineno(0), p.lexpos(0)],p[2])
 
-    
 def p_vardecl(p):
     """vardecl : VAR varinits type SEMICOLON"""
     listvardecl = ListVarDecl([], p[4])
@@ -294,7 +290,6 @@ def p_error(p):
         print(f"error: {p}")
         print(f"Syntax error: at token at line: {p.lineno}")
         # Just discard the token and tell the parser it's okay.
-
     else:
         print(f"Syntax error: at EOF")
     sys.exit(1)
@@ -312,7 +307,3 @@ def run_parser(filename):
 
 if __name__ == "__main__":
     res = run_parser(sys.argv[1])
-    
-
-
-    
