@@ -153,6 +153,7 @@ class CFG:
         self.__labels_to_blocks: Dict[str, Block] = {block.get_block_label(): block for block in self.__blocks}
         self.__predecessors: Dict[str, List[str]] = dict()
         self.__deleted_labels: Set[str] = set()
+        self.__ret_blocks: List[Block] = list()
         self.__update_graph()
 
     # ---------------------------------------------------------------------------#
@@ -373,6 +374,8 @@ class CFG:
         """ Jump threading to convert cond jmps to uncond jmps """     
         for block in self.__blocks:
             self.__check_jcc(block)
+            if block not in self.__ret_blocks:
+                self.__ret_blocks.append(block)
         self.__update_graph()
 
         for block in self.__blocks:
@@ -397,16 +400,23 @@ class CFG:
         curr_block: Block = self.__entry_block 
         scheduled: List[Block] = list()
         # print(self.__labels_to_blocks)
-        # In our code, all blocks end with jmp or ret instrs
-        # hence, we only need to string them together
+        
+        # All blocks end with jmp or ret so we string jmp blocks together
         while True:
             scheduled.append(curr_block)
-            last_instr: str = curr_block.last_instr_opcode()
-            if last_instr == "ret":
+            last_instr_code: str = curr_block.last_instr_opcode()
+            if last_instr_code == "ret":
                 break
-            assert(last_instr == "jmp"), f"Last instr is not jmp: {curr_block.instructions()[-1]}"
+            assert(last_instr_code == "jmp"), f"Last instr is not jmp: {curr_block.instructions()[-1]}"
             next_lab = curr_block.last_instr_label()
             curr_block = self.__labels_to_blocks[next_lab]
+        
+        # and add undetected ret ending blocks
+        if len(self.__ret_blocks) > 1:
+            assert(len(scheduled) < len(self.__blocks)), f"Ensure that no duplicates are added in scheduling"
+            for block in self.__ret_blocks:
+                if block not in scheduled:
+                    scheduled.append(block)
         return scheduled
 
     def serialized_tac(self) -> List[dict]:
