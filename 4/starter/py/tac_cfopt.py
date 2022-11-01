@@ -97,8 +97,8 @@ class CFG_creator:
         # assert all blocks end with jmp
         for block in blocks:
             # print(block.instructions())
-            assert(block.last_instr_opcode() == "jmp" \
-                    or block.last_instr_opcode() == "ret"), f'Block does not end with jmp or ret instr: {instr}'
+            assert(block.last_instr_opcode() in ["jmp", "ret"]), \
+                f'Block does not end with jmp or ret instr: {instr}'
 
         return blocks
 

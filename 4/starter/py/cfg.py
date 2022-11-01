@@ -208,7 +208,6 @@ class CFG:
 
     def __coalesce_blocks(self, block1: Block, block2: Block) -> Block:
         """ Coalesce and return the first block """
-        assert(block1.last_instr_opcode() == "jmp"), f"Last instr in block is not jmp: {block1.instructions()}"
         block1.remove_last_jmp()
         block1.add_instrs(block2.instructions()[1:])
         return block1
@@ -217,6 +216,7 @@ class CFG:
         """ Checks if given blocks are coalescable """
         if block1.has_one_succ() and block2.has_one_pred():
             assert(block1.last_instr_opcode() == "jmp"), f"Last instr in block is not jmp: {block2.instructions()}"
+            assert(block2.last_instr_opcode() in ["jmp", "ret"]), f"Last instr in block is not jmp: {block2.instructions()}"
             if block1.successors()[0] == block2.get_block_label():
                 if block2.predecessors()[0] == block1.get_block_label():
                     return True
@@ -224,14 +224,14 @@ class CFG:
 
     def __thread(self, block1: Block, block2: Block) -> None:
         """ Threads two blocks """
-        # block2 can only have 2 instr including label
-        if len(block2.instructions()) == 2:
+        # block2 can only have 2 instr including label and jmp
+        if len(block2.instructions()) == 2 and block2.last_instr_opcode() == "jmp":
             # block2 can only have one pred
             if len(self.__prev(block2.get_block_label())) == 1:
+                assert(block1.last_instr_opcode() == "jmp"), f"Last instr in block is not jmp: {block2.instructions()}"
                 # the two blocks should be connected to each other
                 if block1.last_instr_label() == block2.get_block_label():
-                    assert(block1.last_instr_opcode() == "jmp"), f"Last instr in block is not jmp: {block2.instructions()}"
-                    assert(block2.last_instr_opcode() == "jmp"), f"Last instr in block is not jmp: {block2.instructions()}"
+                    # print(block1.get_block_label(), block2.get_block_label())
                     block1.remove_last_jmp()
                     block1.add_jmp(block2.last_instr_label())
 
@@ -276,14 +276,14 @@ class CFG:
                 # if the temp has been modified befor jcc instr then break
                 if dest_block.is_temp_modified(prev_index, dest_index, temp):
                     break
-                
+
                 # if jcc instr is a direct implication then it will be True
                 if dest_instr["opcode"] in self.__jcc_direct_implication[jcc]:
                     dest_lab = dest_instr["args"][-1]
                     # delete all instr after curr jcc
-                    block.del_after_cond_jmp(dest_index)
+                    dest_block.del_after_cond_jmp(dest_index)
                     # add uncond jmp instr to label of deleted jcc instr
-                    block.add_jmp(dest_lab)
+                    dest_block.add_jmp(dest_lab)
                     break
                 
                 # if jcc instr is a direct neg implication then it will be False
@@ -343,12 +343,12 @@ class CFG:
             if self.__coalescable(prev_block, block):
                 self.__blocks[index-1] = self.__coalesce_blocks(prev_block, block)
             index -= 1
-            
         self.__update_graph()
+
         for block in self.__blocks:
             print(block.instructions())
         print("Coalesce done", '\n')
-        # remove dead blocks now
+
         self.__uce()
 
     def __jmp_thread(self) -> None:
@@ -360,12 +360,12 @@ class CFG:
             prev_block = self.__blocks[index-1]
             self.__thread(prev_block, block)
             index -= 1
-            
         self.__update_graph()
-        # coalesce blocks now
+
         for block in self.__blocks:
             print(block.instructions())
         print("jmp thread done", '\n')
+        
         self.__uce()
         self.__coalesce()
 
@@ -373,8 +373,8 @@ class CFG:
         """ Jump threading to convert cond jmps to uncond jmps """     
         for block in self.__blocks:
             self.__check_jcc(block)
-        
         self.__update_graph()
+
         for block in self.__blocks:
             print(block.instructions())
         print("jmp cond done", '\n')
@@ -385,10 +385,12 @@ class CFG:
     def optimization(self) -> None:
         """ Carry out CFG optimizations """
         self.__jmp_cond_mod()
-        exit(0)
+        # exit(0)
 
     # ---------------------------------------------------------------------------#
     # Serialization
+
+    # TODO add ret instr support
 
     def __serialize(self) -> List[Block]:
         """ Serialisation from CFG to TAC """
