@@ -61,6 +61,10 @@ class CFG_creator:
         blocks: List[Block] = []
 
         for index, instr in enumerate(self.__updated_tac_instr):
+            
+            print(index)
+            print(instr)
+            
             # append the first label instr and assert it is a label
             if not len(current_block_instr):
                 assert(instr["opcode"] == "label"), f'First instruction not a label {instr}'
@@ -68,18 +72,16 @@ class CFG_creator:
             # Create a block until a ret instr and assert last instr is ret
             if instr["opcode"] == "ret":
                 current_block_instr.append(instr)
-                # print(index)
-                # print(current_block_instr)
                 blocks.append(Block(current_block_instr))
+                # print(current_block_instr)
                 current_block_instr = []
                 continue
 
             # end a block if next instr is label
             if self.__updated_tac_instr[index+1]["opcode"] == "label":
                 current_block_instr.append(instr)
-                # print(index)
-                # print(current_block_instr)
                 blocks.append(Block(current_block_instr))
+                # print(current_block_instr)
                 current_block_instr = []
                 continue
 

@@ -395,26 +395,29 @@ class CFG:
 
     def __serialize(self) -> List[Block]:
         """ Serialisation from CFG to TAC """
-        curr_block: Block = self.__entry_block 
+        curr_block: Block = self.__entry_block
         scheduled: List[Block] = list()
+        remaining_blocks: List[Block] = self.__blocks.copy()
         # print(self.__labels_to_blocks)
         
         # All blocks end with jmp or ret so we string jmp blocks together
-        while True:
+        while len(scheduled) < self.__num_blocks:
             scheduled.append(curr_block)
-            last_instr_code: str = curr_block.last_instr_opcode()
+            remaining_blocks.remove(curr_block)
+            last_instr_code = curr_block.last_instr_opcode()
+            # once we hit a ret block we must add first unscheduled block
             if last_instr_code == "ret":
-                break
-            assert(last_instr_code == "jmp"), f"Last instr is not jmp: {curr_block.instructions()[-1]}"
+                if len(remaining_blocks) > 0:
+                    curr_block = remaining_blocks[0]
+                continue
+            assert(last_instr_code == "jmp"), f"Last instr should be jmp: {curr_block.instructions()[-1]}"
             next_lab = curr_block.last_instr_label()
             curr_block = self.__labels_to_blocks[next_lab]
+            # if curr block is a loop then we get out of it if blocks remain
+            if curr_block in scheduled:
+                if len(remaining_blocks) > 0:
+                    curr_block = remaining_blocks[0]
         
-        # and add undetected ret ending blocks
-        if len(self.__ret_blocks) > 1:
-            assert(len(scheduled) < len(self.__blocks)), f"Ensure that no duplicates are added in scheduling"
-            for block in self.__ret_blocks:
-                if block not in scheduled:
-                    scheduled.append(block)
         return scheduled
 
     def serialized_tac(self) -> List[dict]:
