@@ -52,24 +52,24 @@ class Code_State:
         self.__temp_counter: int = 0
         self.__temps_by_scope: List = []
         self.__labels: list = []
-        # self.__label_counter: int = 0
+        self.__label_counter: int = 0
         self.__break_stack = []
         self.__continue_stack = []
 
-    def __getitem__(self, jump: str) -> str:
-        """ Returns label for jump statement """
-        if jump == 'break':
-            return self.__break_stack[-1]
-        else:
-            return self.__continue_stack[-1]
+    # ------------------------------------------------------------------------------#
+    # variable and lable handlers
 
-    def __check_scope(self, variable: ExpressionVar) -> None:
-        if len(self.__temps_by_scope) == 0:
-            raise RuntimeError(f'Variable {variable} is defined out of scope')
+    def add_variable(self, variable: ExpressionVar) -> str:
+        """ Adds a variable in code and creates a temp for it """
+        self.__check_scope(variable.name)
+        temp = self.generate_new_temp()
+        self.__temps_by_scope[-1][variable.name] = temp
+        return temp
+
+    # TODO add glob var or func arg call chceking
 
     def fetch_temp(self, variable: str) -> str:
         """ Returns a temp if it exists otherwise creates and returns one """
-        # self.__check_scope(variable)
         # We traverse the scopes from the last to check if variable is defined bottom up
         for scope in self.__temps_by_scope[::-1]:
             # print(f"Scope is {scope}")
@@ -81,13 +81,6 @@ class Code_State:
             temp = self.generate_new_temp()
             self.__temps_by_scope[-1][variable] = temp
             return temp
-    
-    def add_variable(self, variable: ExpressionVar) -> str:
-        """ adds a temporary for the vardecl in code """
-        self.__check_scope(variable.name)
-        temp = self.generate_new_temp()
-        self.__temps_by_scope[-1][variable.name] = temp
-        return temp
 
     def generate_new_temp(self) -> str:
         """ Creates and returns a new temp """
@@ -98,28 +91,55 @@ class Code_State:
 
     def generate_label(self) -> str:
         """ generates a new label """
-        label = f'%.L{self.__temp_counter}'
-        self.__temp_counter += 1
+        label = f'%.L{self.__label_counter}'
+        self.__label_counter += 1
         self.__labels.append(label)
         return label
+
+    def enter_new_proc(self) -> None:
+        """ Resets label and temp handlers when a new proc is entered """
+        self.__temp_counter = 0
+        self.__label_counter = 0
+        self.__temps = []
+        self.__labels = []
+
+    # ------------------------------------------------------------------------------#
+    # scope handlers
 
     def enter_scope(self) -> None:
         """ adds a new scope dict to the stack """
         self.__temps_by_scope.append({})
 
+    def __check_scope(self, variable: ExpressionVar) -> None:
+        if len(self.__temps_by_scope) == 0:
+            raise RuntimeError(f'Variable {variable} is defined out of scope')
+
     def exit_scope(self) -> None:
         """ pops the last scope dict from the stack """
         self.__temps_by_scope.pop()
+
+    # ------------------------------------------------------------------------------#
+    # loop handlers
 
     def enter_loop(self, Lstart: str, Lend: str) -> None:
         """ adds respective lables to break and continue stack """
         self.__break_stack.append(Lend)
         self.__continue_stack.append(Lstart)
 
+    def __getitem__(self, jump: str) -> str:
+        """ Returns label for jump statement """
+        if jump == 'break':
+            return self.__break_stack[-1]
+        else:
+            return self.__continue_stack[-1]
+
     def exit_loop(self) -> None:
         """ pops labels from break and continue stack """
         self.__break_stack.pop()
         self.__continue_stack.pop()
+
+    # ------------------------------------------------------------------------------#
+    # getter functions
 
     def get_labels(self) -> list:
         return self.__labels
@@ -137,20 +157,56 @@ class AST_to_TAC_Generator:
     def __init__(self, tree: Prog):
         self.__code_state: Code_State = Code_State()
         self.__code: Prog = tree
-        self.__instructions: List[Dict[TAC_line]] = []
+        self.__global_vars: List[dict] = list()
+        self.__global_procs: List[dict] = list()
+        self.__proc_instructions: List[Dict[TAC_line]] = []
         self.__macros: Code_Macro = Code_Macro
-        self.__tmm_statement_parse(self.__code.get_body())
+        self.__tmm_global_parse()
 
     def __emit(self, instr: TAC_line) -> None:
-        self.__instructions.append(instr)
+        self.__proc_instructions.append(instr)
 
     def tac_generator(self) -> List[dict]:
         """ Generates the tac file """
-        return [{"proc": '@'+self.__code.get_name(),
-                "body": self.__instructions,
-                "temps": self.__code_state.get_temps(),
-                "labels": self.__code_state.get_labels()}]
+        return self.__global_vars + self.__global_procs
 
+    # ------------------------------------------------------------------------------#
+    # Global Muncher
+
+    def __tmm_global_parse(self) -> None:
+        """ parses the global definition and builds its tac """
+        self.__code_state.enter_scope()
+        
+        for glob_func in self.__code.functions:
+            
+            if isinstance(glob_func, ListVarDecl):
+                
+                # TODO add expression to global var
+                
+                for var in glob_func.return_vardecl_list():
+                    self.__code_state.add_variable("@"+var.name)
+                    self.__global_vars.append({"var": "@"+var.name,
+                                               "init": var.name})
+
+            elif isinstance(glob_func, DeclProc):
+                self.__code_state.enter_scope()
+                self.__code_state.enter_new_proc()
+                self.__proc_instructions = []
+
+                args = []
+                for var in glob_func.get_args():
+                    args.append("%"+var.name)
+                    self.__code_state.add_variable("%"+var.name)
+
+                self.__tmm_statement_parse(glob_func.get_body())
+                self.__global_procs.append({"proc":"@"+glob_func.get_name(),
+                                            "args": args,
+                                            "body": self.__proc_instructions,
+                                            "temps": self.__code_state.get_temps(),
+                                            "labels": self.__code_state.get_labels()})
+                self.__code_state.exit_scope()
+
+        self.__code_state.exit_scope()
 
     # ------------------------------------------------------------------------------#
     # Statement Muncher
@@ -226,7 +282,7 @@ class AST_to_TAC_Generator:
                 self.__emit(TAC_line(opcode="ret", args=[], result=None).format())
 
             elif isinstance(statement.expression, ExpressionVar):
-                temp = self.__code_state.fetch_temp(statement.expression.name)
+                temp = self.__code_state.add_variable(statement.expression.name)
                 self.__emit(TAC_line(opcode="ret", args=[temp], result=None).format())
 
             # TODO assumption that ret statement has int expr

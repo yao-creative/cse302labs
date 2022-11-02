@@ -446,6 +446,9 @@ class DeclProc(Node):
     def get_name(self) -> str:
         return self.__name
 
+    def get_args(self) -> List[Param]:
+        return self.__arguments
+
     def get_body(self) -> StatementBlock:
         return self.__body
 
