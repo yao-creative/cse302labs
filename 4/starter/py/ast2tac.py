@@ -43,7 +43,6 @@ class TAC_line:
                 "args": self.__args, 
                 "result": self.__result }
 
-
 class Code_State:
     """ The class keeps track of helper information 
         needed to track TAC stmt generation """
@@ -135,9 +134,9 @@ class Code_State:
 
 class AST_to_TAC_Generator:
     """ Takes the AST tree and converts it to TAC """
-    def __init__(self, tree: DeclProc):
+    def __init__(self, tree: Prog):
         self.__code_state: Code_State = Code_State()
-        self.__code: DeclProc = tree
+        self.__code: Prog = tree
         self.__instructions: List[Dict[TAC_line]] = []
         self.__macros: Code_Macro = Code_Macro
         self.__tmm_statement_parse(self.__code.get_body())
@@ -152,8 +151,13 @@ class AST_to_TAC_Generator:
                 "temps": self.__code_state.get_temps(),
                 "labels": self.__code_state.get_labels()}]
 
+
+    # ------------------------------------------------------------------------------#
+    # Statement Muncher
+
     def __tmm_statement_parse(self, statement) -> None:
         """ parses the statement and builds its tac """
+        
         if isinstance(statement, StatementBlock):
             self.__code_state.enter_scope()
             for stmt in statement.statements:
@@ -211,13 +215,32 @@ class AST_to_TAC_Generator:
             temp = self.__code_state.fetch_temp(statement.lvalue.name)
             self.__tmm_int_expression_parse(statement.rvalue, temp)
 
-        elif isinstance(statement, StatementPrint):
-            temp = self.__code_state.generate_new_temp()
-            self.__tmm_int_expression_parse(statement.argument, temp)
-            self.__emit(TAC_line(opcode="print", args=[temp], result=None).format())
+        # elif isinstance(statement, StatementPrint):
+        #     temp = self.__code_state.generate_new_temp()
+        #     self.__tmm_int_expression_parse(statement.argument, temp)
+        #     self.__emit(TAC_line(opcode="print", args=[temp], result=None).format())
+
+        elif isinstance(statement, StatementReturn):
+
+            if statement.expression is None or isinstance(statement.expression, ExpressionProcCall):
+                self.__emit(TAC_line(opcode="ret", args=[], result=None).format())
+
+            elif isinstance(statement.expression, ExpressionVar):
+                temp = self.__code_state.fetch_temp(statement.expression.name)
+                self.__emit(TAC_line(opcode="ret", args=[temp], result=None).format())
+
+            # TODO assumption that ret statement has int expr
+
+            else:
+                temp = self.__code_state.generate_new_temp()
+                self.__tmm_int_expression_parse(statement.expression, temp)
+                self.__emit(TAC_line(opcode="ret", args=[temp], result=None).format())
 
         else:       # should never reach here
             raise RuntimeError(f'Got unexpected statement {statement}')
+
+    # ------------------------------------------------------------------------------#
+    # Expression Muncher
 
     def __tmm_int_expression_parse(self, expression: Expression, temporary: str) -> None:
         """ parses the expression and builds its tac """
@@ -296,7 +319,6 @@ class AST_to_TAC_Generator:
             
         else:       # should never reach here
             raise RuntimeError(f'Got unexpected expression {expression}')
-            
 
 
 # ------------------------------------------------------------------------------#

@@ -304,9 +304,9 @@ class StatementEval(Statement):
         return "eval(%s)" % (self.expression)
     
 class StatementReturn(Statement):
-    def __init__(self,location: List[int], expression: Expression):
+    def __init__(self,location: List[int], expression: Union[ExpressionVar, ExpressionProcCall]):
         super().__init__(location)
-        self.expression: Expression = expression
+        self.expression: Union[ExpressionVar, ExpressionProcCall] = expression
     
     def type_check(self, scope: Scope, ongoingloop: bool) -> None:
         if self.expression is not None:
