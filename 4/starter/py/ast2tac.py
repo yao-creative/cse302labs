@@ -30,19 +30,6 @@ class Code_Macro:
         "cmple": "jle", "cmpge": "jnl",
     }
 
-class TAC_line:
-    """ This class generates single tac line for each instruction """
-    def __init__(self, opcode: str, args: List, result: str):
-        self.__opcode: str = opcode
-        self.__args: List = args
-        self.__result: str = result
-    
-    def format(self) -> Dict[str, Union[str, List[str]]]:
-        """ Returns tac instruction as a json object """
-        return {"opcode": self.__opcode, 
-                "args": self.__args, 
-                "result": self.__result }
-
 class Code_State:
     """ The class keeps track of helper information 
         needed to track TAC stmt generation """
@@ -62,7 +49,7 @@ class Code_State:
     def add_variable(self, variable: ExpressionVar) -> str:
         """ Adds a variable in code and creates a temp for it """
         self.__check_scope(variable.name)
-        temp = self.generate_new_temp()
+        temp = self.fresh_temp()
         self.__temps_by_scope[-1][variable.name] = temp
         return temp
 
@@ -78,18 +65,18 @@ class Code_State:
                 return scope[variable]
         # otherwise we create a new temp and add it in the innermost scope
         else:
-            temp = self.generate_new_temp()
+            temp = self.fresh_temp()
             self.__temps_by_scope[-1][variable] = temp
             return temp
 
-    def generate_new_temp(self) -> str:
+    def fresh_temp(self) -> str:
         """ Creates and returns a new temp """
         temp = f'%{self.__temp_counter}'
         self.__temp_counter += 1
         self.__temps.append(temp)
         return temp
 
-    def generate_label(self) -> str:
+    def fresh_label(self) -> str:
         """ generates a new label """
         label = f'%.L{self.__label_counter}'
         self.__label_counter += 1
@@ -159,16 +146,29 @@ class AST_to_TAC_Generator:
         self.__code: Prog = tree
         self.__global_vars: List[dict] = list()
         self.__global_procs: List[dict] = list()
-        self.__proc_instructions: List[Dict[TAC_line]] = []
+        self.__proc_instructions: List[dict] = []
         self.__macros: Code_Macro = Code_Macro
         self.__tmm_global_parse()
-
-    def __emit(self, instr: TAC_line) -> None:
-        self.__proc_instructions.append(instr)
 
     def tac_generator(self) -> List[dict]:
         """ Generates the tac file """
         return self.__global_vars + self.__global_procs
+
+    def __emit(self, opcode: str, args: List, result: str) -> None:
+        self.__proc_instructions.append({"opcode": opcode, 
+                                         "args": args, 
+                                         "result": result })
+
+    def __bool_assign(self, fresh_temp:str, expression: ExpressionBool, temporary: str) -> None:
+        """ Adds TAC instrs to convert bool stmt result into int """
+        LTrue = self.__code_state.fresh_label()
+        LFalse = self.__code_state.fresh_label()
+        self.__emit("const", [0], fresh_temp)
+        self.__tmm_bool_expression_parse(expression, LTrue, LFalse)
+        self.__emit("label", [LTrue], None)
+        self.__emit("copy", [1], fresh_temp)
+        self.__emit("label", [LFalse], None)
+        self.__emit("copy", fresh_temp, temporary)
 
     # ------------------------------------------------------------------------------#
     # Global Muncher
@@ -178,7 +178,6 @@ class AST_to_TAC_Generator:
         self.__code_state.enter_scope()
         
         for glob_func in self.__code.functions:
-            
             if isinstance(glob_func, ListVarDecl):
                 
                 # TODO add expression to global var
@@ -221,76 +220,70 @@ class AST_to_TAC_Generator:
             self.__code_state.exit_scope() 
 
         elif isinstance(statement, StatementWhile):
-            Lhead = self.__code_state.generate_label()
-            Lbody = self.__code_state.generate_label()
-            Lend = self.__code_state.generate_label()
+            Lhead = self.__code_state.fresh_label()
+            Lbody = self.__code_state.fresh_label()
+            Lend = self.__code_state.fresh_label()
             # treat the while loop condition
             self.__code_state.enter_loop(Lhead, Lend)
             # print(f'while head label is {Lhead}')
-            self.__emit(TAC_line(opcode="label", args=[Lhead], result=None).format())
+            self.__emit(opcode="label", args=[Lhead], result=None)
             self.__tmm_bool_expression_parse(statement.condition, Lbody, Lend)
             # treat the body of while loop
             # print(f'while body label is {Lbody}')
-            self.__emit(TAC_line(opcode="label", args=[Lbody], result=None).format())
+            self.__emit(opcode="label", args=[Lbody], result=None)
             self.__tmm_statement_parse(statement.block)
-            self.__emit(TAC_line(opcode="jmp", args=[Lhead], result=None).format())
+            self.__emit(opcode="jmp", args=[Lhead], result=None)
             # treat while loop ending
             # print(f'while end label is {Lend}')
-            self.__emit(TAC_line(opcode="label", args=[Lend], result=None).format())
+            self.__emit(opcode="label", args=[Lend], result=None)
             self.__code_state.exit_loop()
 
         elif isinstance(statement, StatementIfElse):
-            Ltrue = self.__code_state.generate_label()
-            Lfalse = self.__code_state.generate_label()
-            Lover = self.__code_state.generate_label()
+            Ltrue = self.__code_state.fresh_label()
+            Lfalse = self.__code_state.fresh_label()
+            Lover = self.__code_state.fresh_label()
             # treat condition of if stmt
             self.__tmm_bool_expression_parse(statement.condition, Ltrue, Lfalse)
             # print(f'if true label is {Ltrue}')
-            self.__emit(TAC_line(opcode="label", args=[Ltrue], result=None).format())
+            self.__emit(opcode="label", args=[Ltrue], result=None)
             # treat block of if stmt
             self.__tmm_statement_parse(statement.block)
             # print(f'if over label is {Lover}')
-            self.__emit(TAC_line(opcode="jmp", args=[Lover], result=None).format())
+            self.__emit(opcode="jmp", args=[Lover], result=None)
             # print(f'if false label is {Lfalse}')
-            self.__emit(TAC_line(opcode="label", args=[Lfalse], result=None).format())
+            self.__emit(opcode="label", args=[Lfalse], result=None)
             # treat else part if exists
             if statement.if_rest is not None: self.__tmm_statement_parse(statement.if_rest)
-            self.__emit(TAC_line(opcode="label", args=[Lover], result=None).format())
+            self.__emit(opcode="label", args=[Lover], result=None)
 
         elif isinstance(statement, StatementJump):
             # print(f"Jump stmt is {statement.keyword}")
             Ldestination = self.__code_state[statement.keyword]     # get the relevant label for jmp
             # print(f"Jump stmt destination is {Ldestination}")
-            self.__emit(TAC_line(opcode="jmp", args=[Ldestination], result=None).format())
+            self.__emit(opcode="jmp", args=[Ldestination], result=None)
 
         elif isinstance(statement, StatementVardecl):
             temp = self.__code_state.add_variable(statement.variable)
-            self.__tmm_int_expression_parse(statement.init, temp)
+            self.__tmm_expression_parse(statement.init, temp)
 
         elif isinstance(statement, StatementAssign):
-            temp = self.__code_state.fetch_temp(statement.lvalue.name)
-            self.__tmm_int_expression_parse(statement.rvalue, temp)
-
-        # elif isinstance(statement, StatementPrint):
-        #     temp = self.__code_state.generate_new_temp()
-        #     self.__tmm_int_expression_parse(statement.argument, temp)
-        #     self.__emit(TAC_line(opcode="print", args=[temp], result=None).format())
+            temporary = self.__code_state.fetch_temp(statement.lvalue.name)
+            if statement.rvalue.type == BX_TYPE.INT:
+                self.__tmm_expression_parse(statement.rvalue, temporary)
+            elif statement.rvalue.type == BX_TYPE.BOOL:
+                temp = self.__code_state.fresh_temp()
+                self.__bool_assign(temp, statement.rvalue, temporary)
 
         elif isinstance(statement, StatementReturn):
-
             if statement.expression is None or isinstance(statement.expression, ExpressionProcCall):
-                self.__emit(TAC_line(opcode="ret", args=[], result=None).format())
-
+                self.__emit(opcode="ret", args=[], result=None)
             elif isinstance(statement.expression, ExpressionVar):
                 temp = self.__code_state.add_variable(statement.expression.name)
-                self.__emit(TAC_line(opcode="ret", args=[temp], result=None).format())
-
-            # TODO assumption that ret statement has int expr
-
+                self.__emit(opcode="ret", args=[temp], result=None)
             else:
-                temp = self.__code_state.generate_new_temp()
-                self.__tmm_int_expression_parse(statement.expression, temp)
-                self.__emit(TAC_line(opcode="ret", args=[temp], result=None).format())
+                temp = self.__code_state.fresh_temp()
+                self.__tmm_expression_parse(statement.expression, temp)
+                self.__emit(opcode="ret", args=[temp], result=None)
 
         else:       # should never reach here
             raise RuntimeError(f'Got unexpected statement {statement}')
@@ -298,60 +291,75 @@ class AST_to_TAC_Generator:
     # ------------------------------------------------------------------------------#
     # Expression Muncher
 
-    def __tmm_int_expression_parse(self, expression: Expression, temporary: str) -> None:
+    def __tmm_expression_parse(self, expression: Expression, temporary: str) -> None:
         """ parses the expression and builds its tac """
         
-        if expression.type != BX_TYPE.INT:
-            raise RuntimeError(f'Expression must have type INT but has type {expression.type}')
+        # if expression.type != BX_TYPE.INT:
+        #     raise RuntimeError(f'Expression must have type INT but has type {expression.type}')
         
         if isinstance(expression, ExpressionInt):
-            self.__emit(TAC_line("const", [expression.value], temporary).format())
+            self.__emit("const", [expression.value], temporary)
 
         elif isinstance(expression, ExpressionVar):
             temp = self.__code_state.fetch_temp(expression.name)
             if temp != temporary:
-                self.__emit(TAC_line("copy", [temp], temporary).format())
+                self.__emit("copy", [temp], temporary)
 
         elif isinstance(expression, ExpressionOp) and len(expression.arguments) == 1:
             opcode = self.__macros.operator_map[expression.operator]
-            subexpr_target = self.__code_state.generate_new_temp()
-            self.__tmm_int_expression_parse(expression.arguments[0], subexpr_target)
-            self.__emit(TAC_line(opcode, [subexpr_target], temporary).format()) 
+            subexpr_target = self.__code_state.fresh_temp()
+            self.__tmm_expression_parse(expression.arguments[0], subexpr_target)
+            self.__emit(opcode, [subexpr_target], temporary)
             
         elif isinstance(expression, ExpressionOp) and len(expression.arguments) == 2:
             opcode = self.__macros.operator_map[expression.operator]
             subexpr_targets = []
             for subexpr in expression.arguments: 
-                target = self.__code_state.generate_new_temp()
+                target = self.__code_state.fresh_temp()
                 subexpr_targets.append(target)
-                self.__tmm_int_expression_parse(subexpr, target)
-            self.__emit(TAC_line(opcode, subexpr_targets, temporary).format())
-        
+                self.__tmm_expression_parse(subexpr, target)
+            self.__emit(opcode, subexpr_targets, temporary)
+
+        elif isinstance(expression, ExpressionProcCall):
+            for index, param in enumerate(expression.params):
+                if isinstance(param, ExpressionVar):
+                    temp = self.__code_state.fetch_temp(param.name)
+                else:
+                    temp = self.__code_state.fresh_temp()
+                    # if param is bool then we need to convert its result into int
+                    if param.type == BX_TYPE.BOOL:
+                        self.__bool_assign(temp, param, temporary)
+                    else:
+                        self.__tmm_expression_parse(param, temporary)
+                self.__emit(opcode="param", args=[index+1, temp], result=None)
+            res = None if expression.type is "void" else temporary
+            self.__emit(opcode="call", args=["@"+expression.name, len(expression.params)], result=res)
+
         else:       # should never reach here
             raise RuntimeError(f'Got unexpected expression {expression}')
 
     def __tmm_bool_expression_parse(self, expression: Expression, Ltrue: str, Lfalse: str) -> None:
-        """ parses the expression and builds its tac """
+        """ parses the bool expression and builds its tac """
         if expression.type != BX_TYPE.BOOL:
             raise RuntimeError(f'Expression must have type BOOL but has type {expression.type}')
         
         if isinstance(expression, ExpressionBool):
             if expression.value: 
-                self.__emit(TAC_line("jmp", [Ltrue], None).format())
+                self.__emit("jmp", [Ltrue], None)
             else: 
-                self.__emit(TAC_line("jmp", [Lfalse], None).format())
+                self.__emit("jmp", [Lfalse], None)
 
         elif isinstance(expression, ExpressionOp):
             if expression.operator == "logical-and":
-                Lmid = self.__code_state.generate_label()
+                Lmid = self.__code_state.fresh_label()
                 self.__tmm_bool_expression_parse(expression.arguments[0], Lmid, Lfalse)
-                self.__emit(TAC_line("label", [Lmid], None).format())
+                self.__emit("label", [Lmid], None)
                 self.__tmm_bool_expression_parse(expression.arguments[1], Ltrue, Lfalse)
                 
             elif expression.operator == "logical-or":
-                Lmid = self.__code_state.generate_label()
+                Lmid = self.__code_state.fresh_label()
                 self.__tmm_bool_expression_parse(expression.arguments[0], Ltrue, Lmid)
-                self.__emit(TAC_line("label", [Lmid], None).format())
+                self.__emit("label", [Lmid], None)
                 self.__tmm_bool_expression_parse(expression.arguments[1], Ltrue, Lfalse)
                 
             elif expression.operator == "not":
@@ -360,15 +368,15 @@ class AST_to_TAC_Generator:
             elif expression.operator in self.__macros.jump_map:
                 subexpr_targets = [] 
                 for subexpr in expression.arguments: 
-                    target = self.__code_state.generate_new_temp()
+                    target = self.__code_state.fresh_temp()
                     subexpr_targets.append(target)
-                    self.__tmm_int_expression_parse(subexpr, target)
-                temp_result = self.__code_state.generate_new_temp()
-                self.__emit(TAC_line("sub", subexpr_targets, temp_result).format())
+                    self.__tmm_expression_parse(subexpr, target)
+                temp_result = self.__code_state.fresh_temp()
                 #e1 - e2 since assembly second argument is subtracted from first
-                self.__emit(TAC_line(self.__macros.jump_map[expression.operator], 
-                                    [temp_result, Ltrue], None).format())
-                self.__emit(TAC_line("jmp", [Lfalse], None).format())
+                self.__emit("sub", subexpr_targets, temp_result)
+                self.__emit(self.__macros.jump_map[expression.operator], 
+                            [temp_result, Ltrue], None)
+                self.__emit("jmp", [Lfalse], None)
         
             else:
                 raise RuntimeError(f'Got unexpected boolean operator {expression.operator}')
@@ -385,7 +393,7 @@ import argparse
 import my_parser as lexer_parser
 
 def source_to_tac(filename: str) -> json:
-    ast_: DeclProc = lexer_parser.run_parser(filename)          # run lexer and parser
+    ast_: Prog = lexer_parser.run_parser(filename)          # run lexer and parser
     if ast_ is None: 
         raise SyntaxError("Could not compile ast")          # exit if error occured while parsing 
     
