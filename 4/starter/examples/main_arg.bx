@@ -1,0 +1,4 @@
+def fizzbuzz( hello : bool ) : int {
+}
+def main() {
+}

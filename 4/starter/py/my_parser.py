@@ -86,9 +86,9 @@ def p_type(p):
             | COLON BOOL
             | COLON INT"""
     if len(p) == 1:
-        p[0] = "void"
+        p[0] = BX_TYPE.VOID
     else:
-        p[0] = p[2]
+        p[0] = BX_TYPE.INT if p[2] == "int" else BX_TYPE.BOOL
         
 def p_paramstar(p):
     """paramstar : 

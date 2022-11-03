@@ -40,6 +40,8 @@ class BX_TYPE:
             return BX_TYPE.INT
         elif __name == "bool":
             return BX_TYPE.BOOL
+        elif __name == "void":
+            return BX_TYPE.VOID
 
     class INT: 
         """ Class of INT type """
@@ -50,6 +52,11 @@ class BX_TYPE:
         """ Class of BOOL type """
         def __str__(self) -> str:
             return "bool"
+    
+    class VOID:
+        """ Class of VOID type """
+        def __str__(self) -> str:
+            return "void"
 
 class Scope:
     def __init__(self) -> None:
@@ -85,8 +92,20 @@ class Scope:
         if variable in self.__scope_map[-1]:
             return True
         return False
+    
+    def get_global(self, name) -> Tuple[List[BX_TYPE], BX_TYPE] :
+        """ Returns the type of a procedure or global variable from the global scope """
 
-    def add(self, variable: str, value: BX_TYPE = BX_TYPE.INT) -> None:
+        return self.__scope_map[0][name]
+        
+    
+
+    def add_proc(self, proc_name: str, in_type: List[BX_TYPE], out_type: BX_TYPE) -> None:
+        """ Adds a procedure in the current global scope """
+        if self.scope_len():
+            self.__scope_map[0][proc_name] = (in_type, out_type)
+            
+    def add_variable(self, variable: str, value: BX_TYPE = BX_TYPE.INT) -> None:
         """ Adds a variable in the current scope """
         if self.scope_len():
             self.__scope_map[-1][variable] = value
@@ -103,26 +122,36 @@ class Node:
         raise SyntaxError(msg)
 
 # ------------------------------------------------------------------------------#
-# Expression Classes
+# Parameter Class
 # ------------------------------------------------------------------------------#
 
 class Param(Node):
     def __init__(self, location: List[int], name: str, ty: BX_TYPE):
         super().__init__(location)
-        self.name: str = name
-        self.type: BX_TYPE = ty     
+        self.__name: str = name
+        self.__type: BX_TYPE = ty     
     
     def __str__(self):
-        return f"Param({self.name}, {self.type})"
-
+        return f"Param({self.__name}, {self.__type})"
+    
+    def get_type(self):
+        """ return type of param """
+        return self.__type
+    
+    def get_name(self):
+        """ return name of param """
+        return self.__name
+# ------------------------------------------------------------------------------#
+# Utility Class for Parser
+# ------------------------------------------------------------------------------#
 class ListParams:
     def __init__(self, params: List[Param], ty: BX_TYPE):
         self.params: List[Param] = params 
-        self.type: BX_TYPE = ty     
+        self.__type: BX_TYPE = ty     
     
     def add_param(self, location: List[int], name: str) -> None:
         """ helper function to append param """
-        self.params.append(Param(location, name, self.type))
+        self.params.append(Param(location, name, self.__type))
         
     def add_multi_param(self, l: List[Tuple[List[int], str]]) -> None:
         """ Adds multiple parameter locations and names to the list of parameters """
@@ -132,7 +161,10 @@ class ListParams:
     def return_params_list(self):
         """ return list of declared params """
         return self.params
-    
+
+# ------------------------------------------------------------------------------#
+# Expression Classes
+# ------------------------------------------------------------------------------#
 class Expression(Node):
     def __init__(self,location: List[int]):
         super().__init__(location)
@@ -141,8 +173,11 @@ class ExpressionBool(Expression):
     def __init__(self,location: List[int], value: bool):
         super().__init__(location)
         self.value: bool = value
-        self.type = BX_TYPE.BOOL
-
+        self.__type = BX_TYPE.BOOL
+        
+    def get_type(self):
+        return self.__type
+    
     def __str__(self):
         return "ExpressionBool(%s)" % (self.value)
     
@@ -150,25 +185,51 @@ class ExpressionBool(Expression):
         if self.value not in (True, False):
             self.syntax_error(f"{self.value} value must be 'true' or 'false'.")
             
+    
+    
 class ExpressionProcCall(Expression):
     def __init__(self, location: List[int], name: str, params: List[Expression]):
         super().__init__(location)
-        self.name: str = name
-        self.params: List[Expression] = params
-        self.type = None
+        self.__name: str = name
+        self.__params: List[Expression] = params
+        self.__type: BX_TYPE = None
+        
+    def get_type(self) -> BX_TYPE:
+        return self.__type
     
     def __str__(self):
-        return "ExpressionProcCall(%s, %s)" % (self.name, self.params)
-    
+        return "ExpressionProcCall(%s, %s)" % (self.__name, self.__params)
+        
     def type_check(self, scope: Scope) -> None:
-        pass
+        """ Checks if the procedure exists and if the parameters are of the correct type """
+        proc = scope.get_global(self.__name)
+        if proc is None:
+            self.syntax_error("Procedure '%s' is not defined." % self.__name)
+        elif not isinstance(proc, Tuple[List[BX_TYPE],BX_TYPE]):
+            self.syntax_error(f" procedure {self.__name} already declared in global scope but as global variable")
+        else:
+            in_types, out_type = scope.get_from_global_scope(self.__name)
+            self.__type = out_type #set type of proc call
+            
+            if len(self.__params) != len(in_types): #check correct num params
+                self.syntax_error(f"Procedure '{self.__name}' expects {len(in_types)} parameters, but {len(self.__params)} were given.")
+                
+            for i,parameter in enumerate(self.__params): #check correct parameters
+                parameter.type_check(scope)
+                if parameter.get_type() != in_types[i]:
+                    self.syntax_error(f"Parameter {i} of procedure '{self.__name}' must be of type {in_types[i]}.")
+                                   
+        
             
 class ExpressionVar(Expression):
     def __init__(self, location: List[int], name: str):
         super().__init__(location)
         self.name: str = name
-        self.type: BX_TYPE = BX_TYPE.INT        # We only allow int decl in BX
+        self.__type: BX_TYPE = BX_TYPE.INT        # We only allow int decl in BX
 
+    def get_type(self) -> BX_TYPE:
+        return self.__type
+    
     def __str__(self):
         return "ExpressionVar({})".format(self.name)
 
@@ -176,15 +237,18 @@ class ExpressionVar(Expression):
         if not scope.exists(self.name):
             self.syntax_error(f" variable not defined")
         else:
-            scope.add(self.name)
+            scope.add_variable(self.name)
 
 class ExpressionInt(Expression):
     def __init__(self, location: List[int], value):
         super().__init__(location)
         self.value = value
         self.__max = 1<<63
-        self.type = BX_TYPE.INT
-
+        self.__type = BX_TYPE.INT
+        
+    def get_type(self) -> BX_TYPE:
+        return self.__type
+    
     def __str__(self):
         return "ExpressionInt({})".format(self.value)
     
@@ -201,10 +265,13 @@ class ExpressionOp(Expression):
         super().__init__(location)
         self.operator: str = operator
         self.arguments = arguments
-        self.type: BX_TYPE = None
+        self.__type: BX_TYPE = None
         self.expected_argument_type: Tuple[BX_TYPE] = None
         self.operations: Operations = Operations
         self.__type_init()
+        
+    def get_type(self) -> BX_TYPE:
+        return self.__type
     
     def __str__(self):
         return "ExpressionOp(%s,%s)" % (self.operator,self.arguments)
@@ -213,25 +280,25 @@ class ExpressionOp(Expression):
         """ Initializes the result and argument type based on argument input """
         if self.operator in self.operations._binops_int:
             self.expected_argument_type = (BX_TYPE.INT, BX_TYPE.INT)
-            self.type = BX_TYPE.INT
+            self.__type = BX_TYPE.INT
         # elif self.operator in self.operations._binops_int_bool:
         #     self.expected_argument_type = [(BX_TYPE.INT, BX_TYPE.INT),(BX_TYPE.BOOL, BX_TYPE.BOOL)]
-        #     self.type = BX_TYPE.BOOL
+        #     self.__type = BX_TYPE.BOOL
         elif self.operator in self.operations._binops_bool:
             self.expected_argument_type = (BX_TYPE.BOOL, BX_TYPE.BOOL)
-            self.type = BX_TYPE.BOOL
+            self.__type = BX_TYPE.BOOL
 
         elif self.operator in self.operations._binops_cmp:
             self.expected_argument_type = (BX_TYPE.INT, BX_TYPE.INT)
-            self.type = BX_TYPE.BOOL
+            self.__type = BX_TYPE.BOOL
         
         elif self.operator in self.operations._unops_int:
             self.expected_argument_type = (BX_TYPE.INT,)
-            self.type = BX_TYPE.INT
+            self.__type = BX_TYPE.INT
         
         elif self.operator in self.operations._unops_bool:
             self.expected_argument_type = (BX_TYPE.BOOL,)
-            self.type = BX_TYPE.BOOL
+            self.__type = BX_TYPE.BOOL
 
         else:       # this should not happen
             self.syntax_error(f"Unkown operator {self.operator}")
@@ -240,23 +307,26 @@ class ExpressionOp(Expression):
         if len(self.arguments) != len(self.expected_argument_type):
             self.syntax_error(f"{self.operator} takes {len(self.expected_argument_type)} \
                                 arguments got {len(self.arguments)}")
-        # real_expected_type = [None] * len(self.arguments)
+
         for index, arg in enumerate(self.arguments):
             arg.type_check(scope)
-            arg_type = self.arguments[index].type
+            arg_type = self.arguments[index].get_type()
             # else: 
             expected_type = self.expected_argument_type[index]
             if arg_type != expected_type:
                 self.syntax_error(f"Argument {index+1} for operation {self.operator} should have type {expected_type} but has {arg_type}")
 
+#------------------------------------------------------------
+#Utility for parser
+#------------------------------------------------------------
 class ListVarDecl:
     def __init__(self, vars: List[ExpressionVar], ty: BX_TYPE):
         self.__vars: List[ExpressionVar] = vars 
-        self.type: BX_TYPE = ty     
-        
+        self.__type: BX_TYPE = ty     
+    
     def __add_var(self, location: List[int], name: str, expression: Expression) -> None:
         """ helper func to append var """
-        self.__vars.append(StatementVardecl(location, name, self.type, expression))
+        self.__vars.append(StatementVardecl(location, name, self.__type, expression))
         
     def add_multi_var(self, l: List[Tuple[List[int], str, Expression]]) -> None:
         """ Adds multiple parameter locations and names to the list of parameters """
@@ -293,6 +363,8 @@ class StatementBlock(Statement):
         return "block(%s)" % (self.statements)
     
 class StatementEval(Statement):
+    #TODO: type check The type of the result is allowed to be
+    # any semantic type, including the type void, because the “result” of the evaluation is not stored.
     def __init__(self,location: List[int], expression: Expression):
         super().__init__(location)
         self.expression: Expression = expression
@@ -304,6 +376,10 @@ class StatementEval(Statement):
         return "eval(%s)" % (self.expression)
     
 class StatementReturn(Statement):
+    #TODO:  ensure that the full type of the procedure is known at the point where
+    #you are type-checking a return statement
+    #TODO: Subroutines: here, an argument to return is optional. If one is provided, it must type-check
+    # against the expected type void.
     def __init__(self,location: List[int], expression: Union[ExpressionVar, ExpressionProcCall]):
         super().__init__(location)
         self.expression: Union[ExpressionVar, ExpressionProcCall] = expression
@@ -319,24 +395,34 @@ class StatementVardecl(Statement):
     def __init__(self,location: List[int], variable: ExpressionVar, type: BX_TYPE, init: Expression):
         super().__init__(location)
         self.variable: ExpressionVar = variable
-        self.type: BX_TYPE = BX_TYPE.getType(type)
+        self.__type: BX_TYPE = BX_TYPE.getType(type)
         self.init: Expression = init 
+        self.__global = False
+        
+    def get_type(self) -> BX_TYPE:
+        return self.__type
     
     def __str__(self):
         return "vardecl(%s,%s,%s)" % (self.name,self.ty,self.init)
 
-    def type_check(self, scope: Scope, ongoingloop: bool) -> None:
-        if self.type != BX_TYPE.INT:    # shouldn't be possible but anyways
-            self.syntax_error(f'{self.variable.name} should have type {str(BX_TYPE.INT)} \
-                                but has type {self.type}')
-        # print("Entered vardecl typecheck")
-        # print(f"{self.variable}")
-        # print(f"{self.variable.name}")
-        self.init.type_check(scope)
+    def global_type_check(self, scope: Scope) -> None:
         if scope.exists_in_current_scope(self.variable.name):
-            self.syntax_error(" variable already declared in current scope")
+            self.syntax_error(" variable already declared in current global scope")
         else:
-            scope.add(self.variable.name, self.type)
+            scope.add_variable(self.variable.name, self.__type)
+        self.__global = True
+
+    def type_check(self, scope: Scope, ongoingloop: bool) -> None:
+        # if self.__type != BX_TYPE.INT:    # shouldn't be possible but anyways
+        #     self.syntax_error(f'{self.variable.name} should have type {str(BX_TYPE.INT)} \
+        #                         but has type {self.__type}')
+        self.init.type_check(scope)
+        if not self.__global: 
+            # first global pass already did this, only need to check declaration in non-global scope
+            if scope.exists_in_current_scope(self.variable.name): 
+                self.syntax_error(" variable already declared in current scope")
+            else:
+                scope.add_variable(self.variable.name, self.__type)
         
 class StatementPrint(Statement):
     """Actually are prints"""
@@ -422,22 +508,36 @@ class StatementJump(Statement):
 # ------------------------------------------------------------------------------#
 
 class DeclProc(Node):
-    def __init__(self,location: List[int], name : str, arguments: List[Param], returntype: type, body: StatementBlock):
+    def __init__(self,location: List[int], name : str, arguments: List[Param], returntype: BX_TYPE, body: StatementBlock):
         super().__init__(location)
         self.__name: str = name
         self.__arguments: List[Param] = arguments
         # print(f"__name: {name} __arguments: {arguments}")
-        self.__returntype: type = returntype
+        self.__returntype: BX_TYPE = returntype
         self.__body: StatementBlock = body
         self.__scope = Scope()
+        
+    def global_type_check(self, scope: Scope) -> None:
+        """Checks if the procedure is already declared in the global scope.
+        If not, check if it is main and restrictions on main, then add it to the global scope."""
+        proc = scope.get_global(self.__name)
+        if proc is not None:
+            self.syntax_error(" variable already declared in current scope")
+        elif not isinstance(proc, Tuple[List[BX_TYPE],BX_TYPE]):
+            self.syntax_error(f" procedure {self.__name} already declared in global scope but as global variable")
+        else:
+            if self.__name == "main":
+                if self.__arguments != []:
+                    self.syntax_error(" main function cannot have arguments")
+                if self.__returntype != None:
+                    self.syntax_error(" main function cannot have a return type")
+            scope.add_proc(self.__name, [arg.get_type() for arg in self.__arguments], self.__returntype)
     
+    def get_name(self) -> str:
+        return self.__name
+            
     def type_check(self) -> None:
-        if self.__name != "main":
-            self.syntax_error("non-main function found")
-        if self.__arguments != []:
-            self.syntax_error(" main function cannot have arguments")
-        if self.__returntype != None:
-            self.syntax_error(" main function cannot have a return type")
+        #TODO: Check that every path terminates with a return statement
         self.__body.type_check(self.__scope, False)
     
     def __str__(self):
@@ -457,19 +557,31 @@ class Decl(Node):
         super().__init__(location)
 
 class Prog(Node):
-    def __init__(self,location: List[int], functions: List[Union[DeclProc, Expression]]):
+    def __init__(self,location: List[int], decls: List[Union[DeclProc, StatementVardecl]]):
         super().__init__(location)
-        self.functions: List[Union[DeclProc, Expression]] = functions
-    
+        self.__decls: List[Union[DeclProc, StatementVardecl]] = decls
+        self.__scope = Scope().create_scope() #immediately initialize global scope
+        
     def __str__(self):
-        return "Prog(%s)" % (self.functions)
+        return "Prog(%s)" % (self.__decls)
     
-    def type_check(self, scope: Scope) -> None:
+    def global_type_check(self) -> None:
+        """
+        1) Checks that all global variables and procedures are added to global scope 
+        2) Checks that main is declared and has no arguments
+        (expression of global variables declarations and procedure bodies are unchecked)"""
         has_main = False
-        for function in self.functions:
-            if function.name == "main":
-                has_main = True
-            function.type_check(scope)
+        for declaration in self.__decls:
+            if isinstance(declaration, DeclProc):
+                if declaration.get_name() == "main":
+                    has_main = True
+            declaration.global_type_check(self.__scope)
+                
         if not has_main:
             self.syntax_error("No main function defined")
+            
+    def type_check(self) -> None:
+        """Checks the var declaration expressions and procedure bodies"""
+        for declaration in self.__decls:
+            declaration.type_check()
         
