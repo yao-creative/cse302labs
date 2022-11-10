@@ -98,11 +98,16 @@ class Scope:
         if variable in self.__scope_map[-1]:
             return True
         return False
-    
+
+    def add_variable(self, variable: str, value: BX_TYPE = BX_TYPE.INT) -> None:
+        """ Adds a variable in the current scope """
+        if self.scope_len():
+            self.__scope_map[-1][variable] = value
+
     # ---------------------------------------------------------------------------#
     # Helpers for global type_check
 
-    def get_global(self, name) -> Tuple[List[BX_TYPE], BX_TYPE] :
+    def get_global(self, name: str) -> Tuple[List[BX_TYPE], BX_TYPE] :
         """ Returns the type of a procedure or global variable from the global scope """
         return self.__scope_map[0][name]
 
@@ -110,11 +115,7 @@ class Scope:
         """ Adds a procedure in the current global scope """
         if self.scope_len():
             self.__scope_map[0][proc_name] = (in_type, out_type)
-            
-    def add_variable(self, variable: str, value: BX_TYPE = BX_TYPE.INT) -> None:
-        """ Adds a variable in the current scope """
-        if self.scope_len():
-            self.__scope_map[-1][variable] = value
+
 
 class Node:
     def __init__(self, location: List[int]):
@@ -213,31 +214,29 @@ class ExpressionProcCall(Expression):
         if self.__name == "print":
             if len(self.__params) != 1:
                 self.syntax_error(" print function can have only 1 parameter")
-            # check print type            
+            # set requirements for print call
             type = self.__params[0].get_type()
-            if type == BX_TYPE.BOOL:
-                self.__name == "__bx_print_bool"
-            elif type == BX_TYPE.INT:
-                self.__name == "__bx_print_int"
-            else:
-                self.syntax_error(" print statement has invalid argument")
-            # set return type and return
+            if type == BX_TYPE.BOOL: self.__name == "__bx_print_bool"
+            elif type == BX_TYPE.INT: self.__name == "__bx_print_int"
+            else: self.syntax_error(" print statement has invalid argument")
+            # set return type for print call
             self.__type = BX_TYPE.VOID
             return
         
+        # check type of all proc arguments
         proc = scope.get_global(self.__name)
         if proc is None:
             self.syntax_error("Procedure '%s' is not defined." % self.__name)
-        elif not isinstance(proc, Tuple[List[BX_TYPE],BX_TYPE]):
+        elif not isinstance(proc, Tuple[List[BX_TYPE], BX_TYPE]):
             self.syntax_error(f" procedure {self.__name} already declared in global scope but as global variable")
         else:
-            in_types, out_type = scope.get_from_global_scope(self.__name)
+            in_types, out_type = scope.get_global(self.__name)
             self.__type = out_type #set type of proc call
-            
-            if len(self.__params) != len(in_types): #check correct num params
+            # check correct num params
+            if len(self.__params) != len(in_types):
                 self.syntax_error(f"Procedure '{self.__name}' expects {len(in_types)} parameters, but {len(self.__params)} were given.")
-                
-            for i,parameter in enumerate(self.__params): #check correct parameters
+            # check correct params
+            for i, parameter in enumerate(self.__params):
                 parameter.type_check(scope)
                 if parameter.get_type() != in_types[i]:
                     self.syntax_error(f"Parameter {i} of procedure '{self.__name}' must be of type {in_types[i]}.")
@@ -298,6 +297,8 @@ class ExpressionOp(Expression):
     def __str__(self):
         return "ExpressionOp(%s,%s)" % (self.operator,self.arguments)
 
+    # TODO check if correct param comparisons
+
     def __type_init(self) -> None:
         """ Initializes the result and argument type based on argument input """
         if self.operator in self.operations._binops_int:
@@ -331,7 +332,6 @@ class ExpressionOp(Expression):
         for index, arg in enumerate(self.arguments):
             arg.type_check(scope)
             arg_type = self.arguments[index].get_type()
-            # else: 
             expected_type = self.expected_argument_type[index]
             if arg_type != expected_type:
                 self.syntax_error(f"Argument {index+1} for operation {self.operator} should have type {expected_type} but has {arg_type}")
@@ -343,7 +343,7 @@ class ExpressionOp(Expression):
 class ListVarDecl:
     def __init__(self, vars: List[ExpressionVar], ty: BX_TYPE):
         self.__vars: List[ExpressionVar] = vars 
-        self.__type: BX_TYPE = ty     
+        self.__type: BX_TYPE = ty
     
     def __add_var(self, location: List[int], name: str, expression: Expression) -> None:
         """ helper func to append var """
@@ -443,6 +443,8 @@ class StatementVardecl(Statement):
                 self.syntax_error(" variable already declared in current scope")
             else:
                 scope.add_variable(self.variable.name, self.__type)
+        else:
+            print("Entered global Vardecl Type_checker")
 
 class StatementAssign(Statement):
     def __init__(self, location: List[int], lvalue: ExpressionVar, rvalue: Expression):
@@ -521,7 +523,6 @@ class DeclProc(Node):
         # print(f"__name: {name} __arguments: {arguments}")
         self.__returntype: BX_TYPE = returntype
         self.__body: StatementBlock = body
-        # self.__scope = Scope()
         
     def global_type_check(self, scope: Scope) -> None:
         """ Checks if the procedure is already declared in the global scope.
@@ -544,7 +545,7 @@ class DeclProc(Node):
             scope.add_proc(self.__name, [arg.get_type() for arg in self.__arguments], self.__returntype)
 
     def type_check(self, scope: Scope) -> None:
-        """ typ checks the proc block. Sets proc return type for Return statements """
+        """ Type checks the proc block. Sets proc return type for Return statements """
         scope.set_proc_return_type(self.__returntype)
         self.__body.type_check(self.__scope, False)
         scope.unset_proc_return_type()
@@ -571,10 +572,6 @@ class DeclProc(Node):
     def get_body(self) -> StatementBlock:
         return self.__body
 
-class Decl(Node):
-    def __init__(self,location: List[int]):
-        super().__init__(location)
-
 class Prog(Node):
     def __init__(self,location: List[int], decls: List[Union[DeclProc, StatementVardecl]]):
         super().__init__(location)
@@ -586,20 +583,24 @@ class Prog(Node):
     
     def global_type_check(self) -> None:
         """
-        1) Checks that all global variables and procedures are added to global scope 
-        2) Checks that main is declared and has no arguments
-        (expression of global variables declarations and procedure bodies are unchecked)"""
+            1) Checks that all global vardecls and procs are added to global scope 
+            2) Checks that main is declared and has no arguments
+            (expression of global vardecls and proc bodies are unchecked)
+        """
         has_main = False
         for declaration in self.__decls:
             if isinstance(declaration, DeclProc):
                 if declaration.get_name() == "main":
                     has_main = True
-            declaration.global_type_check(self.__scope)
-                
+            declaration.global_type_check(self.__scope)       
         if not has_main:
             self.syntax_error("No main function defined")
             
     def type_check(self) -> None:
         """Checks the var declaration expressions and procedure bodies"""
         for declaration in self.__decls:
-            declaration.type_check()
+            declaration.type_check(self.__scope)
+
+class Decl(Node):
+    def __init__(self,location: List[int]):
+        super().__init__(location)
