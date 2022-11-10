@@ -1,0 +1,15 @@
+def main() {
+    var i = 0 : int;
+    while (i < 10) {
+        print(fib(i));              // can call procs declared later
+        i = i + 1;
+    }
+}
+
+def fib(n : int) : int {
+    if (n == 0) { return f0; }      // can refer to vars declared later
+    else if (n == 1) { return f1; }
+    else { return fib(n - 1) + fib(n - 2); }
+}
+
+var f0 = 0, f1 = 1 : int;
