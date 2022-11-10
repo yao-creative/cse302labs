@@ -190,6 +190,24 @@ class ExpressionProcCall(Expression):
         
     def type_check(self, scope: Scope) -> None:
         """ Checks if the procedure exists and if the parameters are of the correct type """
+        # if a print call then change the call to reserved print call statement
+        if self.__name == "print":
+            if len(self.__params) != 1:
+                self.syntax_error(" print function can have only 1 parameter")
+
+            # check print type            
+            type = self.__params[0].get_type()
+            if type == BX_TYPE.BOOL:
+                self.__name == "__bx_print_bool"
+            elif type == BX_TYPE.INT:
+                self.__name == "__bx_print_int"
+            else:
+                self.syntax_error(" print statement has invalid argument")
+            
+            # set return type and return
+            self.__type = BX_TYPE.VOID
+            return
+        
         proc = scope.get_global(self.__name)
         if proc is None:
             self.syntax_error("Procedure '%s' is not defined." % self.__name)
@@ -410,19 +428,19 @@ class StatementVardecl(Statement):
             else:
                 scope.add_variable(self.variable.name, self.__type)
         
-class StatementPrint(Statement):
-    """Actually are prints"""
-    def __init__(self, location: List[int], argument: Expression):
-        super().__init__(location)
-        self.argument: Expression = argument
+# class StatementPrint(Statement):
+#     """Actually are prints"""
+#     def __init__(self, location: List[int], argument: Expression):
+#         super().__init__(location)
+#         self.argument: Expression = argument
     
-    def __str__(self):
-        return "print({})".format(self.argument)
+#     def __str__(self):
+#         return "print({})".format(self.argument)
     
-    def type_check(self, scope: Scope, ongoingloop: bool) -> None:
-        self.argument.type_check(scope)
-        if self.argument.type != BX_TYPE.INT:
-            self.syntax_error(f'')
+#     def type_check(self, scope: Scope, ongoingloop: bool) -> None:
+#         self.argument.type_check(scope)
+#         if self.argument.type != BX_TYPE.INT:
+#             self.syntax_error(f'')
 
 class StatementAssign(Statement):
     def __init__(self, location: List[int], lvalue: ExpressionVar, rvalue: Expression):
@@ -504,11 +522,15 @@ class DeclProc(Node):
         self.__scope = Scope()
         
     def global_type_check(self, scope: Scope) -> None:
-        """Checks if the procedure is already declared in the global scope.
-        If not, check if it is main and restrictions on main, then add it to the global scope."""
+        """ Checks if the procedure is already declared in the global scope.
+            If not, check if it is main and restrictions on main, then add it to the global scope.
+        """
+        if self.__name.startswith("__bx_"):
+            self.syntax_error(" function starts with reserved keyword")
+        
         proc = scope.get_global(self.__name)
         if proc is not None:
-            self.syntax_error(" variable already declared in current scope")
+            self.syntax_error(" function already declared in current scope")
         elif not isinstance(proc, Tuple[List[BX_TYPE], BX_TYPE]):
             self.syntax_error(f" procedure {self.__name} already declared in global scope but as global variable")
         else:
@@ -520,8 +542,18 @@ class DeclProc(Node):
             scope.add_proc(self.__name, [arg.get_type() for arg in self.__arguments], self.__returntype)
 
     def type_check(self) -> None:
-        #TODO: Check that every path terminates with a return statement
+
         self.__body.type_check(self.__scope, False)
+
+        # check if the func has a return statement        
+        if self.__returntype != "void":
+            ret_stat = False
+            for stat in self.__body.statements:
+                if isinstance(stat, StatementReturn):
+                    ret_stat = True
+                    break
+            if not ret_stat:
+                self.syntax_error(f" function {self.__name} has no return statement")
     
     def __str__(self):
         return "proc(%s,%s,%s,%s)" % (self.__name, self.__arguments, self.__returntype, self.__body)

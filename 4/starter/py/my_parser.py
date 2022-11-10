@@ -132,7 +132,6 @@ def p_statement(p):
     """statement : vardecl
                  | eval
                  | assign
-                 | print
                  | block
                  | ifelse
                  | while
@@ -153,9 +152,9 @@ def p_assign(p):
     """assign : IDENT EQUALS expression SEMICOLON"""
     p[0] = StatementAssign([p.lineno(0), p.lexpos(0)], p[1], p[3])
 
-def p_print(p):
-    """print : PRINT LPAREN expression RPAREN SEMICOLON"""
-    p[0] = StatementPrint([p.lineno(0), p.lexpos(0)],p[3])
+# def p_print(p):
+#     """print : PRINT LPAREN expression RPAREN SEMICOLON"""
+#     p[0] = StatementPrint([p.lineno(0), p.lexpos(0)],p[3])
     
 def p_ifelse(p):
     """ifelse : IF LPAREN expression RPAREN block ifrest"""
@@ -227,9 +226,9 @@ def p_expression(p):
         elif p[1] == "false":
             p[0] = ExpressionBool([p.lineno(0), p.lexpos(0)], False)
         elif isinstance(p[1], int):
-            p[0] = ExpressionInt([p.lineno(0), p.lexpos(0)],p[1])
+            p[0] = ExpressionInt([p.lineno(0), p.lexpos(0)], p[1])
         elif isinstance(p[1], str):
-            p[0] = ExpressionVar([p.lineno(0), p.lexpos(0)],p[1])
+            p[0] = ExpressionVar([p.lineno(0), p.lexpos(0)], p[1])
         else:
             raise SyntaxError("Invalid expression at line: " + str(p.lineno(0)))
 
