@@ -1,0 +1,5 @@
+// func test has same params
+
+def main() { }
+
+def test(n, n : int) { }
