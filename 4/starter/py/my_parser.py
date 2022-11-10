@@ -192,11 +192,15 @@ def p_vardecl(p):
     """vardecl : VAR varinits type SEMICOLON"""
     listvardecl = ListVarDecl([], p[4])
     vars = p[1]
+    # TODO smth wrong with vars passing here
+    # check example gvar_repeated.bx, lvar_badinit, lvar_repeated, 
     listvardecl.add_multi_var(vars)
     p[0] = listvardecl.return_vardecl_list()
     
 def p_varinits(p):
     """varinits : IDENT EQUALS expression varinitstar"""
+    # TODO expression can only be a num or a bool
+    # check examples gvar_badinit1 and gvar_badinit2 
     p[0] =  [([p.lineno(0), p.lexpos(0)], p[1], p[3])] + p[4]
 
 def p_varinitstar(p):
