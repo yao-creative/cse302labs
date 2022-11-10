@@ -6,19 +6,13 @@ Authors: Yi Yao Tan
          Vrushank Agrawal
 """
 
-class tac2x64:
-    def __init__(self, functn: str, tac_instrs: List) -> None:
-        self.__tac_instr: List = tac_instrs
-        self.__func_name: str = functn
-        self.__assembly: List = []
-        self.__temp_map: dict = {}
+# ---------------------------------------------------------------------#
+# Class for Macro vars
+# ---------------------------------------------------------------------#
 
-    # ---------------------------------------------------------------------#
-    # Class Macro Variables
-    # ---------------------------------------------------------------------#
+class Macros:
 
-    # idea reffered from lab1
-    __binops={'add': 'addq',
+    _binops={ 'add': 'addq',
               'sub': 'subq',
               'mul': (lambda ra, rb, rd: [f'\tmovq {ra}, %rax',
                                           f'\timulq {rb}',
@@ -41,17 +35,93 @@ class tac2x64:
               'shr': (lambda ra, rb, rd: [f'\tmovq {ra}, %r11',
                                           f'\tmovq {rb}, %rcx',
                                           f'\tsarq %cl, %r11',
-                                          f'\tmovq %r11, {rd}'])}
-    __unops = {'neg': 'negq',
+                                          f'\tmovq %r11, {rd}'])
+            }
+    
+    _unops = { 'neg': 'negq',
                'not': 'notq'}
 
-    __jcc = ["je", "jz",        # Src2 == Src1
+    _jcc = ["je", "jz",       # Src2 == Src1
            "jne", "jnz",      # Src2 != Src1
            "jl", "jnge",      # Src2 < Src1
            "jle", "jng",      # Src2 <= Src1
            "jg", "jnle",      # Src2 > Src1
            "jge", "jnl",      # Src2 >= Src1
            ]
+
+    _first_6_regs = {   1 : (lambda reg: [f'movq {reg}, %rdi'] ),
+                        2 : (lambda reg: [f'movq {reg}, %rsi'] ),
+                        3 : (lambda reg: [f'movq {reg}, %rdx'] ),
+                        4 : (lambda reg: [f'movq {reg}, %rcx'] ),
+                        5 : (lambda reg: [f'movq {reg}, %r8'] ),
+                        6 : (lambda reg: [f'movq {reg}, %r9'] ),
+                    }
+
+    # ---------------------------------------------------------------------#
+    # assertion functions
+    # ---------------------------------------------------------------------#
+        
+    @staticmethod
+    def _assert_temporary(temp: str, instr: dict) -> None:
+        """ Checks if temporary is of correct format """
+        assert (isinstance(temp, str) and \
+                temp[0] == '%' and \
+                temp[1:].isnumeric()), f'Invalid format for temporary in {instr}'
+
+    @staticmethod
+    def _assert_label(arg: str, instr: dict) -> None:
+        """ Checks if label is of correct format """
+        assert (isinstance(arg, str) and \
+                arg.startswith('%.L') and \
+                arg[3:].isnumeric()), f'Invalid format for label in {instr}'
+
+    @staticmethod
+    def _assert_argument_numb(args: List, num: int, instr: dict) -> None:
+        """ Checks if correct number of arguments passed """
+        if num == 1:
+          assert (len(args)==1), f'Invalid number of arguments in {instr}'
+        elif num == 2:
+          assert (len(args)==2), f'Invalid number of arguments in {instr}'
+
+    @staticmethod
+    def _assert_result(result: None, instr: dict) -> None:
+        """ Checks if result temporary is set to None """
+        assert result == None, f'Result should be empty in {instr}'
+
+# ---------------------------------------------------------------------#
+# Class for Global Vars
+# ---------------------------------------------------------------------#
+
+class GlobalVarx64:
+    def __init__(self, var: dict) -> None:
+        self.__name: str = var["var"][1:]
+        self.__init: str = var["init"]
+        self.__asm_instr: list = list()
+        self.__create_asm()
+
+    def __create_asm(self) -> None:
+        """ Creates x64 asm instr from the given tac instr """
+        self.__asm_instr.append(f"\tglobl {self.__name}")
+        self.__asm_instr.append(f"\tdata")
+        self.__asm_instr.append(f"{self.__name}:  .quad {self.__init}")
+
+    def get_instr(self) -> list:
+        """ Returns the assembly instructions of the global variables """
+        return self.__asm_instr
+
+# ---------------------------------------------------------------------#
+# Class for Procs
+# ---------------------------------------------------------------------#
+
+class Procx64:
+    def __init__(self, proc_instrs: List) -> None:
+        self.__func_name: str = proc_instrs["proc"][1:]
+        self.__args: list = proc_instrs["args"]
+        self.__tac_instr: list = proc_instrs["body"]
+        self.__temps: list = proc_instrs["temps"]
+        self.__labels: list = proc_instrs["labels"]
+        self.__assembly: List = list()
+        self.__temp_map: dict = dict()
 
     # ---------------------------------------------------------------------#
     # misc functions
@@ -60,27 +130,24 @@ class tac2x64:
     def __lookup_temp(self, temp: str, instr: dict) -> str:
         """ Returns the value of the temp from the stack 
             while simultaneously creating a hash table """
-        self.__assert_temporary(temp, instr)
-        
-        if temp in self.__temp_map:     # if temporary already exists return its value
+        Macros._assert_temporary(temp, instr)
+        # if temporary already exists return its value
+        if temp in self.__temp_map:
             return self.__temp_map[temp]
-        
-        else:      # add a new destination for it considering there is one address for rsp
+        # add a new destination for it considering there is one address for rsp
+        else:
             self.__temp_map[temp] = f'{-8 * (len(self.__temp_map) + 1)}(%rbp)'
-        
         return self.__temp_map[temp]
 
     def __add_instr_comment(self, instr: dict) -> None:
         """ Adds instruction as a comment in the assembly """
-
         if instr['result'] == None:
             if instr['opcode'] == 'jmp' or instr['opcode'] == 'print':
                 self.__assembly.append(f'\t/*   {instr["opcode"]} {instr["args"][0]} [TAC] */')
-            elif instr['opcode'] in self.__jcc:
+            elif instr['opcode'] in Macros._jcc:
                 self.__assembly.append(f'\t/*   {instr["opcode"]} {instr["args"][0]}, {instr["args"][1]} [TAC] */')
             elif instr['opcode'] == 'label':
                 self.__assembly.append(f'\t/*  {instr["args"][0]}: [TAC] */')
-        
         elif len(instr["args"]) == 1:
             self.__assembly.append(f'\t/*   {instr["result"]} = {instr["opcode"]} {instr["args"][0]} [TAC] */')
         elif len(instr["args"]) == 2:
@@ -90,50 +157,18 @@ class tac2x64:
     
     def __check_previous_instr(self, index: int, field: str, value_to_check: str) -> bool:
         """ Checks the previous instruction if a certain field in it has a certain value 
-
             Requirement: To check if we previous instruction is jmp to current label
                          To check if 
         """
         # print(self.__tac_instr[index])
         # print(self.__tac_instr[index][field], value_to_check)
         if field == 'args':   # compare the jmp argument with current label
-          return self.__tac_instr[index][field][0] == value_to_check
+            return self.__tac_instr[index][field][0] == value_to_check
         return self.__tac_instr[index][field] == value_to_check
 
     def __get_label_name(self, lab: str) -> str:
         """ appends the function name to the current label to mark a local label """
-        return f'.{self.__func_name}{lab[1:]}'
-
-    # ---------------------------------------------------------------------#
-    # assertion functions
-    # ---------------------------------------------------------------------#
-        
-    @staticmethod
-    def __assert_temporary(temp: str, instr: dict) -> None:
-        """ Checks if temporary is of correct format """
-        assert (isinstance(temp, str) and \
-                temp[0] == '%' and \
-                temp[1:].isnumeric()), f'Invalid format for temporary in {instr}'
-
-    @staticmethod
-    def __assert_label(arg: str, instr: dict) -> None:
-        """ Checks if label is of correct format """
-        assert (isinstance(arg, str) and \
-                arg.startswith('%.L') and \
-                arg[3:].isnumeric()), f'Invalid format for label in {instr}'
-
-    @staticmethod
-    def __assert_argument_numb(args: List, num: int, instr: dict) -> None:
-        """ Checks if correct number of arguments passed """
-        if num == 1:
-          assert (len(args)==1), f'Invalid number of arguments in {instr}'
-        elif num == 2:
-          assert (len(args)==2), f'Invalid number of arguments in {instr}'
-
-    @staticmethod
-    def __assert_result(result: None, instr: dict) -> None:
-        """ Checks if result temporary is set to None """
-        assert result == None, f'Result should be empty in {instr}'        
+        return f'.{self.__func_name}{lab[1:]}'      
 
     # ---------------------------------------------------------------------#
     # tac to assembly conversion
@@ -155,10 +190,10 @@ class tac2x64:
             if opcode == 'nop': pass
 
             elif opcode == 'label':
-                self.__assert_argument_numb(args, 1, instr)
+                Macros._assert_argument_numb(args, 1, instr)
                 arg = args[0]
-                self.__assert_label(arg, instr)
-                self.__assert_result(result, instr)
+                Macros._assert_label(arg, instr)
+                Macros._assert_result(result, instr)
                 
                 # if previous instruction is jmp to current lab then comment the jmp
                 if self.__check_previous_instr(index-1, 'opcode', 'jmp'): 
@@ -168,24 +203,24 @@ class tac2x64:
                 self.__assembly.append(self.__get_label_name(arg)+':')          # add label to the assembly
 
             elif opcode == 'const':
-                self.__assert_argument_numb(args, 1, instr)
+                Macros._assert_argument_numb(args, 1, instr)
                 assert isinstance(args[0], int)                         # check if instruction is in correct format
                 result = self.__lookup_temp(result, instr)        # get stack position to store result of temp
                 self.__assembly.append(f'\tmovq ${args[0]}, {result}')    # add instruction as assembly
 
             elif opcode == 'copy':
-                self.__assert_argument_numb(args, 1, instr)
+                Macros._assert_argument_numb(args, 1, instr)
                 arg = self.__lookup_temp(args[0], instr)
                 result = self.__lookup_temp(result, instr)
                 self.__assembly.append(f'\tmovq {arg}, %r11')
                 self.__assembly.append(f'\tmovq %r11, {result}')
 
-            elif opcode in self.__binops:
-                self.__assert_argument_numb(args, 2, instr)
+            elif opcode in Macros._binops:
+                Macros._assert_argument_numb(args, 2, instr)
                 arg1 = self.__lookup_temp(args[0], instr)
                 arg2 = self.__lookup_temp(args[1], instr)
                 result = self.__lookup_temp(result, instr)
-                bin_op = self.__binops[opcode]
+                bin_op = Macros._binops[opcode]
                 if isinstance(bin_op, str):
                     self.__assembly.extend([f'\tmovq {arg1}, %r11',
                                             f'\t{bin_op} {arg2}, %r11',
@@ -193,18 +228,18 @@ class tac2x64:
                 else: 
                     self.__assembly.extend(bin_op(arg1, arg2, result))
 
-            elif opcode in self.__unops:
-                self.__assert_argument_numb(args, 1, instr)
+            elif opcode in Macros._unops:
+                Macros._assert_argument_numb(args, 1, instr)
                 arg = self.__lookup_temp(args[0], instr)
                 result = self.__lookup_temp(result, instr)
-                un_op = self.__unops[opcode]
+                un_op = Macros._unops[opcode]
                 self.__assembly.extend([f'\tmovq {arg}, %r11',
                                         f'\t{un_op} %r11',
                                         f'\tmovq %r11, {result}'])
 
             elif opcode == 'print':
-                self.__assert_argument_numb(args, 1, instr)
-                self.__assert_result(result, instr)
+                Macros._assert_argument_numb(args, 1, instr)
+                Macros._assert_result(result, instr)
                 arg = self.__lookup_temp(args[0], instr)
                 # we are not using rax and rdi for simplicity
                 # hence need not push them on the stack 
@@ -212,25 +247,38 @@ class tac2x64:
                                         f'\tcallq bx_print_int'])
 
             elif opcode == 'jmp':
-                self.__assert_argument_numb(args, 1, instr)
-                self.__assert_result(result, instr)
+                Macros._assert_argument_numb(args, 1, instr)
+                Macros._assert_result(result, instr)
                 arg = args[0]
                 self.__assembly.append(f'\tjmp {self.__get_label_name(arg)}')
 
-            elif opcode in self.__jcc:
-                self.__assert_argument_numb(args, 2, instr)
+            elif opcode in Macros._jcc:
+                Macros._assert_argument_numb(args, 2, instr)
                 arg = args[0]
                 lab = args[1]
-                self.__assert_temporary(arg, instr)
-                self.__assert_label(lab, instr)
-                self.__assert_result(result, instr)
+                Macros._assert_temporary(arg, instr)
+                Macros._assert_label(lab, instr)
+                Macros._assert_result(result, instr)
                 # if previous instruction is not a sub then we have a bool
                 # condition and we need to test the argument value with 0 to
                 # set the appropraite flags for the jcc instruction
                 if not self.__check_previous_instr(index-1, 'opcode', 'sub'):
                     arg = self.__lookup_temp(arg, instr)
-                    self.__assembly.append(f'\tcompq $0, {arg}')
+                    self.__assembly.append(f'\tcmpq $0, {arg}')
                 self.__assembly.append(f'\t{opcode} {self.__get_label_name(lab)}')
+
+            elif opcode == "call":
+                Macros._assert_argument_numb(args, 2, instr)
+                assert(args[0][0]) == "@", f"Invalid call in the {instr}"
+
+            elif opcode == "param":
+                Macros._assert_argument_numb(args, 2, instr)
+
+            elif opcode == "ret":
+                if args == []:
+                    self.__assembly.append(f'')
+                else:
+                    Macros._assert_argument_numb(args, 1, instr)
 
             else:       # where did we screw up?
                 raise RuntimeError(f'Undefined opcode: {opcode}')
@@ -261,7 +309,32 @@ class tac2x64:
         return self.__assembly
 
 # ------------------------------------------------------------------------------#
-# main function drivers
+# Main x64 class
+# ------------------------------------------------------------------------------#
+
+class tac2x64:
+    def __init__(self, tac: list) -> None:
+        self.__tac_list: List[dict] = tac
+        self.__globl_vars_list: List[GlobalVarx64] = list()
+        self.__proc_list: List[Procx64] = list()
+        self.__x64_list: List[list] = list()
+        self.__parse_tac()
+
+    def __parse_tac(self) -> None:
+        """ Get asm instr for all tac members """
+        for member in self.__tac_list:
+            if "var" in member:
+                self.__globl_vars_list.append(GlobalVarx64(member))
+            elif "proc" in member:
+                self.__proc_list.append(Procx64(member))
+            else:
+                raise RuntimeError(f"Unexpected Tac type {member}")
+
+    def __stack_alloc(self) -> None:
+        """ Allocates appropraite memory for all procs """
+
+# ------------------------------------------------------------------------------#
+# Main function drivers
 # ------------------------------------------------------------------------------#
 
 def compile_tac(fname: str) -> None:
@@ -281,18 +354,15 @@ def convert_instr_to_asm(fname: str, tac_jsn: list) -> None:
     """ Converts tac instructions list to assembly """
     # Check if fileformat is correct
 
-    assert isinstance(tac_jsn, list) and len(tac_jsn) == 1, f'Invalid list structure of the input file\n {tac_jsn}'
-    
-    tac_jsn = tac_jsn[0]
-    assert 'proc' in tac_jsn and tac_jsn['proc'] == '@main', f'Invalid function in {tac_jsn}'
-    
+    assert isinstance(tac_jsn, list), f'Tac instr should be a list\n'
+
     # Convert tac to assembly
-    x64_asm = tac2x64(tac_jsn['proc'][1:], tac_jsn['body'])     # initialize tac2x64 class here 
+    x64_asm = tac2x64(tac_jsn)     # initialize tac2x64 class here 
     asm = x64_asm.complete_assembly()
     asm[:0] = [f'\t.text',
                f'\t.globl main',
                f'main:']
-    
+
     # Save assembly code and create executable
     exe_name = fname + '.exe'
     asm_name = fname + '.s'
