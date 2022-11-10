@@ -52,7 +52,6 @@ class Scope:
     def __init__(self) -> None:
         self.__scope_map: List[Dict[str, BX_TYPE]] = list()
         self.__global_vardecls: Dict[str, BX_TYPE] = dict()
-        self.__proc_args: Dict[str, BX_TYPE] = dict()
 
     def scope_len(self) -> int:
         """ returns number of scopes """
@@ -278,13 +277,13 @@ class ExpressionProcCall(Expression):
                 parameter.type_check(scope)
                 if parameter.get_type() != in_types[i]:
                     self.syntax_error(f"Parameter {i} of procedure '{self.__name}' must be of type {in_types[i]}.")
-            
+
 class ExpressionVar(Expression):
     def __init__(self, location: List[int], name: str):
         super().__init__(location)
         self.name: str = name
-        # TODO do we allow bool decl?
-        self.__type: BX_TYPE = BX_TYPE.INT        # We only allow int decl in BX
+        # TODO how to assign expr Type?
+        self.__type: BX_TYPE = BX_TYPE.INT
 
     def get_type(self) -> BX_TYPE:
         return self.__type
@@ -293,6 +292,7 @@ class ExpressionVar(Expression):
         return "ExpressionVar({})".format(self.name)
 
     def type_check(self, scope: Scope) -> None:
+        # TODO what is happening here?
         if not scope.exists(self.name):
             self.syntax_error(f" variable not defined")
         else:
@@ -519,7 +519,8 @@ class StatementIfElse(Statement):
     def __str__(self):
         return "ifelse(%s,%s,%s)" % (self.condition,self.block,self.if_rest)
     
-    def type_check(self, scope: Scope, ongoingloop: bool) -> None:        
+    def type_check(self, scope: Scope, ongoingloop: bool) -> None:
+        print(self.condition)
         if self.condition.get_type() != BX_TYPE.BOOL:
             self.syntax_error(f'')
         self.condition.type_check(scope)
