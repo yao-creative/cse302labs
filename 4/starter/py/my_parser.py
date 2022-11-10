@@ -220,6 +220,7 @@ def p_expression(p):
                   | BITWISE_NEGATION expression
                   | IDENT LPAREN expression expressionstar RPAREN
     """
+    # TODO ProcCall can have zero parameters
     if len(p) == 2:
         if p[1] == "true":
             p[0] = ExpressionBool([p.lineno(0), p.lexpos(0)], True)

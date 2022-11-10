@@ -52,6 +52,7 @@ class Scope:
     def __init__(self) -> None:
         self.__scope_map: List[Dict[str, BX_TYPE]] = list()
         self.__global_vardecls: Dict[str, BX_TYPE] = dict()
+        self.__proc_args: Dict[str, BX_TYPE] = dict()
 
     def scope_len(self) -> int:
         """ returns number of scopes """
@@ -76,6 +77,22 @@ class Scope:
                 return True
         return False
 
+    def exists_in_current_scope(self, variable: str) -> bool:
+        """ Checks if a variable exists in current scope """
+        # print(self.__scope_map)
+        # print(variable)
+        if variable in self.__scope_map[-1]:
+            return True
+        return False
+
+    def add_variable(self, variable: str, value: BX_TYPE = BX_TYPE.INT) -> None:
+        """ Adds a variable in the current scope """
+        if self.scope_len():
+            self.__scope_map[-1][variable] = value
+
+    # ---------------------------------------------------------------------------#
+    # Helpers for proc functions
+
     def set_proc_return_type(self, type: BX_TYPE) -> None:
         """ Sets the return type for the current proc """
         # print("set proc ret type")
@@ -97,18 +114,14 @@ class Scope:
             return
         raise RuntimeError("Return Type not set for the proc")
 
-    def exists_in_current_scope(self, variable: str) -> bool:
-        """ Checks if a variable exists in current scope """
-        # print(self.__scope_map)
-        # print(variable)
-        if variable in self.__scope_map[-1]:
-            return True
-        return False
+    # def set_proc_args(self, args: list) -> None:
+    #     """ Add variables to scope passed as current proc parameters """
+    #     args_dict = {arg.get_name(): arg.get_type() for arg in args}
+    #     self.__proc_args = args_dict
 
-    def add_variable(self, variable: str, value: BX_TYPE = BX_TYPE.INT) -> None:
-        """ Adds a variable in the current scope """
-        if self.scope_len():
-            self.__scope_map[-1][variable] = value
+    # def unset_proc_args(self) -> None:
+    #     """ Removes vars from list of declvars for current proc """
+    #     self.__proc_args = []
 
     # ---------------------------------------------------------------------------#
     # Helpers for global type_check
@@ -165,6 +178,15 @@ class Param(Node):
     def get_name(self):
         """ return name of param """
         return self.__name
+
+    def type_check(self, scope: Scope) -> None:
+        """ Type checks if the param is already defined in scope """
+        if scope.exists_in_current_scope(self.__name):
+            self.syntax_error(" function param is repeated")
+        else:
+            scope.add_variable(self.__name)
+
+
 
 # ------------------------------------------------------------------------------#
 # Utility Class for Parser
@@ -389,9 +411,12 @@ class StatementBlock(Statement):
         self.statements: List[Statement] = statements
         # print("Created BLOCK class")
     
-    def type_check(self, scope: Scope, ongoingloop: bool) -> None:
+    def type_check(self, scope: Scope, ongoingloop: bool, args: List[Param] = None) -> None:
         # print("entered BLOCK type_check")
         scope.create_scope()
+        if args is not None:
+            for arg in args:
+                arg.type_check(scope)
         for statement in self.statements:
             statement.type_check(scope, ongoingloop)
         scope.delete_scope()
@@ -538,7 +563,6 @@ class DeclProc(Node):
         super().__init__(location)
         self.__name: str = name
         self.__arguments: List[Param] = arguments
-        # print(f"__name: {name} __arguments: {arguments}")
         self.__returntype: BX_TYPE = returntype
         self.__body: StatementBlock = body
         
@@ -566,8 +590,7 @@ class DeclProc(Node):
     def type_check(self, scope: Scope) -> None:
         """ Type checks the proc block. Sets proc return type for Return statements """
         scope.set_proc_return_type(self.__returntype)
-        scope.add()
-        self.__body.type_check(scope, False)
+        self.__body.type_check(scope, False, self.__arguments)
         scope.unset_proc_return_type()
 
         # check if the func has a return statement        
