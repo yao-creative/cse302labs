@@ -50,7 +50,8 @@ class BX_TYPE:
 
 class Scope:
     def __init__(self) -> None:
-        self.__scope_map: List[Dict[str, BX_TYPE]] = []
+        self.__scope_map: List[Dict[str, BX_TYPE]] = list()
+        self.__global_vardecls: Dict[str, BX_TYPE] = dict()
 
     def scope_len(self) -> int:
         """ returns number of scopes """
@@ -77,18 +78,23 @@ class Scope:
 
     def set_proc_return_type(self, type: BX_TYPE) -> None:
         """ Sets the return type for the current proc """
+        # print("set proc ret type")
         self.__proc_return_type = type
 
     def get_proc_return_type(self) -> BX_TYPE:
         """ Get the return type for the current proc """
-        if "__proc_return_type" in self.__dict__:
+        # print("got proc ret type")
+        if "_Scope__proc_return_type" in self.__dict__:
             return self.__proc_return_type
         raise RuntimeError("Return Type not set for the proc")
 
     def unset_proc_return_type(self) -> None:
         """ Unsets the return type for the proc after exit """
-        if "__proc_return_type" in self.__dict__:
+        # print("unset proc ret type")
+        print(self.__dict__)
+        if "_Scope__proc_return_type" in self.__dict__:
             self.__dict__.pop("__proc_return_type", "")
+            return
         raise RuntimeError("Return Type not set for the proc")
 
     def exists_in_current_scope(self, variable: str) -> bool:
@@ -109,13 +115,24 @@ class Scope:
 
     def get_global(self, name: str) -> Tuple[List[BX_TYPE], BX_TYPE] :
         """ Returns the type of a procedure or global variable from the global scope """
-        return self.__scope_map[0][name]
+        if self.exists_in_current_scope(name):
+            return self.__scope_map[0][name]
+        return None
 
     def add_proc(self, proc_name: str, in_type: List[BX_TYPE], out_type: BX_TYPE) -> None:
         """ Adds a procedure in the current global scope """
         if self.scope_len():
             self.__scope_map[0][proc_name] = (in_type, out_type)
 
+    def add_global_var(self, name:str, ty: BX_TYPE) -> None:
+        """ Adds a global vardecl """
+        self.__global_vardecls[name] = ty
+
+    def check_global_vars(self, name: str) -> bool:
+        """ Checks if var is declared in global vars """
+        if name in self.__global_vardecls:
+            return True
+        return False
 
 class Node:
     def __init__(self, location: List[int]):
@@ -227,7 +244,7 @@ class ExpressionProcCall(Expression):
         proc = scope.get_global(self.__name)
         if proc is None:
             self.syntax_error("Procedure '%s' is not defined." % self.__name)
-        elif not isinstance(proc, Tuple[List[BX_TYPE], BX_TYPE]):
+        elif scope.check_global_vars(proc):
             self.syntax_error(f" procedure {self.__name} already declared in global scope but as global variable")
         else:
             in_types, out_type = scope.get_global(self.__name)
@@ -433,6 +450,7 @@ class StatementVardecl(Statement):
             self.syntax_error(" variable already declared in current global scope")
         else:
             scope.add_variable(self.variable.name, self.__type)
+            scope.add_global_var(self.variable.name, self.__type)
         self.__global = True
 
     def type_check(self, scope: Scope, ongoingloop: bool) -> None:
@@ -459,7 +477,7 @@ class StatementAssign(Statement):
         if not scope.exists(self.lvalue.name):
             self.syntax_error(f" variable not yet declared")
         self.rvalue.type_check(scope)
-        if self.lvalue.type != self.rvalue.type:
+        if self.lvalue.get_type() != self.rvalue.get_type():
             self.syntax_error(f'')
 
 # ------------------------------------------------------------------------------#
@@ -478,7 +496,7 @@ class StatementIfElse(Statement):
         return "ifelse(%s,%s,%s)" % (self.condition,self.block,self.if_rest)
     
     def type_check(self, scope: Scope, ongoingloop: bool) -> None:        
-        if self.condition.type != BX_TYPE.BOOL:
+        if self.condition.get_type() != BX_TYPE.BOOL:
             self.syntax_error(f'')
         self.condition.type_check(scope)
         self.block.type_check(scope, ongoingloop)
@@ -495,7 +513,7 @@ class StatementWhile(Statement):
     
     def type_check(self, scope: Scope, ongoingloop: bool) -> None:
         self.condition.type_check(scope)
-        if self.condition.type != BX_TYPE.BOOL:
+        if self.condition.get_type() != BX_TYPE.BOOL:
             self.syntax_error(f'')
         self.block.type_check(scope, True)
 
@@ -531,27 +549,29 @@ class DeclProc(Node):
         if self.__name.startswith("__bx_"):
             self.syntax_error(" function starts with reserved keyword")
         
+        # print(f"global checking {self.__name}")
         proc = scope.get_global(self.__name)
         if proc is not None:
             self.syntax_error(" function already declared in current scope")
-        elif not isinstance(proc, Tuple[List[BX_TYPE], BX_TYPE]):
+        elif scope.check_global_vars(proc):
             self.syntax_error(f" procedure {self.__name} already declared in global scope but as global variable")
         else:
             if self.__name == "main":
                 if self.__arguments != []:
                     self.syntax_error(" main function cannot have arguments")
-                if self.__returntype != None:
+                if self.__returntype != BX_TYPE.VOID:
                     self.syntax_error(" main function cannot have a return type")
             scope.add_proc(self.__name, [arg.get_type() for arg in self.__arguments], self.__returntype)
 
     def type_check(self, scope: Scope) -> None:
         """ Type checks the proc block. Sets proc return type for Return statements """
         scope.set_proc_return_type(self.__returntype)
-        self.__body.type_check(self.__scope, False)
+        scope.add()
+        self.__body.type_check(scope, False)
         scope.unset_proc_return_type()
 
         # check if the func has a return statement        
-        if self.__returntype != "void":
+        if self.__returntype != BX_TYPE.VOID:
             ret_stat = False
             for stat in self.__body.statements:
                 if isinstance(stat, StatementReturn):
@@ -576,7 +596,8 @@ class Prog(Node):
     def __init__(self,location: List[int], decls: List[Union[DeclProc, StatementVardecl]]):
         super().__init__(location)
         self.__decls: List[Union[DeclProc, StatementVardecl]] = decls
-        self.__scope = Scope().create_scope() #immediately initialize global scope
+        self.__scope = Scope()
+        self.__scope.create_scope() #immediately initialize global scope
         
     def __str__(self):
         return "Prog(%s)" % (self.__decls)

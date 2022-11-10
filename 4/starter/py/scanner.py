@@ -4,9 +4,7 @@ import sys
 
 #words 
 reserved = {
-    # "main" : "MAIN",
     "while": "WHILE",
-    "print": "PRINT",
     "def" : "DEF",
     "int" : "INT",
     "bool": "BOOL",

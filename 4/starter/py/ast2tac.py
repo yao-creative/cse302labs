@@ -268,9 +268,9 @@ class AST_to_TAC_Generator:
 
         elif isinstance(statement, StatementAssign):
             temporary = self.__code_state.fetch_temp(statement.lvalue.name)
-            if statement.rvalue.type == BX_TYPE.INT:
+            if statement.rvalue.get_type() == BX_TYPE.INT:
                 self.__tmm_expression_parse(statement.rvalue, temporary)
-            elif statement.rvalue.type == BX_TYPE.BOOL:
+            elif statement.rvalue.get_type() == BX_TYPE.BOOL:
                 temp = self.__code_state.fresh_temp()
                 self.__bool_assign(temp, statement.rvalue, temporary)
 
@@ -294,8 +294,8 @@ class AST_to_TAC_Generator:
     def __tmm_expression_parse(self, expression: Expression, temporary: str) -> None:
         """ parses the expression and builds its tac """
         
-        # if expression.type != BX_TYPE.INT:
-        #     raise RuntimeError(f'Expression must have type INT but has type {expression.type}')
+        # if expression.get_type() != BX_TYPE.INT:
+        #     raise RuntimeError(f'Expression must have type INT but has type {expression.get_type()}')
         
         if isinstance(expression, ExpressionInt):
             self.__emit("const", [expression.value], temporary)
@@ -327,12 +327,12 @@ class AST_to_TAC_Generator:
                 else:
                     temp = self.__code_state.fresh_temp()
                     # if param is bool then we need to convert its result into int
-                    if param.type == BX_TYPE.BOOL:
+                    if param.get_type() == BX_TYPE.BOOL:
                         self.__bool_assign(temp, param, temporary)
                     else:
                         self.__tmm_expression_parse(param, temporary)
                 self.__emit(opcode="param", args=[index+1, temp], result=None)
-            res = None if expression.type is "void" else temporary
+            res = None if expression.get_type() is BX_TYPE.VOID else temporary
             self.__emit(opcode="call", args=["@"+expression.name, len(expression.params)], result=res)
 
         else:       # should never reach here
@@ -340,8 +340,8 @@ class AST_to_TAC_Generator:
 
     def __tmm_bool_expression_parse(self, expression: Expression, Ltrue: str, Lfalse: str) -> None:
         """ parses the bool expression and builds its tac """
-        if expression.type != BX_TYPE.BOOL:
-            raise RuntimeError(f'Expression must have type BOOL but has type {expression.type}')
+        if expression.get_type() != BX_TYPE.BOOL:
+            raise RuntimeError(f'Expression must have type BOOL but has type {expression.get_type()}')
         
         if isinstance(expression, ExpressionBool):
             if expression.value: 

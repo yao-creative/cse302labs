@@ -94,14 +94,14 @@ def p_paramstar(p):
     """paramstar : 
                  | param
                  | param COMMA paramstar"""
-    print(f"entered paramstar")
+    # print(f"entered paramstar")
     if len(p) == 1:
         p[0] = []
     if len(p) == 2:
         p[0] = p[1]
     elif len(p) == 4:
         p[0] = p[1] + p[3]
-    print(f"paramstar: {p[0]}")
+    # print(f"paramstar: {p[0]}")
 
 def p_param(p):
     """param : identstar type"""
