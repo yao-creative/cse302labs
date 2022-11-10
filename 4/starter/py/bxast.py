@@ -1,25 +1,20 @@
 from typing import List, Tuple, Dict, Union, Any
 
 """
-NOTE FOR THE GRADER:
-
-For comparison operators != and == we have only implemented INT
-comparisons and not BOOL comparisons as stated in the assignment.
-In this regards, the file ../examples/boolops.bx throws an error
-as it implements bool comparisons in line 18 which is not allowed
-by our compiler. Thank you for taking this into account.
 
 Authors: Yi Yao Tan 
          Vrushank Agrawal
 """
+
+# ------------------------------------------------------------------------------#
+# Macro Classes
+# ------------------------------------------------------------------------------#
 
 class Operations:
     """ A class that declares all operations for global use """
     _binops_int: tuple = ("addition", "substraction", "multiplication",
                         "division", "modulus", "bitwise-and", "bitwise-or", 
                         "bitwise-xor", "logical-shift-left", "logical-shift-right")
-    # _binops_int_bool: tuple = ("cmpe", "cmpne")
-    # _binops_cmp: tuple = ("cmpl", "cmple", "cmpge", "cmpg") delete line below
     _binops_cmp: tuple = ("cmpl", "cmple", "cmpge", "cmpg", "cmpe", "cmpne")
     _binops_bool: tuple = ("logical-and", "logical-or")
     _binops: tuple = _binops_bool + _binops_cmp + _binops_int
@@ -28,13 +23,8 @@ class Operations:
     _unops_bool: tuple = ("not",)
     _unops: tuple = _unops_bool + _unops_int
 
-# ------------------------------------------------------------------------------#
-# Macro Classes
-# ------------------------------------------------------------------------------#
-
 class BX_TYPE:
     """ Class of all the data types in BX """
-
     def getType(__name: str) -> Any:
         if __name == "int":
             return BX_TYPE.INT
@@ -95,10 +85,7 @@ class Scope:
     
     def get_global(self, name) -> Tuple[List[BX_TYPE], BX_TYPE] :
         """ Returns the type of a procedure or global variable from the global scope """
-
         return self.__scope_map[0][name]
-        
-    
 
     def add_proc(self, proc_name: str, in_type: List[BX_TYPE], out_type: BX_TYPE) -> None:
         """ Adds a procedure in the current global scope """
@@ -141,9 +128,11 @@ class Param(Node):
     def get_name(self):
         """ return name of param """
         return self.__name
+
 # ------------------------------------------------------------------------------#
 # Utility Class for Parser
 # ------------------------------------------------------------------------------#
+
 class ListParams:
     def __init__(self, params: List[Param], ty: BX_TYPE):
         self.params: List[Param] = params 
@@ -165,6 +154,7 @@ class ListParams:
 # ------------------------------------------------------------------------------#
 # Expression Classes
 # ------------------------------------------------------------------------------#
+
 class Expression(Node):
     def __init__(self,location: List[int]):
         super().__init__(location)
@@ -183,9 +173,7 @@ class ExpressionBool(Expression):
     
     def type_check(self, scope: Scope) -> None:   # We should never reach here
         if self.value not in (True, False):
-            self.syntax_error(f"{self.value} value must be 'true' or 'false'.")
-            
-    
+            self.syntax_error(f"{self.value} value must be 'true' or 'false'.")    
     
 class ExpressionProcCall(Expression):
     def __init__(self, location: List[int], name: str, params: List[Expression]):
@@ -218,8 +206,6 @@ class ExpressionProcCall(Expression):
                 parameter.type_check(scope)
                 if parameter.get_type() != in_types[i]:
                     self.syntax_error(f"Parameter {i} of procedure '{self.__name}' must be of type {in_types[i]}.")
-                                   
-        
             
 class ExpressionVar(Expression):
     def __init__(self, location: List[int], name: str):
@@ -317,8 +303,9 @@ class ExpressionOp(Expression):
                 self.syntax_error(f"Argument {index+1} for operation {self.operator} should have type {expected_type} but has {arg_type}")
 
 #------------------------------------------------------------
-#Utility for parser
+# Utility for parser
 #------------------------------------------------------------
+
 class ListVarDecl:
     def __init__(self, vars: List[ExpressionVar], ty: BX_TYPE):
         self.__vars: List[ExpressionVar] = vars 
@@ -336,7 +323,6 @@ class ListVarDecl:
     def return_vardecl_list(self):
         """ Return list of declared variables """
         return self.__vars
-
 
 # ------------------------------------------------------------------------------#
 # Statement Classes
@@ -523,7 +509,7 @@ class DeclProc(Node):
         proc = scope.get_global(self.__name)
         if proc is not None:
             self.syntax_error(" variable already declared in current scope")
-        elif not isinstance(proc, Tuple[List[BX_TYPE],BX_TYPE]):
+        elif not isinstance(proc, Tuple[List[BX_TYPE], BX_TYPE]):
             self.syntax_error(f" procedure {self.__name} already declared in global scope but as global variable")
         else:
             if self.__name == "main":
@@ -532,10 +518,7 @@ class DeclProc(Node):
                 if self.__returntype != None:
                     self.syntax_error(" main function cannot have a return type")
             scope.add_proc(self.__name, [arg.get_type() for arg in self.__arguments], self.__returntype)
-    
-    def get_name(self) -> str:
-        return self.__name
-            
+
     def type_check(self) -> None:
         #TODO: Check that every path terminates with a return statement
         self.__body.type_check(self.__scope, False)
@@ -584,4 +567,3 @@ class Prog(Node):
         """Checks the var declaration expressions and procedure bodies"""
         for declaration in self.__decls:
             declaration.type_check()
-        
