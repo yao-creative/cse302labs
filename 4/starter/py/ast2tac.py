@@ -1,6 +1,5 @@
 import sys
 import json
-from typing import Union
 from bxast import *
 
 """
@@ -52,8 +51,6 @@ class Code_State:
         temp = self.fresh_temp()
         self.__temps_by_scope[-1][variable.name] = temp
         return temp
-
-    # TODO add glob var or func arg call chceking
 
     def fetch_temp(self, variable: str) -> str:
         """ Returns a temp if it exists otherwise creates and returns one """
@@ -178,14 +175,11 @@ class AST_to_TAC_Generator:
         self.__code_state.enter_scope()
         
         for glob_func in self.__code.functions:
-            if isinstance(glob_func, ListVarDecl):
-                
-                # TODO add expression to global var
-                
+            if isinstance(glob_func, ListVarDecl):                
                 for var in glob_func.return_vardecl_list():
-                    self.__code_state.add_variable("@"+var.name)
-                    self.__global_vars.append({"var": "@"+var.name,
-                                               "init": var.name})
+                    self.__code_state.add_variable("@"+var.variable)
+                    self.__global_vars.append({"var": "@"+var.variable,
+                                               "init": var.init})
 
             elif isinstance(glob_func, DeclProc):
                 self.__code_state.enter_scope()
