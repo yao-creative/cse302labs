@@ -90,6 +90,14 @@ class Scope:
         if self.scope_len():
             self.__scope_map[-1][variable] = value
 
+    def exists_in_global_scope(self, variable: str) -> bool:
+        """ Checks if a variable exists in current scope """
+        # print(self.__scope_map[0])
+        # print(variable)
+        if variable in self.__scope_map[0]:
+            return True
+        return False
+
     # ---------------------------------------------------------------------------#
     # Helpers for proc functions
 
@@ -108,27 +116,18 @@ class Scope:
     def unset_proc_return_type(self) -> None:
         """ Unsets the return type for the proc after exit """
         # print("unset proc ret type")
-        print(self.__dict__)
+        # print(self.__dict__)
         if "_Scope__proc_return_type" in self.__dict__:
             self.__dict__.pop("__proc_return_type", "")
             return
         raise RuntimeError("Return Type not set for the proc")
-
-    # def set_proc_args(self, args: list) -> None:
-    #     """ Add variables to scope passed as current proc parameters """
-    #     args_dict = {arg.get_name(): arg.get_type() for arg in args}
-    #     self.__proc_args = args_dict
-
-    # def unset_proc_args(self) -> None:
-    #     """ Removes vars from list of declvars for current proc """
-    #     self.__proc_args = []
 
     # ---------------------------------------------------------------------------#
     # Helpers for global type_check
 
     def get_global(self, name: str) -> Tuple[List[BX_TYPE], BX_TYPE] :
         """ Returns the type of a procedure or global variable from the global scope """
-        if self.exists_in_current_scope(name):
+        if self.exists_in_global_scope(name):
             return self.__scope_map[0][name]
         return None
 
@@ -141,8 +140,10 @@ class Scope:
         """ Adds a global vardecl """
         self.__global_vardecls[name] = ty
 
-    def check_global_vars(self, name: str) -> bool:
+    def proc_in_global_vars(self, name: str) -> bool:
         """ Checks if var is declared in global vars """
+        print(name)
+        print(self.__global_vardecls)
         if name in self.__global_vardecls:
             return True
         return False
@@ -185,8 +186,6 @@ class Param(Node):
             self.syntax_error(" function param is repeated")
         else:
             scope.add_variable(self.__name)
-
-
 
 # ------------------------------------------------------------------------------#
 # Utility Class for Parser
@@ -266,7 +265,7 @@ class ExpressionProcCall(Expression):
         proc = scope.get_global(self.__name)
         if proc is None:
             self.syntax_error("Procedure '%s' is not defined." % self.__name)
-        elif scope.check_global_vars(proc):
+        elif scope.proc_in_global_vars(proc[1]):
             self.syntax_error(f" procedure {self.__name} already declared in global scope but as global variable")
         else:
             in_types, out_type = scope.get_global(self.__name)
@@ -577,7 +576,7 @@ class DeclProc(Node):
         proc = scope.get_global(self.__name)
         if proc is not None:
             self.syntax_error(" function already declared in current scope")
-        elif scope.check_global_vars(proc):
+        elif proc is not None and scope.proc_in_global_vars(proc[1]):
             self.syntax_error(f" procedure {self.__name} already declared in global scope but as global variable")
         else:
             if self.__name == "main":

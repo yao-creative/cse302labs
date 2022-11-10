@@ -106,7 +106,7 @@ def p_paramstar(p):
 def p_param(p):
     """param : identstar type"""
     lp = ListParams([], p[2])
-    print(f"identstar p[2]: {p[2]}")
+    # print(f"identstar p[2]: {p[2]}")
     lp.add_multi_param(p[1])
     p[0] = lp.return_params_list()
 
@@ -302,7 +302,7 @@ def run_parser(filename):
         data = f.read()
 
     result = parser.parse(data, lexer=lexer,tracking=True)
-    print(result)
+    # print(result)
     return result 
 
 if __name__ == "__main__":
