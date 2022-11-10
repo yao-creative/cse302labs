@@ -75,6 +75,22 @@ class Scope:
                 return True
         return False
 
+    def set_proc_return_type(self, type: BX_TYPE) -> None:
+        """ Sets the return type for the current proc """
+        self.__proc_return_type = type
+
+    def get_proc_return_type(self) -> BX_TYPE:
+        """ Get the return type for the current proc """
+        if "__proc_return_type" in self.__dict__:
+            return self.__proc_return_type
+        raise RuntimeError("Return Type not set for the proc")
+
+    def unset_proc_return_type(self) -> None:
+        """ Unsets the return type for the proc after exit """
+        if "__proc_return_type" in self.__dict__:
+            self.__dict__.pop("__proc_return_type", "")
+        raise RuntimeError("Return Type not set for the proc")
+
     def exists_in_current_scope(self, variable: str) -> bool:
         """ Checks if a variable exists in current scope """
         # print(self.__scope_map)
@@ -83,6 +99,9 @@ class Scope:
             return True
         return False
     
+    # ---------------------------------------------------------------------------#
+    # Helpers for global type_check
+
     def get_global(self, name) -> Tuple[List[BX_TYPE], BX_TYPE] :
         """ Returns the type of a procedure or global variable from the global scope """
         return self.__scope_map[0][name]
@@ -194,7 +213,6 @@ class ExpressionProcCall(Expression):
         if self.__name == "print":
             if len(self.__params) != 1:
                 self.syntax_error(" print function can have only 1 parameter")
-
             # check print type            
             type = self.__params[0].get_type()
             if type == BX_TYPE.BOOL:
@@ -203,7 +221,6 @@ class ExpressionProcCall(Expression):
                 self.__name == "__bx_print_int"
             else:
                 self.syntax_error(" print statement has invalid argument")
-            
             # set return type and return
             self.__type = BX_TYPE.VOID
             return
@@ -229,6 +246,7 @@ class ExpressionVar(Expression):
     def __init__(self, location: List[int], name: str):
         super().__init__(location)
         self.name: str = name
+        # TODO do we allow bool decl?
         self.__type: BX_TYPE = BX_TYPE.INT        # We only allow int decl in BX
 
     def get_type(self) -> BX_TYPE:
@@ -285,9 +303,7 @@ class ExpressionOp(Expression):
         if self.operator in self.operations._binops_int:
             self.expected_argument_type = (BX_TYPE.INT, BX_TYPE.INT)
             self.__type = BX_TYPE.INT
-        # elif self.operator in self.operations._binops_int_bool:
-        #     self.expected_argument_type = [(BX_TYPE.INT, BX_TYPE.INT),(BX_TYPE.BOOL, BX_TYPE.BOOL)]
-        #     self.__type = BX_TYPE.BOOL
+
         elif self.operator in self.operations._binops_bool:
             self.expected_argument_type = (BX_TYPE.BOOL, BX_TYPE.BOOL)
             self.__type = BX_TYPE.BOOL
@@ -367,8 +383,6 @@ class StatementBlock(Statement):
         return "block(%s)" % (self.statements)
     
 class StatementEval(Statement):
-    #TODO: type check The type of the result is allowed to be
-    # any semantic type, including the type void, because the “result” of the evaluation is not stored.
     def __init__(self,location: List[int], expression: Expression):
         super().__init__(location)
         self.expression: Expression = expression
@@ -380,18 +394,23 @@ class StatementEval(Statement):
         return "eval(%s)" % (self.expression)
     
 class StatementReturn(Statement):
-    #TODO:  ensure that the full type of the procedure is known at the point where
-    #you are type-checking a return statement
-    #TODO: Subroutines: here, an argument to return is optional. If one is provided, it must type-check
-    # against the expected type void.
     def __init__(self,location: List[int], expression: Union[ExpressionVar, ExpressionProcCall]):
         super().__init__(location)
         self.expression: Union[ExpressionVar, ExpressionProcCall] = expression
     
     def type_check(self, scope: Scope, ongoingloop: bool) -> None:
+        """ Type checks if return type matches function return type"""
+        # if expression is None then it is a subroutine -> VOID
+        expr_ret_type = BX_TYPE.VOID
         if self.expression is not None:
+            expr_ret_type = self.expression.get_type()
             self.expression.type_check(scope)
         
+        # checks ret type of expression with proc
+        ret_type = scope.get_proc_return_type()
+        if ret_type != expr_ret_type:
+            self.syntax_error(f" expected return type {ret_type} got {expr_ret_type}")
+
     def __str__(self):
         return "return(%s)" % (self.expression)
       
@@ -417,9 +436,6 @@ class StatementVardecl(Statement):
         self.__global = True
 
     def type_check(self, scope: Scope, ongoingloop: bool) -> None:
-        # if self.__type != BX_TYPE.INT:    # shouldn't be possible but anyways
-        #     self.syntax_error(f'{self.variable.name} should have type {str(BX_TYPE.INT)} \
-        #                         but has type {self.__type}')
         self.init.type_check(scope)
         if not self.__global: 
             # first global pass already did this, only need to check declaration in non-global scope
@@ -427,20 +443,6 @@ class StatementVardecl(Statement):
                 self.syntax_error(" variable already declared in current scope")
             else:
                 scope.add_variable(self.variable.name, self.__type)
-        
-# class StatementPrint(Statement):
-#     """Actually are prints"""
-#     def __init__(self, location: List[int], argument: Expression):
-#         super().__init__(location)
-#         self.argument: Expression = argument
-    
-#     def __str__(self):
-#         return "print({})".format(self.argument)
-    
-#     def type_check(self, scope: Scope, ongoingloop: bool) -> None:
-#         self.argument.type_check(scope)
-#         if self.argument.type != BX_TYPE.INT:
-#             self.syntax_error(f'')
 
 class StatementAssign(Statement):
     def __init__(self, location: List[int], lvalue: ExpressionVar, rvalue: Expression):
@@ -519,7 +521,7 @@ class DeclProc(Node):
         # print(f"__name: {name} __arguments: {arguments}")
         self.__returntype: BX_TYPE = returntype
         self.__body: StatementBlock = body
-        self.__scope = Scope()
+        # self.__scope = Scope()
         
     def global_type_check(self, scope: Scope) -> None:
         """ Checks if the procedure is already declared in the global scope.
@@ -541,9 +543,11 @@ class DeclProc(Node):
                     self.syntax_error(" main function cannot have a return type")
             scope.add_proc(self.__name, [arg.get_type() for arg in self.__arguments], self.__returntype)
 
-    def type_check(self) -> None:
-
+    def type_check(self, scope: Scope) -> None:
+        """ typ checks the proc block. Sets proc return type for Return statements """
+        scope.set_proc_return_type(self.__returntype)
         self.__body.type_check(self.__scope, False)
+        scope.unset_proc_return_type()
 
         # check if the func has a return statement        
         if self.__returntype != "void":
