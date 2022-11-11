@@ -78,18 +78,23 @@ def p_decl(p):
     p[0] = p[1]
           
 def p_procdecl(p):
-    """procdecl : DEF IDENT LPAREN paramstar RPAREN type block"""
+    """procdecl : DEF IDENT LPAREN paramstar RPAREN type_optional block"""
     p[0]: DeclProc = DeclProc([p.lineno(0), p.lexpos(0)], p[2], p[4], p[6], p[7])
     
-def p_type(p):
-    """type : 
-            | COLON BOOL
-            | COLON INT"""
+def p_type_optional(p):
+    """type_optional : 
+                       | COLON BOOL
+                       | COLON INT"""
     if len(p) == 1:
         p[0] = BX_TYPE.VOID
     else:
         p[0] = BX_TYPE.INT if p[2] == "int" else BX_TYPE.BOOL
         
+def p_type(p):
+    """type : INT
+            | BOOL"""
+    p[0] = BX_TYPE.INT if p[1] == "int" else BX_TYPE.BOOL    
+      
 def p_paramstar(p):
     """paramstar : 
                  | param
@@ -104,8 +109,8 @@ def p_paramstar(p):
     # print(f"paramstar: {p[0]}")
 
 def p_param(p):
-    """param : identstar type"""
-    lp = ListParams([], p[2])
+    """param : identstar COLON type"""
+    lp = ListParams([], p[3])
     # print(f"identstar p[2]: {p[2]}")
     lp.add_multi_param(p[1])
     p[0] = lp.return_params_list()
@@ -189,9 +194,9 @@ def p_return(p):
         p[0] = StatementReturn([p.lineno(0), p.lexpos(0)],p[2])
 
 def p_vardecl(p):
-    """vardecl : VAR varinits type SEMICOLON"""
+    """vardecl : VAR varinits COLON type SEMICOLON"""
     listvardecl = ListVarDecl([], p[4])
-    vars = p[1]
+    vars = p[2]
     # TODO smth wrong with vars passing here
     # check example gvar_repeated.bx, lvar_badinit, lvar_repeated, 
     listvardecl.add_multi_var(vars)
@@ -222,7 +227,7 @@ def p_expression(p):
                   | MINUS expression %prec UMINUS
                   | NOT expression
                   | BITWISE_NEGATION expression
-                  | IDENT LPAREN expression expressionstar RPAREN
+                  | IDENT LPAREN expressionstar RPAREN
     """
     # TODO ProcCall can have zero parameters
     if len(p) == 2:
@@ -252,8 +257,8 @@ def p_expression(p):
             op = __binop_dict.get(p[2])
             p[0] = ExpressionOp([p.lineno(0), p.lexpos(0)], op, [p[1], p[3]])
             
-    elif len(p) == 6: # function call
-        params = [p[3]] + p[4]
+    elif len(p) == 5: # function call
+        params = p[3]
         p[0] = ExpressionProcCall([p.lineno(0), p.lexpos(0)], p[1], params)
         
     else:
@@ -261,9 +266,12 @@ def p_expression(p):
     
 def p_expressionstar(p):
     """expressionstar : 
+                      | expression 
                       | expressionstar COMMA expression"""
     if len(p) == 1:
         p[0] = []
+    elif len(p) == 2:
+        p[0] = [p[1]]
     else:
         p[0] = p[1]
         p[0].append(p[3])
