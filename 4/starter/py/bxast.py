@@ -245,7 +245,7 @@ class ExpressionVar(Expression):
     def __init__(self, location: List[int], name: str):
         super().__init__(location)
         self.name: str = name
-        # TODO how to assign expr Type?
+        # TODO : Vrushank how to assign expr Type?
         self.__type: BX_TYPE = BX_TYPE.INT
 
     def get_type(self) -> BX_TYPE:
@@ -255,7 +255,7 @@ class ExpressionVar(Expression):
         return "ExpressionVar({})".format(self.name)
 
     def type_check(self, scope: Scope) -> None:
-        # TODO what is happening here?
+        # TODO : General what is happening here?
         if not scope.exists(self.name):
             self.syntax_error(f" variable not defined")
         else:
@@ -298,7 +298,7 @@ class ExpressionOp(Expression):
     def __str__(self):
         return "ExpressionOp(%s,%s)" % (self.operator,self.arguments)
 
-    # TODO check if correct param comparisons
+    # TODO : Vrushank check if correct param comparisons
 
     def __type_init(self) -> None:
         """ Initializes the result and argument type based on argument input """
@@ -483,9 +483,11 @@ class StatementIfElse(Statement):
         return "ifelse(%s,%s,%s)" % (self.condition,self.block,self.if_rest)
     
     def type_check(self, scope: Scope, ongoingloop: bool) -> None:
+        # TODO - YAO the expression is parsed incorrectly
+        # check examples/fizzbuzz.bx
         print(self.condition)
         if self.condition.get_type() != BX_TYPE.BOOL:
-            self.syntax_error(f'')
+            self.syntax_error(f' conditional expression does not have bool type')
         self.condition.type_check(scope)
         self.block.type_check(scope, ongoingloop)
         if self.if_rest is not None: self.if_rest.type_check(scope, ongoingloop)
@@ -599,6 +601,8 @@ class Prog(Node):
             if isinstance(declaration, DeclProc):
                 if declaration.get_name() == "main":
                     has_main = True
+            # TODO declaration is being passed as a list
+            # print(declaration)
             declaration.global_type_check(self.__scope)       
         if not has_main:
             self.syntax_error("No main function defined")
