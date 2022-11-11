@@ -131,7 +131,10 @@ def p_statementstar(p):
         p[0] = []
     else:
         p[0] = p[1]
-        p[0].append(p[2])
+        if isinstance(p[2], list):
+            p[0].extend(p[2])
+        else:
+            p[0].append(p[2])
         
 def p_statement(p):
     """statement : vardecl
@@ -144,6 +147,8 @@ def p_statement(p):
                  | return
                  """
     p[0] = p[1]
+
+    
     
 def p_eval(p):
     """eval : expression SEMICOLON"""
@@ -201,6 +206,7 @@ def p_vardecl(p):
     # check example gvar_repeated.bx, lvar_badinit, lvar_repeated, 
     listvardecl.add_multi_var(vars)
     p[0] = listvardecl.return_vardecl_list()
+    print(f"vardecl: {p[0]}")
     
 def p_varinits(p):
     """varinits : IDENT EQUALS expression varinitstar"""
