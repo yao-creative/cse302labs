@@ -379,6 +379,7 @@ class StatementBlock(Statement):
         if args is not None:
             for arg in args:
                 arg.type_check(scope)
+        print(f"scope: {scope} statements: {self.statements}")
         for statement in self.statements:
             statement.type_check(scope, ongoingloop)
         scope.delete_scope()
@@ -430,7 +431,7 @@ class StatementVardecl(Statement):
         return self.__type
     
     def __str__(self):
-        return "vardecl(%s,%s,%s)" % (self.name,self.ty,self.init)
+        return "vardecl(%s,%s,%s)" % (self.variable,self.__type,self.init)
 
     def global_type_check(self, scope: Scope) -> None:
         if scope.exists_in_current_scope(self.variable.name):

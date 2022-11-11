@@ -201,6 +201,7 @@ def p_vardecl(p):
     # check example gvar_repeated.bx, lvar_badinit, lvar_repeated, 
     listvardecl.add_multi_var(vars)
     p[0] = listvardecl.return_vardecl_list()
+    print(f"vardecl: {p[0]}")
     
 def p_varinits(p):
     """varinits : IDENT EQUALS expression varinitstar"""
