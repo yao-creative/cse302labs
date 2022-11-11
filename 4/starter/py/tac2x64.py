@@ -1,92 +1,11 @@
 import json, sys, os
 from typing import List
+from macros import x64Macros as Macros
 
 """
 Authors: Yi Yao Tan 
          Vrushank Agrawal
 """
-
-# ---------------------------------------------------------------------#
-# Class for Macro vars
-# ---------------------------------------------------------------------#
-
-class Macros:
-
-    _binops={ 'add': 'addq',
-              'sub': 'subq',
-              'mul': (lambda ra, rb, rd: [f'\tmovq {ra}, %rax',
-                                          f'\timulq {rb}',
-                                          f'\tmovq %rax, {rd}']),
-              'div': (lambda ra, rb, rd: [f'\tmovq {ra}, %rax',
-                                          f'\tcqto',
-                                          f'\tidivq {rb}',
-                                          f'\tmovq %rax, {rd}']),
-              'mod': (lambda ra, rb, rd: [f'\tmovq {ra}, %rax',
-                                          f'\tcqto',
-                                          f'\tidivq {rb}',
-                                          f'\tmovq %rdx, {rd}']),
-              'and': 'andq',
-              'or': 'orq',
-              'xor': 'xorq',
-              'shl': (lambda ra, rb, rd: [f'\tmovq {ra}, %r11',
-                                          f'\tmovq {rb}, %rcx',
-                                          f'\tsalq %cl, %r11',
-                                          f'\tmovq %r11, {rd}']),
-              'shr': (lambda ra, rb, rd: [f'\tmovq {ra}, %r11',
-                                          f'\tmovq {rb}, %rcx',
-                                          f'\tsarq %cl, %r11',
-                                          f'\tmovq %r11, {rd}'])
-            }
-    
-    _unops = { 'neg': 'negq',
-               'not': 'notq'}
-
-    _jcc = ["je", "jz",       # Src2 == Src1
-           "jne", "jnz",      # Src2 != Src1
-           "jl", "jnge",      # Src2 < Src1
-           "jle", "jng",      # Src2 <= Src1
-           "jg", "jnle",      # Src2 > Src1
-           "jge", "jnl",      # Src2 >= Src1
-           ]
-
-    _first_6_regs = {   1 : (lambda reg: [f'movq {reg}, %rdi'] ),
-                        2 : (lambda reg: [f'movq {reg}, %rsi'] ),
-                        3 : (lambda reg: [f'movq {reg}, %rdx'] ),
-                        4 : (lambda reg: [f'movq {reg}, %rcx'] ),
-                        5 : (lambda reg: [f'movq {reg}, %r8'] ),
-                        6 : (lambda reg: [f'movq {reg}, %r9'] ),
-                    }
-
-    # ---------------------------------------------------------------------#
-    # assertion functions
-    # ---------------------------------------------------------------------#
-        
-    @staticmethod
-    def _assert_temporary(temp: str, instr: dict) -> None:
-        """ Checks if temporary is of correct format """
-        assert (isinstance(temp, str) and \
-                temp[0] == '%' and \
-                temp[1:].isnumeric()), f'Invalid format for temporary in {instr}'
-
-    @staticmethod
-    def _assert_label(arg: str, instr: dict) -> None:
-        """ Checks if label is of correct format """
-        assert (isinstance(arg, str) and \
-                arg.startswith('%.L') and \
-                arg[3:].isnumeric()), f'Invalid format for label in {instr}'
-
-    @staticmethod
-    def _assert_argument_numb(args: List, num: int, instr: dict) -> None:
-        """ Checks if correct number of arguments passed """
-        if num == 1:
-          assert (len(args)==1), f'Invalid number of arguments in {instr}'
-        elif num == 2:
-          assert (len(args)==2), f'Invalid number of arguments in {instr}'
-
-    @staticmethod
-    def _assert_result(result: None, instr: dict) -> None:
-        """ Checks if result temporary is set to None """
-        assert result == None, f'Result should be empty in {instr}'
 
 # ---------------------------------------------------------------------#
 # Class for Global Vars
@@ -168,7 +87,7 @@ class Procx64:
 
     def __get_label_name(self, lab: str) -> str:
         """ appends the function name to the current label to mark a local label """
-        return f'.{self.__func_name}{lab[1:]}'      
+        return f'%{lab[1:]}'      
 
     # ---------------------------------------------------------------------#
     # tac to assembly conversion

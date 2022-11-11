@@ -1,6 +1,7 @@
 import sys
 import json
 from bxast import *
+from macros import tacMacros as Macros
 
 """
 Authors: Yi Yao Tan 
@@ -10,24 +11,6 @@ Authors: Yi Yao Tan
 # ------------------------------------------------------------------------------#
 # Helper Classes
 # ------------------------------------------------------------------------------#
-
-class Code_Macro:
-    """ The class contains mappings needed for parsing """
-
-    operator_map = {
-        "substraction": "sub", "addition": "add",
-        "multiplication": "mul", "division": "div",
-        "modulus": "mod", "bitwise-xor": "xor", 
-        "bitwise-and": "and", "bitwise-or": "or",
-        "logical-shift-right": "shr", "logical-shift-left": "shl",
-        "opposite": "neg", "bitwise-negation": "not",
-    }
-
-    jump_map = {
-        "cmpe": "jz", "cmpne": "jnz",
-        "cmpl": "jl", "cmpg": "jnle",
-        "cmple": "jle", "cmpge": "jnl",
-    }
 
 class Code_State:
     """ The class keeps track of helper information 
@@ -144,7 +127,7 @@ class AST_to_TAC_Generator:
         self.__global_vars: List[dict] = list()
         self.__global_procs: List[dict] = list()
         self.__proc_instructions: List[dict] = []
-        self.__macros: Code_Macro = Code_Macro
+        self.__macros: Macros = Macros
         self.__tmm_global_parse()
 
     def tac_generator(self) -> List[dict]:

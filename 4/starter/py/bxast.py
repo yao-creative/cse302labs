@@ -1,4 +1,5 @@
-from typing import List, Tuple, Dict, Union, Any
+from typing import List, Tuple, Dict, Union
+from macros import Operations, BX_TYPE
 
 """
 
@@ -7,46 +8,8 @@ Authors: Yi Yao Tan
 """
 
 # ------------------------------------------------------------------------------#
-# Macro Classes
+# Class to handle Scopes
 # ------------------------------------------------------------------------------#
-
-class Operations:
-    """ A class that declares all operations for global use """
-    _binops_int: tuple = ("addition", "substraction", "multiplication",
-                        "division", "modulus", "bitwise-and", "bitwise-or", 
-                        "bitwise-xor", "logical-shift-left", "logical-shift-right")
-    _binops_cmp: tuple = ("cmpl", "cmple", "cmpge", "cmpg", "cmpe", "cmpne")
-    _binops_bool: tuple = ("logical-and", "logical-or")
-    _binops: tuple = _binops_bool + _binops_cmp + _binops_int
-
-    _unops_int: tuple = ("bitwise-negation", "opposite")
-    _unops_bool: tuple = ("not",)
-    _unops: tuple = _unops_bool + _unops_int
-
-class BX_TYPE:
-    """ Class of all the data types in BX """
-    def getType(__name: str) -> Any:
-        if __name == "int":
-            return BX_TYPE.INT
-        elif __name == "bool":
-            return BX_TYPE.BOOL
-        elif __name == "void":
-            return BX_TYPE.VOID
-
-    class INT: 
-        """ Class of INT type """
-        def __str__(self) -> str:
-            return "int"
-
-    class BOOL: 
-        """ Class of BOOL type """
-        def __str__(self) -> str:
-            return "bool"
-    
-    class VOID:
-        """ Class of VOID type """
-        def __str__(self) -> str:
-            return "void"
 
 class Scope:
     def __init__(self) -> None:
