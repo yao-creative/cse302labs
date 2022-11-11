@@ -14,7 +14,6 @@ Authors: Yi Yao Tan
 class Stack:
     def __init__(self) -> None:
         self.__temp_map: Dict[str, str] = dict()
-        self.__stack_size: int
 
     def __getitem__(self, temp: str, instr: dict) -> str:
         """ Return the stack address of the temp """
@@ -35,28 +34,23 @@ class Stack:
             self.__temp_map[temp] = f'{-8 * (len(self.__temp_map)+1)}(%rbp)'
         return self.__temp_map[temp]
 
-    def temp_init(self, tac_args: dict) -> None:
-        """ Initializes the temp map for all args """
-
-        # TODO don't need to alloc stack space for params
-
+    def args_temp_init(self, tac_args: dict) -> None:
+        """ Initializes the temp map for all function arguments """
+        # TODO fix args in tac from names to their regs in order
         for index in range(len(tac_args)):
             arg = tac_args[index]
             if index < 6:
-                stack_loc = f"{-8 * (len(self.__temp_map)+1)}(%rbp)"
-                self.__temp_map[arg] = stack_loc
+                self.__temp_map[arg] = f"{Macros._first_6_regs[index]}"
             else:
                 offset = 8*(index - 5)
-                assert()
-
-        # TODO alloc stack space for all other temps
-
-        self.__stack_size = len(self.__temp_map)
+                assert(offset > 15), f' param {index} offset is invalid at {offset}(%rbp)'
+                assert(offset <= (8*(len(tac_args)-5))), f' param {index} offset is invalid at {offset}(%rbp)'
+                self.__temp_map[arg] = f"{offset}(%rbp)"
 
     def start_proc(self, name: str) -> list:
         """ Adds initial commands when proc is entered """
         # set the stack size to the number of temporaries we need
-        stack_size = self.__stack_size
+        stack_size = len(self.__temp_map)
         stack_size += 1 if (stack_size % 2 != 0) else 0
         return [f'\n',
                 f'\t.globl {name}',
@@ -254,30 +248,31 @@ class Procx64():
                     self.__asm_instr_proc.append(f'\tcmpq $0, {arg}')
                 self.__asm_instr_proc.append(f'\t{opcode} {self.__get_label_name(lab)}')
 
-            # TODO check if this is right
             elif opcode == "call":
                 Macros._assert_argument_numb(args, 2, instr)
                 assert(args[0][0]) == "@", f"Invalid call in the {instr}"
                 arg_num = args[1]
                 func = args[0]
-                # add first 6 params to regs
-                for i in range(min(arg_num, 6)):
-                    temp = self.__param_temps_for_call[index]
-                    self.__asm_instr_proc.append(Macros._first_6_regs[i](temp))
-                # add remaining params in reverse order to stack
+                # push remaining params to stack in reverse order
                 if arg_num > 6:
-                    for temp in reversed(self.__param_temps_for_call[6:]):
-                        self.__asm_instr_proc.append(f'\tpushq {temp}')
+                    Macros._assert_argument_numb(self.__param_temps_for_call, arg_num-6, instr)
+                    for param_temp in reversed(self.__param_temps_for_call):
+                        self.__asm_instr_proc.append(f'\tpushq {param_temp}')
                 self.__asm_instr_proc.append(f'\tcallq {func[1:]}')
+                if arg_num > 6:
+                    self.__asm_instr_proc.append(f'\taddq ${8*(arg_num-6)}, %rsp')
 
-            # TODO check if this is right
             elif opcode == "param":
                 Macros._assert_argument_numb(args, 2, instr)
                 arg_temp = args[1]
-                # copy temp to a new temp
-                new_temp = self.__temp_for_param()
-                self.__asm_instr_proc.append(f'\tmovq {arg_temp}, %r11')
-                self.__asm_instr_proc.append(f'\tmovq %r11, {new_temp}')
+                arg_num = args[0]
+                if arg_num <= 6:
+                    self.__asm_instr_proc.append(Macros._first_6_reg_moves[arg_num](arg_temp))
+                # add remaining params in reverse order to list that will be pushed before callq
+                if arg_num > 6:
+                    assert(arg_temp not in self.__param_temps_for_call)
+                    self.__param_temps_for_call.append(arg_temp)
+                self.__asm_instr_proc.append(f'\tcallq {func[1:]}')
 
             elif opcode == "ret":
                 if len(args) == 0:

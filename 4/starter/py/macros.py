@@ -111,12 +111,20 @@ class x64Macros:
            "jge", "jnl",      # Src2 >= Src1
            ]
 
-    _first_6_regs = {   1 : (lambda temp: [f'movq {temp}, %rdi'] ),
-                        2 : (lambda temp: [f'movq {temp}, %rsi'] ),
-                        3 : (lambda temp: [f'movq {temp}, %rdx'] ),
-                        4 : (lambda temp: [f'movq {temp}, %rcx'] ),
-                        5 : (lambda temp: [f'movq {temp}, %r8'] ),
-                        6 : (lambda temp: [f'movq {temp}, %r9'] ),
+    _first_6_reg_moves = {  1 : (lambda temp: [f'movq {temp}, %rdi'] ),
+                            2 : (lambda temp: [f'movq {temp}, %rsi'] ),
+                            3 : (lambda temp: [f'movq {temp}, %rdx'] ),
+                            4 : (lambda temp: [f'movq {temp}, %rcx'] ),
+                            5 : (lambda temp: [f'movq {temp}, %r8'] ),
+                            6 : (lambda temp: [f'movq {temp}, %r9'] ),
+                        }
+
+    _first_6_regs = { 1: "%rdi",
+                      2: "%rsi",
+                      3: "%rdx",
+                      4: "%rcx",
+                      5: "%r8",
+                      6: "%r9"
                     }
 
     # ---------------------------------------------------------------------#
