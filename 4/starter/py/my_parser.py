@@ -131,7 +131,10 @@ def p_statementstar(p):
         p[0] = []
     else:
         p[0] = p[1]
-        p[0].append(p[2])
+        if isinstance(p[2], list):
+            p[0].extend(p[2])
+        else:
+            p[0].append(p[2])
         
 def p_statement(p):
     """statement : vardecl
@@ -144,6 +147,8 @@ def p_statement(p):
                  | return
                  """
     p[0] = p[1]
+
+    
     
 def p_eval(p):
     """eval : expression SEMICOLON"""
