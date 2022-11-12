@@ -130,7 +130,7 @@ class AST_to_TAC_Generator:
         self.__macros: Macros = Macros
         self.__tmm_global_parse()
 
-    def tac_generator(self) -> List[dict]:
+    def return_tac_instr(self) -> List[dict]:
         """ Generates the tac file """
         return self.__global_vars + self.__global_procs
 
@@ -367,21 +367,18 @@ class AST_to_TAC_Generator:
 # ------------------------------------------------------------------------------#
 
 import argparse
-import my_parser as lexer_parser
+import bx2front
 
-def source_to_tac(filename: str) -> json:
-    ast_: Prog = lexer_parser.run_parser(filename)          # run lexer and parser
-    if ast_ is None: 
-        raise SyntaxError("Could not compile ast")          # exit if error occured while parsing 
+def ast_to_tac(ast: Prog) -> json:
+    if ast is None: 
+        raise RuntimeError("Could not compile ast")          # exit if error occured while parsing 
     
-    ast_.type_check()                                       # check syntax
-    print('reached tac json')
-    tac_ = AST_to_TAC_Generator(ast_)   # convert ast code to json
-    print("tac object created")
+    tac_ = AST_to_TAC_Generator(ast)   # convert ast code to json
+    print("tac created")
+    tac_instr = tac_.return_tac_instr()
+    return tac_instr
 
-    return tac_
-
-def write_tacfile(fname: str, tac_instr: List) -> None:
+def write_tacfile(fname: str, tac_instr: List[dict]) -> None:
     """ Writes a tac json to the system """
     tac_filename = fname[:-2] + 'tac.json'   # get new file name
     with open(tac_filename, 'w') as fp:         # save the file
@@ -397,6 +394,6 @@ if __name__=="__main__":
     
     filename = args.filename[0]     # get the filename
 
-    tac_instr = source_to_tac(filename)  # get the tac instr
-
+    ast = bx2front.get_ast(filename)
+    tac_instr = ast_to_tac(ast)  # get the tac instr
     write_tacfile(filename, tac_instr)

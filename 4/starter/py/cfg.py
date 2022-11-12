@@ -427,27 +427,3 @@ class CFG:
         for block in blocks:
             tac_instrs += block.instructions()
         return tac_instrs
-
-    # ---------------------------------------------------------------------------#
-    # Getter functions for unit tests
-
-    def get_blocks(self) -> List[Block]:
-        return self.__blocks
-
-    def get_label_to_blocks(self) -> Dict[str, Block]:
-        return self.__labels_to_blocks
-
-    def get_edges(self) -> Dict[str, List[str]]:
-        return self.__successors
-
-    def uce(self) -> None:
-        self.__uce()
-
-    def coalesce(self) -> None:
-        self.__coalesce()
-    
-    def jmp_thread(self) -> None:
-        self.__jmp_thread()
-    
-    def jmp_cond_mod(self) -> None:
-        self.__jmp_cond_mod()

@@ -1,7 +1,7 @@
 import json
 import sys, argparse
 from cfg import *
-from typing import List
+from typing import List, FILE
 
 # ------------------------------------------------------------------------------#
 # Basic Block Creator Class
@@ -69,6 +69,7 @@ class CFG_creator:
             if not len(current_block_instr):
                 assert(instr["opcode"] == "label"), f'First instruction not a label {instr}'
             
+            # TODO last instr might not be a ret
             # Create a block until a ret instr and assert last instr is ret
             if instr["opcode"] == "ret":
                 current_block_instr.append(instr)
@@ -112,9 +113,31 @@ class CFG_creator:
 # Main function
 # ------------------------------------------------------------------------------#
 
+def get_serialized_tac(tac_instr: List[dict]) -> List[dict]:
+    """ Creates the CFG for given tac instr """
+    serialized_tac = []
+    for decl in tac_instr:
+        if "proc" in decl:
+            # if len(tac_instr["labels"]):
+            #     label = proc["labels"][-1][3:]
+            label = 0
+            assert decl["proc"][0] == '@'
+            basic_blocks = CFG_creator(decl["proc"][1:], decl["body"], label).return_blocks()
+            cfg = CFG(basic_blocks, decl["proc"][1:])
+            cfg.optimization()
+            serialized_tac.append(cfg.serialized_tac())
+
+    return serialized_tac
+
+def write_serial_tac(filename: FILE, serialized_tac: List[dict]) -> None:
+    """ Wrties the serialized tac to a json file """
+    sname = filename + ".serial.json"
+    with open(sname, "w") as fp:
+        json.dump(serialized_tac, fp, indent=3)
+
 if __name__ == "__main__":
 
-    parser = argparse.ArgumentParser(description='Get method for conversion and filetype.')
+    parser = argparse.ArgumentParser(description='Get file')
     parser.add_argument('filename', metavar="FILE", type=str, nargs=1)
     args = parser.parse_args(sys.argv[1:])
     
@@ -124,17 +147,5 @@ if __name__ == "__main__":
     with open(filename, 'r') as fp: # save the file
         tac_instr = json.load(fp)
 
-    serialized_tac = []
-    for proc in tac_instr:
-        # if len(tac_instr["labels"]):
-        #     label = proc["labels"][-1][3:]
-        label = 0
-        assert proc["proc"][0] == '@'
-        basic_blocks = CFG_creator(proc["proc"][1:], proc["body"], label).return_blocks()
-        cfg = CFG(basic_blocks, proc["proc"][1:])
-        cfg.optimization()
-        serialized_tac.append(cfg.serialized_tac())
-
-    sname = filename[:-5] + ".serial.json"
-    with open(sname, "w") as fp:
-        json.dump(serialized_tac, fp, indent=3)
+    serial_tac = get_serialized_tac(tac_instr)
+    write_serial_tac(filename[:-5], serial_tac)
