@@ -12,15 +12,18 @@ Authors: Yi Yao Tan
 # ---------------------------------------------------------------------#
 
 class Stack:
-    def __init__(self) -> None:
+    def __init__(self, proc_args: list) -> None:
         self.__temp_map: Dict[str, str] = dict()
+        self.__proc_args: List[str] = proc_args
+        self.__proc_args_num: int = len(self.__proc_args)
+        self.__args_temp_init()
 
     def __getitem__(self, temp: str, instr: dict) -> str:
         """ Return the stack address of the temp """
         # if globl var then ret rip relative position
         if temp[0] == "@":
             return f'{temp[1:]}(%rip)'
-        return self.__temp_map(temp, instr)
+        return self.__lookup_temp(temp, instr)
 
     def __lookup_temp(self, temp: str, instr: dict) -> str:
         """ Returns the value of the temp from the stack 
@@ -34,17 +37,19 @@ class Stack:
             self.__temp_map[temp] = f'{-8 * (len(self.__temp_map)+1)}(%rbp)'
         return self.__temp_map[temp]
 
-    def args_temp_init(self, tac_args: dict) -> None:
+    def __args_temp_init(self) -> None:
         """ Initializes the temp map for all function arguments """
         # TODO fix args in tac from names to their regs in order
-        for index in range(len(tac_args)):
-            arg = tac_args[index]
+        # I do not need to allocate temp slots in the stack for proc args
+        # because they are already stored in regs and stack
+        for index in range(self.__proc_args_num):
+            arg = self.__proc_args[index]
             if index < 6:
                 self.__temp_map[arg] = f"{Macros._first_6_regs[index]}"
             else:
                 offset = 8*(index - 5)
                 assert(offset > 15), f' param {index} offset is invalid at {offset}(%rbp)'
-                assert(offset <= (8*(len(tac_args)-5))), f' param {index} offset is invalid at {offset}(%rbp)'
+                assert(offset <= (8*(self.__proc_args_num-5))), f' param {index} offset is invalid at {offset}(%rbp)'
                 self.__temp_map[arg] = f"{offset}(%rbp)"
 
     def start_proc(self, name: str) -> list:
@@ -102,14 +107,15 @@ class Procx64():
         self.__temps: list = proc_instrs["temps"]
         self.__labels: list = proc_instrs["labels"]
         self.__asm_instr_proc: List = list()
-        self.__stack: Stack = Stack()
+        self.__stack: Stack = Stack(self.__args)
+        self.__create_asm_instr()
 
     # ---------------------------------------------------------------------#
     # misc functions
     # ---------------------------------------------------------------------#
 
     def __add_instr_comment(self, instr: dict) -> None:
-        """ Adds instruction as a comment in the assembly """
+        """ Adds instrs as a comment in the assembly """
         if instr['result'] == None:
             if instr['opcode'] == 'jmp' or instr['opcode'] == 'print':
                 self.__asm_instr_proc.append(f'\t/*   {instr["opcode"]} {instr["args"][0]} [TAC] */')
@@ -139,15 +145,8 @@ class Procx64():
         """ appends the function name to the current label to mark a local label """
         return f'.{self.__func_name}.{lab[1:]}'      
 
-    def __temp_for_param(self) -> str:
-        """ Creates a new temp for param instr """
-        new_temp = f"%{len(self.__temps)}"
-        self.__temps.append(new_temp)
-        self.__param_temps_for_call.append(new_temp)
-        return new_temp
-
     def __create_asm_instr(self) -> None:
-        """ Runs other functions to create asm instr """
+        """ Runs other functions to create asm instr for the current proc """
         # add initial instr when entering proc
         self.__asm_instr_proc = self.__stack.start_proc(self.__func_name)
         # convert the tac to assembly
@@ -156,8 +155,7 @@ class Procx64():
         self.__asm_instr_proc.extend(self.__stack.end_proc())
 
     def return_asm_instr(self) -> List:
-        """ Returns the complete assembly code for the current proc """
-        self.__create_asm_instr()
+        """ Returns asm instrs for the current proc """
         return self.__asm_instr_proc
 
     # ---------------------------------------------------------------------#
@@ -298,6 +296,7 @@ class tac2x64:
         self.__proc_list: List[Procx64] = list()
         self.__x64_list: List[list] = list()
         self.__parse_tac()
+        self.__asm_alloc()
 
     def __parse_tac(self) -> None:
         """ Get asm instr for all tac members """
@@ -318,7 +317,6 @@ class tac2x64:
 
     def get_asm_instr(self) -> list:
         """ returns the asm instrs for the entire code """
-        self.__asm_alloc()
         return self.__x64_list
 
 # ------------------------------------------------------------------------------#
