@@ -1,5 +1,4 @@
-import json
-import sys, argparse
+import sys, argparse, json
 from cfg import *
 from typing import List, FILE
 
@@ -9,12 +8,13 @@ from typing import List, FILE
 
 class CFG_creator:
     """ Creates Basic Block structure for CFG """
-    
+    # import jcc instr from Block class in cfg.py
     jccs = Block.jccs
 
-    def __init__(self, func_name: str, tac_instr: List[str], label: str) -> None:
+    def __init__(self, func_name: str, tac_instr: List[dict], label: str) -> None:
         self.__func_name: str = func_name
         self.__tac_instr: List[dict] = tac_instr
+        assert(tac_instr[-1]["opcode"] == "ret"), f"Last proc instr is not a ret in {func_name}"
         self.__label_counter: int = int(label)+1
         self.__new_labels: List[str] = list()
         self.__updated_tac_instr: List[dict] = self.__add_labels()
@@ -35,10 +35,9 @@ class CFG_creator:
                 "args": [label_name],
                 "result": None}
 
-    def __add_labels(self) -> List[str]:
-        """ Divide soruce code into basic blocks from proc instrs by adding labels """
+    def __add_labels(self) -> List[dict]:
+        """ Divide proc code into basic blocks by adding labels """
         new_tac_instr: List = []
-
         # add entry label
         new_tac_instr.append(self.__create_label_instr("entry"))
         
@@ -50,27 +49,22 @@ class CFG_creator:
                 if self.__tac_instr[index+1]["opcode"] != "label":
                     new_tac_instr.append(self.__create_label_instr(self.__create_new_label()))
 
-        # # add exit label
-        # new_tac_instr.append(self.__create_label_instr("exit"))
         return new_tac_instr
 
     def __block_inference(self) -> List[Block]:
         """ Creates Blocks from the updated tac_instr """
-
         current_block_instr = []
         blocks: List[Block] = []
 
         for index, instr in enumerate(self.__updated_tac_instr):
-            
-            print(index)
-            print(instr)
+            # print(index)      # DEBUG
+            # print(instr)      # DEBUG
             
             # append the first label instr and assert it is a label
             if not len(current_block_instr):
                 assert(instr["opcode"] == "label"), f'First instruction not a label {instr}'
-            
-            # TODO last instr might not be a ret
-            # Create a block until a ret instr and assert last instr is ret
+
+            # Create a block until a ret instr
             if instr["opcode"] == "ret":
                 current_block_instr.append(instr)
                 blocks.append(Block(current_block_instr))
@@ -86,8 +80,7 @@ class CFG_creator:
                 current_block_instr = []
                 continue
 
-            else:
-                current_block_instr.append(instr)
+            else: current_block_instr.append(instr)
 
         # add jmp instr to all blocks
         for index, block in enumerate(blocks):
