@@ -1,6 +1,7 @@
 import sys, json, argparse
 import ast2tac
 import tac2x64
+from bx2front import get_ast
 from ast2tac import AST_to_TAC_Generator
 
 if __name__=="__main__":

@@ -114,8 +114,8 @@ class Scope:
 
     def proc_in_global_vars(self, name: str) -> bool:
         """ Checks if var is declared in global vars """
-        print(name)
-        print(self.__global_vardecls)
+        # print(name)
+        # print(self.__global_vardecls)
         if name in self.__global_vardecls:
             return True
         return False
@@ -331,19 +331,19 @@ class ExpressionOp(Expression):
             self.syntax_error(f"Unkown operator {self.operator}")
 
     def type_check(self, scope: Scope) -> None:
-        print(F"expression op: {self}, scope: {scope}")
+        # print(F"expression op: {self}, scope: {scope}")
         if len(self.arguments) != len(self.expected_argument_type):
             self.syntax_error(f"{self.operator} takes {len(self.expected_argument_type)} \
                                 arguments got {len(self.arguments)}")
 
         for index, arg in enumerate(self.arguments):
-            print(f"checking arg {arg} of {self.operator}")
+            # print(f"checking arg {arg} of {self.operator}")
             arg.type_check(scope)
             if isinstance(arg, ExpressionVar):
                 arg_type = scope.get_type(arg.name)
             else:
                 arg_type = arg.get_type()
-            print(F"arg type {arg_type}")
+            # print(F"arg type {arg_type}")
             expected_type = self.expected_argument_type[index]
             if arg_type != expected_type:
                 self.syntax_error(f"Argument {index+1} for operation {self.operator} should have type {expected_type} but has {arg_type}")
@@ -362,9 +362,9 @@ class ListVarDecl:
     
     def __add_var(self, location: List[int], name: str, expression: Expression) -> None:
         """ helper func to append var """
-        print(f"adding var {name} of type {self.__type}")
+        # print(f"adding var {name} of type {self.__type}")
         self.__vars.append(StatementVardecl(location, ExpressionVar(location, name), self.__type, expression))
-        print(F"added var {self.__vars[-1]}")
+        # print(F"added var {self.__vars[-1]}")
         
     def add_multi_var(self, l: List[Tuple[List[int], str, Expression]]) -> None:
         """ Adds multiple parameter locations and names to the list of parameters """
@@ -450,7 +450,7 @@ class StatementVardecl(Statement):
 
     def global_type_check(self, scope: Scope) -> None:
         if scope.exists_in_current_scope(self.variable.name):
-            self.syntax_error(" variable already declared in current global scope")
+            self.syntax_error(f" variable {self.variable.name} already declared in current global scope")
         else:
             scope.add_variable(self.variable.name, self.__type)
             scope.add_global_var(self.variable.name, self.__type)
@@ -459,14 +459,13 @@ class StatementVardecl(Statement):
     def type_check(self, scope: Scope, ongoingloop: bool) -> None:
         self.init.type_check(scope)
         if not self.__global: 
-            # first global pass already did this, only need to check declaration in non-global scope
             if scope.exists_in_current_scope(self.variable.name): 
                 self.syntax_error(" variable already declared in current scope")
             else:
-                print(f"adding {self.variable} to scope and is not global, of type: {self.__type}")
+                # print(f"adding {self.variable} to scope and is not global, of type: {self.__type}")
                 scope.add_variable(self.variable.name, self.__type)
         else:
-            print("Entered global Vardecl Type_checker")
+            raise RuntimeError("Entered global Vardecl Type_checker. You should not be here")
 
 class StatementAssign(Statement):
     def __init__(self, location: List[int], lvalue: ExpressionVar, rvalue: Expression):
@@ -608,8 +607,7 @@ class Prog(Node):
         return "Prog(%s)" % (self.__decls)
     
     def global_type_check(self) -> None:
-        """
-            1) Checks that all global vardecls and procs are added to global scope 
+        """ 1) Checks that all global vardecls and procs are added to global scope 
             2) Checks that main is declared and has no arguments
             (expression of global vardecls and proc bodies are unchecked)
         """
@@ -618,16 +616,23 @@ class Prog(Node):
             if isinstance(declaration, DeclProc):
                 if declaration.get_name() == "main":
                     has_main = True
-            # TODO declaration is being passed as a list
-            # print(declaration)
-            declaration.global_type_check(self.__scope)       
+            if isinstance(declaration, list):
+                declaration[0].global_type_check(self.__scope)
+            else:
+                declaration.global_type_check(self.__scope)
         if not has_main:
             self.syntax_error("No main function defined")
             
     def type_check(self) -> None:
         """Checks the var declaration expressions and procedure bodies"""
         for declaration in self.__decls:
-            declaration.type_check(self.__scope)
+            # global var decls are passed as list and they can be skipped
+            if isinstance(declaration, list):
+                print(declaration)
+                continue
+                # declaration[0].type_check(self.__scope, False)
+            else:
+                declaration.type_check(self.__scope)
 
 class Decl(Node):
     def __init__(self,location: List[int]):

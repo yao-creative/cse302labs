@@ -11,6 +11,8 @@ Authors: Yi Yao Tan
          Vrushank Agrawal
 """
 
+# TODO we dont need opposite because neg nums are allowed
+# in examples/var_decls.bx z should be a number and not ExpressionOp(opposite)
 __unop_dict = {
     '!': "not",
     '-': "opposite",
@@ -70,7 +72,9 @@ def p_declstar(p):
         p[0] = p[1]
         p[0].append(p[2])
     # print(f"declstar: {p[0]}")
-        
+
+# TODO Global vardecl is different than simple vardecl they can only
+# have numerical expressions and no binary or unary operations
 def p_decl(p):
     """decl : vardecl
             | procdecl"""
@@ -147,8 +151,6 @@ def p_statement(p):
                  | return
                  """
     p[0] = p[1]
-
-    
     
 def p_eval(p):
     """eval : expression SEMICOLON"""
@@ -162,10 +164,6 @@ def p_assign(p):
     """assign : IDENT EQUALS expression SEMICOLON"""
     p[0] = StatementAssign([p.lineno(0), p.lexpos(0)], p[1], p[3])
 
-# def p_print(p):
-#     """print : PRINT LPAREN expression RPAREN SEMICOLON"""
-#     p[0] = StatementPrint([p.lineno(0), p.lexpos(0)],p[3])
-    
 def p_ifelse(p):
     """ifelse : IF LPAREN expression RPAREN block ifrest"""
     p[0] = StatementIfElse([p.lineno(0), p.lexpos(0)],p[3],p[5],p[6])
@@ -200,14 +198,14 @@ def p_return(p):
 
 def p_vardecl(p):
     """vardecl : VAR varinits COLON type SEMICOLON"""
-    print(f"variable declaration of type {p[4]}")
+    # print(f"variable declaration of type {p[4]}")
     listvardecl = ListVarDecl([], p[4])
     vars = p[2]
     # TODO smth wrong with vars passing here
     # check example gvar_repeated.bx, lvar_badinit, lvar_repeated, 
     listvardecl.add_multi_var(vars)
     p[0] = listvardecl.return_vardecl_list()
-    print(f"vardecl: {p[0]}")
+    # print(f"vardecl: {p[0]}")
     
 def p_varinits(p):
     """varinits : IDENT EQUALS expression varinitstar"""
@@ -307,7 +305,7 @@ def p_binop(p):
 def p_error(p):
     if p:
         print(f"error: {p}")
-        print(f"Syntax error: at token at line: {p.lineno}")
+        # print(f"Syntax error: at token at line: {p.lineno}")
         # Just discard the token and tell the parser it's okay.
     else:
         print(f"Syntax error: at EOF")

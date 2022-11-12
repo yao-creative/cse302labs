@@ -156,7 +156,7 @@ class Procx64():
         self.__asm_instr_proc.extend(self.__stack.end_proc())
 
     def return_asm_instr(self) -> List:
-        """ Returns the complete assembly code """
+        """ Returns the complete assembly code for the current proc """
         self.__create_asm_instr()
         return self.__asm_instr_proc
 
@@ -259,6 +259,7 @@ class Procx64():
                     for param_temp in reversed(self.__param_temps_for_call):
                         self.__asm_instr_proc.append(f'\tpushq {param_temp}')
                 self.__asm_instr_proc.append(f'\tcallq {func[1:]}')
+                self.__param_temps_for_call = []
                 if arg_num > 6:
                     self.__asm_instr_proc.append(f'\taddq ${8*(arg_num-6)}, %rsp')
 
@@ -308,8 +309,17 @@ class tac2x64:
             else:
                 raise RuntimeError(f"Unexpected Tac type {member}")
 
-    def __stack_alloc(self) -> None:
-        """ Allocates appropraite memory for all procs """
+    def __asm_alloc(self) -> None:
+        """ Allocates appropraite instrs for all globl decls """
+        for var in self.__globl_vars_list:
+            self.__x64_list.append(var.get_instr())
+        for proc in self.__proc_list:
+            self.__x64_list.append(proc.return_asm_instr())
+
+    def get_asm_instr(self) -> list:
+        """ returns the asm instrs for the entire code """
+        self.__asm_alloc()
+        return self.__x64_list
 
 # ------------------------------------------------------------------------------#
 # Main function drivers
@@ -331,12 +341,11 @@ def compile_tac(fname: str) -> None:
 def convert_instr_to_asm(fname: str, tac_jsn: list) -> None:
     """ Converts tac instructions list to assembly """
     # Check if fileformat is correct
-
     assert isinstance(tac_jsn, list), f'Tac instr should be a list\n'
 
     # Convert tac to assembly
     x64_asm = tac2x64(tac_jsn)     # initialize tac2x64 class here 
-    asm = x64_asm.complete_assembly()
+    asm = x64_asm.get_asm_instr()
 
     # Save assembly code and create executable
     exe_name = fname + '.exe'

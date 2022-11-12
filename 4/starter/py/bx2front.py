@@ -3,7 +3,7 @@ import sys
 from bxast import Prog
 from my_parser import run_parser
 
-def get_ast(fname):
+def get_ast(fname) -> Prog:
     ast: Prog = run_parser(fname)
     ast.global_type_check()
     print("global type_check done")
