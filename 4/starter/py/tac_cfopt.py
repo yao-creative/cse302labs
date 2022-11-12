@@ -15,7 +15,7 @@ class CFG_creator:
         self.__func_name: str = func_name
         self.__tac_instr: List[dict] = tac_instr
         assert(tac_instr[-1]["opcode"] == "ret"), f"Last proc instr is not a ret in {func_name}"
-        self.__label_counter: int = int(label)+1
+        self.__label_counter: int = int(label)
         self.__new_labels: List[str] = list()
         self.__updated_tac_instr: List[dict] = self.__add_labels()
         self.__num_instr: int = len(self.__updated_tac_instr)
@@ -111,9 +111,11 @@ def get_serialized_tac(tac_instr: List[dict]) -> List[dict]:
     serialized_tac = []
     for decl in tac_instr:
         if "proc" in decl:
-            # if len(tac_instr["labels"]):
-            #     label = proc["labels"][-1][3:]
-            label = 0
+            # get the final prev label counter and 
+            if len(tac_instr["labels"]):
+                label = int(decl["labels"][-1][3:])+1
+            else:
+                label = 0
             assert decl["proc"][0] == '@'
             basic_blocks = CFG_creator(decl["proc"][1:], decl["body"], label).return_blocks()
             cfg = CFG(basic_blocks, decl["proc"][1:])

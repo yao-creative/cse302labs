@@ -12,15 +12,15 @@ Authors: Yi Yao Tan
 # Helper Classes
 # ------------------------------------------------------------------------------#
 
-class Code_State:
-    """ The class keeps track of helper information 
+class CodeScope:
+    """ The class keeps track of scope info 
         needed to track TAC stmt generation """
 
     def __init__(self) -> None:
         self.__temps: dict = []
         self.__temp_counter: int = 0
         self.__temps_by_scope: List = []
-        self.__labels: list = []
+        self.__labels: List[str] = []
         self.__label_counter: int = 0
         self.__break_stack = []
         self.__continue_stack = []
@@ -35,20 +35,6 @@ class Code_State:
         self.__temps_by_scope[-1][variable.name] = temp
         return temp
 
-    def fetch_temp(self, variable: str) -> str:
-        """ Returns a temp if it exists otherwise creates and returns one """
-        # We traverse the scopes from the last to check if variable is defined bottom up
-        for scope in self.__temps_by_scope[::-1]:
-            # print(f"Scope is {scope}")
-            if variable in scope:
-                # print(f" variable = {variable} and temp = {scope[variable]}")
-                return scope[variable]
-        # otherwise we create a new temp and add it in the innermost scope
-        else:
-            temp = self.fresh_temp()
-            self.__temps_by_scope[-1][variable] = temp
-            return temp
-
     def fresh_temp(self) -> str:
         """ Creates and returns a new temp """
         temp = f'%{self.__temp_counter}'
@@ -62,6 +48,20 @@ class Code_State:
         self.__label_counter += 1
         self.__labels.append(label)
         return label
+
+    def fetch_temp(self, variable: str) -> str:
+        """ Returns a temp if it exists otherwise creates and returns one """
+        # We traverse the scopes from the last to check if variable is defined bottom up
+        for scope in self.__temps_by_scope[::-1]:
+            # print(f"Scope is {scope}")
+            if variable in scope:
+                # print(f" variable = {variable} and temp = {scope[variable]}")
+                return scope[variable]
+        # otherwise we create a new temp and add it in the innermost scope
+        else:
+            temp = self.fresh_temp()
+            self.__temps_by_scope[-1][variable] = temp
+            return temp
 
     def enter_new_proc(self) -> None:
         """ Resets label and temp handlers when a new proc is entered """
@@ -109,12 +109,14 @@ class Code_State:
     # getter functions
 
     def get_labels(self) -> list:
-        return self.__labels
+        """ Return sorted list of labels because last label is used in CFG """
+        return sorted(self.__labels)
 
     def get_temps(self) -> list:
-        return self.__temps
+        """ Returns sorted list of temps just in case """
+        return sorted(self.__temps)
 
-    
+
 # ------------------------------------------------------------------------------#
 # Typed Maximal Munch Class
 # ------------------------------------------------------------------------------#
@@ -122,7 +124,7 @@ class Code_State:
 class AST_to_TAC_Generator:
     """ Takes the AST tree and converts it to TAC """
     def __init__(self, tree: Prog):
-        self.__code_state: Code_State = Code_State()
+        self.__code_state: CodeScope = CodeScope()
         self.__code: Prog = tree
         self.__global_vars: List[dict] = list()
         self.__global_procs: List[dict] = list()
@@ -156,7 +158,7 @@ class AST_to_TAC_Generator:
     def __tmm_global_parse(self) -> None:
         """ parses the global definition and builds its tac """
         self.__code_state.enter_scope()
-        
+
         for glob_func in self.__code.functions:
             if isinstance(glob_func, ListVarDecl):                
                 for var in glob_func.return_vardecl_list():
@@ -175,6 +177,9 @@ class AST_to_TAC_Generator:
                     self.__code_state.add_variable("%"+var.name)
 
                 self.__tmm_statement_parse(glob_func.get_body())
+                # if last instr is not ret then add it to simplify CFG analysis
+                if self.__proc_instructions[-1]["opcode"] != "ret":
+                    self.__emit(opcode="ret", args=[], result=None)
                 self.__global_procs.append({"proc":"@"+glob_func.get_name(),
                                             "args": args,
                                             "body": self.__proc_instructions,
@@ -188,8 +193,8 @@ class AST_to_TAC_Generator:
     # Statement Muncher
 
     def __tmm_statement_parse(self, statement) -> None:
-        """ parses the statement and builds its tac """
-        
+        """ parses the statement and append its tac to proc_instructions """
+
         if isinstance(statement, StatementBlock):
             self.__code_state.enter_scope()
             for stmt in statement.statements:
@@ -239,6 +244,7 @@ class AST_to_TAC_Generator:
             # print(f"Jump stmt destination is {Ldestination}")
             self.__emit(opcode="jmp", args=[Ldestination], result=None)
 
+        # TODO add stmt parse per expression type
         elif isinstance(statement, StatementVardecl):
             temp = self.__code_state.add_variable(statement.variable)
             self.__tmm_expression_parse(statement.init, temp)
@@ -251,6 +257,7 @@ class AST_to_TAC_Generator:
                 temp = self.__code_state.fresh_temp()
                 self.__bool_assign(temp, statement.rvalue, temporary)
 
+        # TODO add stmt parse per expression type
         elif isinstance(statement, StatementReturn):
             if statement.expression is None or isinstance(statement.expression, ExpressionProcCall):
                 self.__emit(opcode="ret", args=[], result=None)
@@ -270,10 +277,10 @@ class AST_to_TAC_Generator:
 
     def __tmm_expression_parse(self, expression: Expression, temporary: str) -> None:
         """ parses the expression and builds its tac """
-        
-        # if expression.get_type() != BX_TYPE.INT:
-        #     raise RuntimeError(f'Expression must have type INT but has type {expression.get_type()}')
-        
+
+        if expression.get_type() != BX_TYPE.INT:
+            raise RuntimeError(f'Expression must have type INT but has type {expression.get_type()}')
+
         if isinstance(expression, ExpressionInt):
             self.__emit("const", [expression.value], temporary)
 
@@ -287,7 +294,7 @@ class AST_to_TAC_Generator:
             subexpr_target = self.__code_state.fresh_temp()
             self.__tmm_expression_parse(expression.arguments[0], subexpr_target)
             self.__emit(opcode, [subexpr_target], temporary)
-            
+
         elif isinstance(expression, ExpressionOp) and len(expression.arguments) == 2:
             opcode = self.__macros.operator_map[expression.operator]
             subexpr_targets = []
@@ -315,11 +322,14 @@ class AST_to_TAC_Generator:
         else:       # should never reach here
             raise RuntimeError(f'Got unexpected expression {expression}')
 
+    # ------------------------------------------------------------------------------#
+    # Bool expression Muncher
+
     def __tmm_bool_expression_parse(self, expression: Expression, Ltrue: str, Lfalse: str) -> None:
         """ parses the bool expression and builds its tac """
         if expression.get_type() != BX_TYPE.BOOL:
             raise RuntimeError(f'Expression must have type BOOL but has type {expression.get_type()}')
-        
+
         if isinstance(expression, ExpressionBool):
             if expression.value: 
                 self.__emit("jmp", [Ltrue], None)
@@ -332,21 +342,22 @@ class AST_to_TAC_Generator:
                 self.__tmm_bool_expression_parse(expression.arguments[0], Lmid, Lfalse)
                 self.__emit("label", [Lmid], None)
                 self.__tmm_bool_expression_parse(expression.arguments[1], Ltrue, Lfalse)
-                
+
             elif expression.operator == "logical-or":
                 Lmid = self.__code_state.fresh_label()
                 self.__tmm_bool_expression_parse(expression.arguments[0], Ltrue, Lmid)
                 self.__emit("label", [Lmid], None)
                 self.__tmm_bool_expression_parse(expression.arguments[1], Ltrue, Lfalse)
-                
+
             elif expression.operator == "not":
                 self.__tmm_bool_expression_parse(expression.arguments[0], Lfalse, Ltrue)
-                
+
             elif expression.operator in self.__macros.jump_map:
                 subexpr_targets = [] 
                 for subexpr in expression.arguments: 
                     target = self.__code_state.fresh_temp()
                     subexpr_targets.append(target)
+                    # if subexpr
                     self.__tmm_expression_parse(subexpr, target)
                 temp_result = self.__code_state.fresh_temp()
                 #e1 - e2 since assembly second argument is subtracted from first
@@ -354,10 +365,10 @@ class AST_to_TAC_Generator:
                 self.__emit(self.__macros.jump_map[expression.operator], 
                             [temp_result, Ltrue], None)
                 self.__emit("jmp", [Lfalse], None)
-        
-            else:
+
+            else:       # should never reach here
                 raise RuntimeError(f'Got unexpected boolean operator {expression.operator}')
-            
+
         else:       # should never reach here
             raise RuntimeError(f'Got unexpected expression {expression}')
 
@@ -370,8 +381,7 @@ import argparse
 import bx2front
 
 def ast_to_tac(ast: Prog) -> json:
-    if ast is None: 
-        raise RuntimeError("Could not compile ast")          # exit if error occured while parsing 
+    if ast is None: raise RuntimeError("Could not compile ast")          # exit if error occured while parsing 
     
     tac_ = AST_to_TAC_Generator(ast)   # convert ast code to json
     print("tac created")
@@ -385,9 +395,7 @@ def write_tacfile(fname: str, tac_instr: List[dict]) -> None:
         json.dump(tac_instr, fp) #, indent=3
     print(f"tac json file {tac_filename} written")
 
-
 if __name__=="__main__":
-
     parser = argparse.ArgumentParser(description='Get method for conversion and filetype.')
     parser.add_argument('filename', metavar="FILE", type=str, nargs=1)
     args = parser.parse_args(sys.argv[1:])
