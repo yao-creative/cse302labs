@@ -200,6 +200,7 @@ def p_return(p):
 
 def p_vardecl(p):
     """vardecl : VAR varinits COLON type SEMICOLON"""
+    print(f"variable declaration of type {p[4]}")
     listvardecl = ListVarDecl([], p[4])
     vars = p[2]
     # TODO smth wrong with vars passing here

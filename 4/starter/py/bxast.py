@@ -15,7 +15,10 @@ class Scope:
     def __init__(self) -> None:
         self.__scope_map: List[Dict[str, BX_TYPE]] = list()
         self.__global_vardecls: Dict[str, BX_TYPE] = dict()
-
+        
+    def __str__(self) -> str:
+        return str(self.__scope_map)
+    
     def scope_len(self) -> int:
         """ returns number of scopes """
         return len(self.__scope_map)
@@ -30,8 +33,15 @@ class Scope:
         # print("SCOPE DELETED")
         self.__scope_map.pop()
 
-    def exists(self, variable: str) -> bool:
-        """ Checks if a variable exists in any scope """
+    def get_type(self, variable: str) -> BX_TYPE:
+        """ Returns the type of a variable """
+        for scope in self.__scope_map[::-1]:
+            if variable in scope:
+                return scope[variable]
+        return None
+    
+    def exists(self, variable) -> bool:
+        """ Checks if a variable (ExpressionVar) exists in any scope """
         # print(self.__scope_map)
         # print(variable)
         for scope in self.__scope_map[::-1]:
@@ -39,21 +49,21 @@ class Scope:
                 return True
         return False
 
-    def exists_in_current_scope(self, variable: str) -> bool:
-        """ Checks if a variable exists in current scope """
+    def exists_in_current_scope(self, variable) -> bool:
+        """ Checks if a variable (ExpressionVar) exists in current scope """
         # print(self.__scope_map)
         # print(variable)
         if variable in self.__scope_map[-1]:
             return True
         return False
 
-    def add_variable(self, variable: str, value: BX_TYPE = BX_TYPE.INT) -> None:
-        """ Adds a variable in the current scope """
+    def add_variable(self, variable: str, ty: BX_TYPE) -> None:
+        """ Adds a variable (ExpressionVar.name) in the current scope """
         if self.scope_len():
-            self.__scope_map[-1][variable] = value
+            self.__scope_map[-1][variable] = ty
 
     def exists_in_global_scope(self, variable: str) -> bool:
-        """ Checks if a variable exists in current scope """
+        """ Checks if a variable (ExpressionVar.name) exists in current scope """
         # print(self.__scope_map[0])
         # print(variable)
         if variable in self.__scope_map[0]:
@@ -147,7 +157,7 @@ class Param(Node):
         if scope.exists_in_current_scope(self.__name):
             self.syntax_error(" function param is repeated")
         else:
-            scope.add_variable(self.__name)
+            scope.add_variable(self.__name, self.__type)
 
 # ------------------------------------------------------------------------------#
 # Utility Class for Parser
@@ -215,7 +225,9 @@ class ExpressionProcCall(Expression):
             if len(self.__params) != 1:
                 self.syntax_error(" print function can have only 1 parameter")
             # set requirements for print call
+            
             type = self.__params[0].get_type()
+
             if type == BX_TYPE.BOOL: self.__name == "__bx_print_bool"
             elif type == BX_TYPE.INT: self.__name == "__bx_print_int"
             else: self.syntax_error(" print statement has invalid argument")
@@ -245,21 +257,14 @@ class ExpressionVar(Expression):
     def __init__(self, location: List[int], name: str):
         super().__init__(location)
         self.name: str = name
-        # TODO : Vrushank how to assign expr Type?
-        self.__type: BX_TYPE = BX_TYPE.INT
+        self.location = location
 
-    def get_type(self) -> BX_TYPE:
-        return self.__type
-    
     def __str__(self):
         return "ExpressionVar({})".format(self.name)
 
     def type_check(self, scope: Scope) -> None:
-        # TODO : General what is happening here?
-        if not scope.exists(self.name):
-            self.syntax_error(f" variable not defined")
-        else:
-            scope.add_variable(self.name)
+        print("type check in ExprVar reached")
+        pass
 
 class ExpressionInt(Expression):
     def __init__(self, location: List[int], value):
@@ -326,13 +331,19 @@ class ExpressionOp(Expression):
             self.syntax_error(f"Unkown operator {self.operator}")
 
     def type_check(self, scope: Scope) -> None:
+        print(F"expression op: {self}, scope: {scope}")
         if len(self.arguments) != len(self.expected_argument_type):
             self.syntax_error(f"{self.operator} takes {len(self.expected_argument_type)} \
                                 arguments got {len(self.arguments)}")
 
         for index, arg in enumerate(self.arguments):
+            print(f"checking arg {arg} of {self.operator}")
             arg.type_check(scope)
-            arg_type = self.arguments[index].get_type()
+            if isinstance(arg, ExpressionVar):
+                arg_type = scope.get_type(arg.name)
+            else:
+                arg_type = arg.get_type()
+            print(F"arg type {arg_type}")
             expected_type = self.expected_argument_type[index]
             if arg_type != expected_type:
                 self.syntax_error(f"Argument {index+1} for operation {self.operator} should have type {expected_type} but has {arg_type}")
@@ -342,13 +353,18 @@ class ExpressionOp(Expression):
 #------------------------------------------------------------
 
 class ListVarDecl:
-    def __init__(self, vars: List[ExpressionVar], ty: BX_TYPE):
-        self.__vars: List[ExpressionVar] = vars 
+    def __init__(self, var_init_params: List[Tuple[List[int], str, Expression]], ty: BX_TYPE):
+        self.__vars: List[StatementVardecl] = [] 
         self.__type: BX_TYPE = ty
+        self.add_multi_var(var_init_params)
+        
+        
     
     def __add_var(self, location: List[int], name: str, expression: Expression) -> None:
         """ helper func to append var """
-        self.__vars.append(StatementVardecl(location, name, self.__type, expression))
+        print(f"adding var {name} of type {self.__type}")
+        self.__vars.append(StatementVardecl(location, ExpressionVar(location, name), self.__type, expression))
+        print(F"added var {self.__vars[-1]}")
         
     def add_multi_var(self, l: List[Tuple[List[int], str, Expression]]) -> None:
         """ Adds multiple parameter locations and names to the list of parameters """
@@ -379,7 +395,6 @@ class StatementBlock(Statement):
         if args is not None:
             for arg in args:
                 arg.type_check(scope)
-        print(f"scope: {scope} statements: {self.statements}")
         for statement in self.statements:
             statement.type_check(scope, ongoingloop)
         scope.delete_scope()
@@ -423,7 +438,7 @@ class StatementVardecl(Statement):
     def __init__(self,location: List[int], variable: ExpressionVar, type: BX_TYPE, init: Expression):
         super().__init__(location)
         self.variable: ExpressionVar = variable
-        self.__type: BX_TYPE = BX_TYPE.getType(type)
+        self.__type: BX_TYPE = type
         self.init: Expression = init 
         self.__global = False
         
@@ -448,6 +463,7 @@ class StatementVardecl(Statement):
             if scope.exists_in_current_scope(self.variable.name): 
                 self.syntax_error(" variable already declared in current scope")
             else:
+                print(f"adding {self.variable} to scope and is not global, of type: {self.__type}")
                 scope.add_variable(self.variable.name, self.__type)
         else:
             print("Entered global Vardecl Type_checker")
