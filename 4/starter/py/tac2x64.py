@@ -65,10 +65,10 @@ class Stack:
                 f'\tmovq %rsp, %rbp',
                 f'\tsubq ${stack_size}, %rsp']
 
-    def end_proc(self) -> list:
+    def end_proc(self, proc_name: str) -> list:
         """ Adds final commands to end the proc """
         # Reset the base pointer to the stack pointer
-        return [f'.Lexit'
+        return [f'.{proc_name}.Lexit'
                 f'\tmovq %rbp, %rsp',
                 f'\tpopq %rbp',
                 f'\tretq']
@@ -152,7 +152,7 @@ class Procx64():
         # convert the tac to assembly
         self.__tac_to_asm()
         # add final instr when exiting proc
-        self.__asm_instr_proc.extend(self.__stack.end_proc())
+        self.__asm_instr_proc.extend(self.__stack.end_proc(self.__func_name))
 
     def return_asm_instr(self) -> List:
         """ Returns asm instrs for the current proc """
@@ -280,7 +280,8 @@ class Procx64():
                     Macros._assert_argument_numb(args, 1, instr)
                     arg = self.__stack[args[0], instr]
                     self.__asm_instr_proc.append(f'\tmovq {arg}, %rax')
-                self.__asm_instr_proc.append(f'\tretq')
+                # We jmp to the last exit label of the proc 
+                self.__asm_instr_proc.append(f'\tjmp {self.__func_name}.Lexit')
 
             else:       # where did we screw up?
                 raise RuntimeError(f'Undefined opcode: {opcode}')
