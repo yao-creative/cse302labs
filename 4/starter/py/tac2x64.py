@@ -39,7 +39,6 @@ class Stack:
 
     def __args_temp_init(self) -> None:
         """ Initializes the temp map for all function arguments """
-        # TODO fix args in tac from names to their regs in order
         # I do not need to allocate temp slots in the stack for proc args
         # because they are already stored in regs and stack
         for index in range(self.__proc_args_num):

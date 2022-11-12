@@ -163,6 +163,8 @@ class Param(Node):
 # Utility Class for Parser
 # ------------------------------------------------------------------------------#
 
+# TODO : Vrushank - Why do we need this?
+
 class ListParams:
     def __init__(self, params: List[Param], ty: BX_TYPE):
         self.params: List[Param] = params 
@@ -309,23 +311,18 @@ class ExpressionOp(Expression):
         if self.operator in self.operations._binops_int:
             self.expected_argument_type = (BX_TYPE.INT, BX_TYPE.INT)
             self.__type = BX_TYPE.INT
-
         elif self.operator in self.operations._binops_bool:
             self.expected_argument_type = (BX_TYPE.BOOL, BX_TYPE.BOOL)
             self.__type = BX_TYPE.BOOL
-
         elif self.operator in self.operations._binops_cmp:
             self.expected_argument_type = (BX_TYPE.INT, BX_TYPE.INT)
             self.__type = BX_TYPE.BOOL
-
         elif self.operator in self.operations._unops_int:
             self.expected_argument_type = (BX_TYPE.INT,)
             self.__type = BX_TYPE.INT
-
         elif self.operator in self.operations._unops_bool:
             self.expected_argument_type = (BX_TYPE.BOOL,)
             self.__type = BX_TYPE.BOOL
-
         else:       # this should not happen
             self.syntax_error(f"Unkown operator {self.operator}")
 
@@ -627,7 +624,6 @@ class Prog(Node):
             if isinstance(declaration, list):
                 print(declaration)
                 continue
-                # declaration[0].type_check(self.__scope, False)
             else:
                 declaration.type_check(self.__scope)
 
