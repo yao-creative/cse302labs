@@ -132,6 +132,9 @@ class AST_to_TAC_Generator:
         self.__macros: Macros = Macros
         self.__tmm_global_parse()
 
+    # ------------------------------------------------------------------------------#
+    # misc functions
+
     def return_tac_instr(self) -> List[dict]:
         """ Generates the tac file """
         return self.__global_vars + self.__global_procs
@@ -142,7 +145,7 @@ class AST_to_TAC_Generator:
                                          "result": result })
 
     def __bool_assign(self, fresh_temp:str, expression: ExpressionBool, temporary: str) -> None:
-        """ Adds TAC instrs to convert bool stmt result into int """
+        """ Adds TAC instrs to convert bool expr result into int """
         LTrue = self.__code_state.fresh_label()
         LFalse = self.__code_state.fresh_label()
         self.__emit("const", [0], fresh_temp)
@@ -244,10 +247,13 @@ class AST_to_TAC_Generator:
             # print(f"Jump stmt destination is {Ldestination}")
             self.__emit(opcode="jmp", args=[Ldestination], result=None)
 
-        # TODO add stmt parse per expression type
         elif isinstance(statement, StatementVardecl):
             temp = self.__code_state.add_variable(statement.variable)
-            self.__tmm_expression_parse(statement.init, temp)
+            expr = statement.init
+            if expr.get_type() == BX_TYPE.BOOL:
+                self.__bool_assign(fresh_temp=temp, expression=expr, temporary=temporary)
+            else:
+                self.__tmm_expression_parse(expr, temp)
 
         elif isinstance(statement, StatementAssign):
             temporary = self.__code_state.fetch_temp(statement.lvalue.name)
@@ -257,16 +263,19 @@ class AST_to_TAC_Generator:
                 temp = self.__code_state.fresh_temp()
                 self.__bool_assign(temp, statement.rvalue, temporary)
 
-        # TODO add stmt parse per expression type
         elif isinstance(statement, StatementReturn):
-            if statement.expression is None or isinstance(statement.expression, ExpressionProcCall):
+            expr = statement.expression
+            if expr is None or isinstance(expr, ExpressionProcCall):
                 self.__emit(opcode="ret", args=[], result=None)
-            elif isinstance(statement.expression, ExpressionVar):
-                temp = self.__code_state.add_variable(statement.expression.name)
+            elif isinstance(expr, ExpressionVar):
+                temp = self.__code_state.add_variable(expr.name)
                 self.__emit(opcode="ret", args=[temp], result=None)
             else:
                 temp = self.__code_state.fresh_temp()
-                self.__tmm_expression_parse(statement.expression, temp)
+                if expr.get_type() == BX_TYPE.BOOL:
+                    self.__bool_assign(fresh_temp=temp, expression=expr, temporary=temporary)
+                else:
+                    self.__tmm_expression_parse(expr, temp)
                 self.__emit(opcode="ret", args=[temp], result=None)
 
         else:       # should never reach here
@@ -292,7 +301,11 @@ class AST_to_TAC_Generator:
         elif isinstance(expression, ExpressionOp) and len(expression.arguments) == 1:
             opcode = self.__macros.operator_map[expression.operator]
             subexpr_target = self.__code_state.fresh_temp()
-            self.__tmm_expression_parse(expression.arguments[0], subexpr_target)
+            subexpr = expression.arguments[0]
+            if subexpr.get_type() == BX_TYPE.BOOL:
+                self.__bool_assign(fresh_temp=subexpr_target, expression=subexpr, temporary=temporary)
+            else:
+                self.__tmm_expression_parse(subexpr, subexpr_target)
             self.__emit(opcode, [subexpr_target], temporary)
 
         elif isinstance(expression, ExpressionOp) and len(expression.arguments) == 2:
@@ -301,7 +314,10 @@ class AST_to_TAC_Generator:
             for subexpr in expression.arguments: 
                 target = self.__code_state.fresh_temp()
                 subexpr_targets.append(target)
-                self.__tmm_expression_parse(subexpr, target)
+                if subexpr.get_type() == BX_TYPE.BOOL:
+                    self.__bool_assign(fresh_temp=target, expression=subexpr, temporary=temporary)
+                else:
+                    self.__tmm_expression_parse(subexpr, target)
             self.__emit(opcode, subexpr_targets, temporary)
 
         elif isinstance(expression, ExpressionProcCall):
@@ -357,8 +373,10 @@ class AST_to_TAC_Generator:
                 for subexpr in expression.arguments: 
                     target = self.__code_state.fresh_temp()
                     subexpr_targets.append(target)
-                    # if subexpr
-                    self.__tmm_expression_parse(subexpr, target)
+                    if subexpr.get_type() == BX_TYPE.BOOL:
+                        self.__bool_assign(fresh_temp=target, expression=subexpr, temporary=temporary)
+                    else:
+                        self.__tmm_expression_parse(subexpr, target)
                 temp_result = self.__code_state.fresh_temp()
                 #e1 - e2 since assembly second argument is subtracted from first
                 self.__emit("sub", subexpr_targets, temp_result)
@@ -374,7 +392,7 @@ class AST_to_TAC_Generator:
 
 
 # ------------------------------------------------------------------------------#
-# Main function
+# Main functions
 # ------------------------------------------------------------------------------#
 
 import argparse
