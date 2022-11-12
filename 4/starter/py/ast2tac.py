@@ -373,10 +373,7 @@ class AST_to_TAC_Generator:
                 for subexpr in expression.arguments: 
                     target = self.__code_state.fresh_temp()
                     subexpr_targets.append(target)
-                    if subexpr.get_type() == BX_TYPE.BOOL:
-                        self.__bool_assign(fresh_temp=target, expression=subexpr, temporary=temporary)
-                    else:
-                        self.__tmm_expression_parse(subexpr, target)
+                    self.__tmm_expression_parse(subexpr, target)
                 temp_result = self.__code_state.fresh_temp()
                 #e1 - e2 since assembly second argument is subtracted from first
                 self.__emit("sub", subexpr_targets, temp_result)

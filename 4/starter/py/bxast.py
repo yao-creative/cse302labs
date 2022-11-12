@@ -304,8 +304,6 @@ class ExpressionOp(Expression):
     def __str__(self):
         return "ExpressionOp(%s,%s)" % (self.operator,self.arguments)
 
-    # TODO : Vrushank check if correct param comparisons
-
     def __type_init(self) -> None:
         """ Initializes the result and argument type based on argument input """
         if self.operator in self.operations._binops_int:
