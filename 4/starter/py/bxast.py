@@ -495,7 +495,6 @@ class StatementAssign(Statement):
         return "StatementAssign(%s,%s)" % (self.lvalue,self.rvalue)
 
     def type_check(self, scope: Scope, ongoingloop: bool) -> None:
-        print(f"{self}")
         if not scope.exists(self.lvalue.name):
             self.syntax_error(f" variable not yet declared {self.lvalue.name}")
 

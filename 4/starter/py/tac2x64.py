@@ -67,7 +67,7 @@ class Stack:
     def end_proc(self, proc_name: str) -> list:
         """ Adds final commands to end the proc """
         # Reset the base pointer to the stack pointer
-        return [f'.{proc_name}.Lexit'
+        return [f'.{proc_name}.Lexit:',
                 f'\tmovq %rbp, %rsp',
                 f'\tpopq %rbp',
                 f'\tretq\n']
@@ -142,7 +142,7 @@ class Procx64():
 
     def __get_label_name(self, lab: str) -> str:
         """ appends the function name to the current label to mark a local label """
-        return f'.{self.__func_name}.{lab[1:]}'      
+        return f'.{self.__func_name}{lab[1:]}'      
 
     def __create_asm_instr(self) -> None:
         """ Runs other functions to create asm instr for the current proc """

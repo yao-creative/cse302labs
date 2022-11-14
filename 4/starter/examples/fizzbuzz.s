@@ -7,7 +7,7 @@ fizzbuzz:
 	movq %rsp, %rbp
 	subq $2, %rsp
 	/*  %.L0: [TAC] */
-.fizzbuzz..L0:
+.fizzbuzz.L0:
 	/*   %2 = copy %0 [TAC] */
 	movq %rdi, %r11
 	movq %r11, -24(%rbp)
@@ -19,11 +19,11 @@ fizzbuzz:
 	subq -32(%rbp), %r11
 	movq %r11, -40(%rbp)
 	/*   jle %4, %.L1 [TAC] */
-	jle .fizzbuzz..L1
+	jle .fizzbuzz.L1
 	/*   jmp %.L2 [TAC] */
-	jmp .fizzbuzz..L2
+	jmp .fizzbuzz.L2
 	/*  %.L1: [TAC] */
-.fizzbuzz..L1:
+.fizzbuzz.L1:
 	/*   %6 = copy %0 [TAC] */
 	movq %rdi, %r11
 	movq %r11, -48(%rbp)
@@ -41,11 +41,11 @@ fizzbuzz:
 	subq -72(%rbp), %r11
 	movq %r11, -80(%rbp)
 	/*   jz %9, %.L3 [TAC] */
-	jz .fizzbuzz..L3
+	jz .fizzbuzz.L3
 	/*   jmp %.L4 [TAC] */
-	jmp .fizzbuzz..L4
+	jmp .fizzbuzz.L4
 	/*  %.L3: [TAC] */
-.fizzbuzz..L3:
+.fizzbuzz.L3:
 	/*   %11 = copy %0 [TAC] */
 	movq %rdi, %r11
 	movq %r11, -88(%rbp)
@@ -63,29 +63,29 @@ fizzbuzz:
 	subq -112(%rbp), %r11
 	movq %r11, -120(%rbp)
 	/*   jz %14, %.L6 [TAC] */
-	jz .fizzbuzz..L6
+	jz .fizzbuzz.L6
 	/*   jmp %.L7 [TAC] */
-	jmp .fizzbuzz..L7
+	jmp .fizzbuzz.L7
 	/*  %.L6: [TAC] */
-.fizzbuzz..L6:
+.fizzbuzz.L6:
 	/*   %15 = const 151515 [TAC] */
 	movq $151515, -128(%rbp)
 	movq -136(%rbp), %rdi
 	callq print
 	/*   jmp %.L8 [TAC] */
-	jmp .fizzbuzz..L8
+	jmp .fizzbuzz.L8
 	/*  %.L7: [TAC] */
-.fizzbuzz..L7:
+.fizzbuzz.L7:
 	/*   %17 = const 333 [TAC] */
 	movq $333, -144(%rbp)
 	movq -152(%rbp), %rdi
 	callq print
 	/*  %.L8: [TAC] */
-.fizzbuzz..L8:
+.fizzbuzz.L8:
 	/*   jmp %.L5 [TAC] */
-	jmp .fizzbuzz..L5
+	jmp .fizzbuzz.L5
 	/*  %.L4: [TAC] */
-.fizzbuzz..L4:
+.fizzbuzz.L4:
 	/*   %20 = copy %0 [TAC] */
 	movq %rdi, %r11
 	movq %r11, -160(%rbp)
@@ -103,25 +103,25 @@ fizzbuzz:
 	subq -184(%rbp), %r11
 	movq %r11, -192(%rbp)
 	/*   jz %23, %.L9 [TAC] */
-	jz .fizzbuzz..L9
+	jz .fizzbuzz.L9
 	/*   jmp %.L10 [TAC] */
-	jmp .fizzbuzz..L10
+	jmp .fizzbuzz.L10
 	/*  %.L9: [TAC] */
-.fizzbuzz..L9:
+.fizzbuzz.L9:
 	/*   %24 = const 555 [TAC] */
 	movq $555, -200(%rbp)
 	movq -208(%rbp), %rdi
 	callq print
 	/*   jmp %.L11 [TAC] */
-	jmp .fizzbuzz..L11
+	jmp .fizzbuzz.L11
 	/*  %.L10: [TAC] */
-.fizzbuzz..L10:
+.fizzbuzz.L10:
 	movq %rdi, %rdi
 	callq print
 	/*  %.L11: [TAC] */
-.fizzbuzz..L11:
+.fizzbuzz.L11:
 	/*  %.L5: [TAC] */
-.fizzbuzz..L5:
+.fizzbuzz.L5:
 	/*   %27 = copy %0 [TAC] */
 	movq %rdi, %r11
 	movq %r11, -216(%rbp)
@@ -132,14 +132,16 @@ fizzbuzz:
 	addq -224(%rbp), %r11
 	movq %r11, %rdi
 	/*   jmp %.L0 [TAC] */
-	jmp .fizzbuzz..L0
+	jmp .fizzbuzz.L0
 	/*  %.L2: [TAC] */
-.fizzbuzz..L2:
+.fizzbuzz.L2:
 	xorq %rax, %rax
 	jmp fizzbuzz.Lexit
-.fizzbuzz.Lexit	movq %rbp, %rsp
+.fizzbuzz.Lexit:
+	movq %rbp, %rsp
 	popq %rbp
 	retq
+
 
 
 	.globl main
@@ -157,6 +159,7 @@ main:
 	callq fizzbuzz
 	xorq %rax, %rax
 	jmp main.Lexit
-.main.Lexit	movq %rbp, %rsp
+.main.Lexit:
+	movq %rbp, %rsp
 	popq %rbp
 	retq
