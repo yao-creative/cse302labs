@@ -14,7 +14,6 @@ Authors: Yi Yao Tan
 class Scope:
     def __init__(self) -> None:
         self.__scope_map: List[Dict[str, BX_TYPE]] = list()
-        self.__global_vardecls: Dict[str, BX_TYPE] = dict()
 
     def __str__(self) -> str:
         return str(self.__scope_map)
@@ -110,13 +109,12 @@ class Scope:
 
     def add_global_var(self, name:str, ty: BX_TYPE) -> None:
         """ Adds a global vardecl """
-        self.__global_vardecls[name] = ty
+        self.__scope_map[0][name] = ty
 
     def proc_in_global_vars(self, name: str) -> bool:
         """ Checks if var is declared in global vars """
         # print(name)
-        # print(self.__global_vardecls)
-        if name in self.__global_vardecls:
+        if name in self.__scope_map[0]:
             return True
         return False
 
@@ -258,8 +256,15 @@ class ExpressionProcCall(Expression):
                 self.syntax_error(f"Procedure '{self.__name}' expects {len(in_types)} parameters, but {len(self.__params)} were given.")
             # check correct params
             for i, parameter in enumerate(self.__params):
-                parameter.type_check(scope)
-                if parameter.get_type() != in_types[i]:
+                if isinstance(parameter, str):
+                    if not scope.exists(parameter):
+                        self.syntax_error(f" param {parameter} not defined")
+                    else:
+                        _type = scope.get_type(parameter)
+                else:
+                    parameter.type_check(scope)
+                    _type = parameter.get_type()
+                if _type != in_types[i]:
                     self.syntax_error(f"Parameter {i} of procedure '{self.__name}' must be of type {in_types[i]}.")
 
 class ExpressionInt(Expression):
@@ -327,10 +332,10 @@ class ExpressionOp(Expression):
 
         for index, arg in enumerate(self.arguments):
             # print(f"checking arg {arg} of {self.operator}")
-            arg.type_check(scope)
             if isinstance(arg, str):
                 arg_type = scope.get_type(arg)
             else:
+                arg.type_check(scope)
                 arg_type = arg.get_type()
             # print(F"arg type {arg_type}")
             expected_type = self.expected_argument_type[index]
@@ -412,6 +417,9 @@ class StatementReturn(Statement):
         expr_ret_type = BX_TYPE.VOID
         if self.expression is not None:
             # print(f"expression for ret is {self.expression}")
+            if isinstance(self.expression, str):
+                if scope.exists(self.expression):
+                    raise SyntaxError("fuck you")
             self.expression.type_check(scope)
             expr_ret_type = self.expression.get_type()
         # print(expr_ret_type)
@@ -470,7 +478,7 @@ class StatementAssign(Statement):
         return "StatementAssign(%s,%s)" % (self.lvalue,self.rvalue)
 
     def type_check(self, scope: Scope, ongoingloop: bool) -> None:
-        print(f"{self}")
+        # print(f"{self}")
         if not scope.exists(self.lvalue):
             self.syntax_error(f" variable not yet declared {self.lvalue}")
 
