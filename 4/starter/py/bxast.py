@@ -239,8 +239,8 @@ class ExpressionProcCall(Expression):
             _type = self.__params[0].get_type()
             # print(type(self.__params[0]))
             # print(self.__params[0].get_type())
-            if _type == BX_TYPE.BOOL: self.__name == "__bx_print_bool"
-            elif _type == BX_TYPE.INT: self.__name == "__bx_print_int"
+            if _type == BX_TYPE.BOOL: self.__name = "__bx_print_bool"
+            elif _type == BX_TYPE.INT: self.__name = "__bx_print_int"
             else: self.syntax_error(" print statement has invalid argument")
             # set return type for print call
             self.__type = BX_TYPE.VOID

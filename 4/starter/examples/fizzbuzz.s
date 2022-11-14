@@ -71,7 +71,7 @@ fizzbuzz:
 	/*   %15 = const 151515 [TAC] */
 	movq $151515, -128(%rbp)
 	movq -136(%rbp), %rdi
-	callq print
+	callq __bx_print_int
 	/*   jmp %.L8 [TAC] */
 	jmp .fizzbuzz.L8
 	/*  %.L7: [TAC] */
@@ -79,7 +79,7 @@ fizzbuzz:
 	/*   %17 = const 333 [TAC] */
 	movq $333, -144(%rbp)
 	movq -152(%rbp), %rdi
-	callq print
+	callq __bx_print_int
 	/*  %.L8: [TAC] */
 .fizzbuzz.L8:
 	/*   jmp %.L5 [TAC] */
@@ -111,13 +111,13 @@ fizzbuzz:
 	/*   %24 = const 555 [TAC] */
 	movq $555, -200(%rbp)
 	movq -208(%rbp), %rdi
-	callq print
+	callq __bx_print_int
 	/*   jmp %.L11 [TAC] */
 	jmp .fizzbuzz.L11
 	/*  %.L10: [TAC] */
 .fizzbuzz.L10:
 	movq %rdi, %rdi
-	callq print
+	callq __bx_print_int
 	/*  %.L11: [TAC] */
 .fizzbuzz.L11:
 	/*  %.L5: [TAC] */
