@@ -215,6 +215,9 @@ class ExpressionProcCall(Expression):
     def get_type(self) -> BX_TYPE:
         return self.__type
 
+    def get_name(self) -> str:
+        return self.__name
+
     def __str__(self):
         return "ExpressionProcCall(%s, %s)" % (self.__name, self.__params)
 
