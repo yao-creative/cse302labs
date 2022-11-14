@@ -70,7 +70,7 @@ class Stack:
         return [f'.{proc_name}.Lexit'
                 f'\tmovq %rbp, %rsp',
                 f'\tpopq %rbp',
-                f'\tretq']
+                f'\tretq\n']
 
 # ---------------------------------------------------------------------#
 # Class for Global Vars
@@ -265,7 +265,7 @@ class Procx64():
                 arg_temp = args[1]
                 arg_num = args[0]
                 if arg_num <= 6:
-                    self.__asm_instr_proc.append(Macros._first_6_reg_moves[arg_num](arg_temp))
+                    self.__asm_instr_proc.append(Macros._first_6_reg_moves[arg_num](self.__stack.get_item(arg_temp, instr)))
                 # add remaining params in reverse order to list that will be pushed before callq
                 if arg_num > 6:
                     assert(arg_temp not in self.__param_temps_for_call)
