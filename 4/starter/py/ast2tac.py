@@ -168,12 +168,13 @@ class AST_to_TAC_Generator:
         """ parses the global definition and builds its tac """
         self.__code_state.enter_scope()
 
-        for glob_func in self.__code.functions:
-            if isinstance(glob_func, ListVarDecl):                
-                for var in glob_func.return_vardecl_list():
-                    self.__code_state.add_globl_var("@"+var.variable.name)
-                    self.__global_vars.append({"var": "@"+var.variable,
-                                               "init": var.init})
+        for glob_func in self.__code.global_decls():
+            if isinstance(glob_func, StatementVardecl):                
+                # for var in glob_func.return_vardecl_list():
+                var = glob_func
+                self.__code_state.add_globl_var("@"+var.variable.name)
+                self.__global_vars.append({"var": "@"+var.variable,
+                                            "init": var.init})
             elif isinstance(glob_func, DeclProc):
                 self.__code_state.enter_scope()
                 self.__code_state.enter_new_proc()
@@ -181,7 +182,7 @@ class AST_to_TAC_Generator:
                 # TODO create example to check that params are computed left -> right
                 args = []
                 for var in glob_func.get_args():
-                    arg_temp = self.__code_state.add_variable(var.name)
+                    arg_temp = self.__code_state.add_variable(var.get_name())
                     args.append(arg_temp)
 
                 self.__tmm_statement_parse(glob_func.get_body())
@@ -260,6 +261,14 @@ class AST_to_TAC_Generator:
             else:
                 self.__tmm_expression_parse(expr, temp)
 
+        elif isinstance(statement, StatementEval):
+            temp = self.__code_state.fresh_temp()
+            expr = statement.expression
+            if expr.get_type() == BX_TYPE.BOOL:
+                self.__bool_assign(fresh_temp=temp, expression=expr, temporary=temporary)
+            else:
+                self.__tmm_expression_parse(expr, temp)
+
         elif isinstance(statement, StatementAssign):
             temporary = self.__code_state.fetch_temp(statement.lvalue.name)
             if statement.rvalue.get_type() == BX_TYPE.INT:
@@ -292,8 +301,8 @@ class AST_to_TAC_Generator:
     def __tmm_expression_parse(self, expression: Expression, temporary: str) -> None:
         """ parses the expression and builds its tac """
 
-        if expression.get_type() != BX_TYPE.INT:
-            raise RuntimeError(f'Expression must have type INT but has type {expression.get_type()}')
+        if expression.get_type() == BX_TYPE.BOOL:
+            raise RuntimeError(f'Expression must have type INT or VOID but has type {expression.get_type()}')
 
         if isinstance(expression, ExpressionInt):
             self.__emit("const", [expression.value], temporary)
@@ -326,7 +335,7 @@ class AST_to_TAC_Generator:
             self.__emit(opcode, subexpr_targets, temporary)
 
         elif isinstance(expression, ExpressionProcCall):
-            for index, param in enumerate(expression.params):
+            for index, param in enumerate(expression.get_params()):
                 if isinstance(param, ExpressionVar):
                     temp = self.__code_state.fetch_temp(param.name)
                 else:
@@ -338,7 +347,7 @@ class AST_to_TAC_Generator:
                         self.__tmm_expression_parse(param, temporary)
                 self.__emit(opcode="param", args=[index+1, temp], result=None)
             res = None if expression.get_type() is BX_TYPE.VOID else temporary
-            self.__emit(opcode="call", args=["@"+expression.name, len(expression.params)], result=res)
+            self.__emit(opcode="call", args=["@"+expression.get_name(), len(expression.get_params())], result=res)
 
         else:       # should never reach here
             raise RuntimeError(f'Got unexpected expression {expression}')

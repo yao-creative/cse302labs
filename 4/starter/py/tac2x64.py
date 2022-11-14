@@ -18,7 +18,7 @@ class Stack:
         self.__proc_args_num: int = len(self.__proc_args)
         self.__args_temp_init()
 
-    def __getitem__(self, temp: str, instr: dict) -> str:
+    def get_item(self, temp: str, instr: dict) -> str:
         """ Return the stack address of the temp """
         # if globl var then ret rip relative position
         if temp[0] == "@":
@@ -41,7 +41,7 @@ class Stack:
         """ Initializes the temp map for all function arguments """
         # I do not need to allocate temp slots in the stack for proc args
         # because they are already stored in regs and stack
-        for index in range(self.__proc_args_num):
+        for index in range(0, self.__proc_args_num):
             arg = self.__proc_args[index]
             if index < 6:
                 self.__temp_map[arg] = f"{Macros._first_6_regs[index]}"
@@ -192,21 +192,21 @@ class Procx64():
             elif opcode == 'const':
                 Macros._assert_argument_numb(args, 1, instr)
                 assert isinstance(args[0], int)                         # check if instruction is in correct format
-                result = self.__stack[result, instr]        # get stack position to store result of temp
+                result = self.__stack.get_item(result, instr)        # get stack position to store result of temp
                 self.__asm_instr_proc.append(f'\tmovq ${args[0]}, {result}')    # add instruction as assembly
 
             elif opcode == 'copy':
                 Macros._assert_argument_numb(args, 1, instr)
-                arg = self.__stack[args[0], instr]
-                result = self.__stack[result, instr]
+                arg = self.__stack.get_item(args[0], instr)
+                result = self.__stack.get_item(result, instr)
                 self.__asm_instr_proc.append(f'\tmovq {arg}, %r11')
                 self.__asm_instr_proc.append(f'\tmovq %r11, {result}')
 
             elif opcode in Macros._binops:
                 Macros._assert_argument_numb(args, 2, instr)
-                arg1 = self.__stack[args[0], instr]
-                arg2 = self.__stack[args[1], instr]
-                result = self.__stack[result, instr]
+                arg1 = self.__stack.get_item(args[0], instr)
+                arg2 = self.__stack.get_item(args[1], instr)
+                result = self.__stack.get_item(result, instr)
                 bin_op = Macros._binops[opcode]
                 if isinstance(bin_op, str):
                     self.__asm_instr_proc.extend([f'\tmovq {arg1}, %r11',
@@ -217,8 +217,8 @@ class Procx64():
 
             elif opcode in Macros._unops:
                 Macros._assert_argument_numb(args, 1, instr)
-                arg = self.__stack[args[0], instr]
-                result = self.__stack[result, instr]
+                arg = self.__stack.get_item(args[0], instr)
+                result = self.__stack.get_item(result, instr)
                 un_op = Macros._unops[opcode]
                 self.__asm_instr_proc.extend([f'\tmovq {arg}, %r11',
                                         f'\t{un_op} %r11',
@@ -241,7 +241,7 @@ class Procx64():
                 # condition and we need to test the argument value with 0 to
                 # set the appropraite flags for the jcc instruction
                 if not self.__check_previous_instr(index-1, 'opcode', 'sub'):
-                    arg = self.__stack[arg, instr]
+                    arg = self.__stack.get_item(arg, instr)
                     self.__asm_instr_proc.append(f'\tcmpq $0, {arg}')
                 self.__asm_instr_proc.append(f'\t{opcode} {self.__get_label_name(lab)}')
 
@@ -270,14 +270,13 @@ class Procx64():
                 if arg_num > 6:
                     assert(arg_temp not in self.__param_temps_for_call)
                     self.__param_temps_for_call.append(arg_temp)
-                self.__asm_instr_proc.append(f'\tcallq {func[1:]}')
 
             elif opcode == "ret":
                 if len(args) == 0:
                     self.__asm_instr_proc.append(f'\txorq %rax, %rax')
                 else:
                     Macros._assert_argument_numb(args, 1, instr)
-                    arg = self.__stack[args[0], instr]
+                    arg = self.__stack.get_item(args[0], instr)
                     self.__asm_instr_proc.append(f'\tmovq {arg}, %rax')
                 # We jmp to the last exit label of the proc 
                 self.__asm_instr_proc.append(f'\tjmp {self.__func_name}.Lexit')
@@ -349,7 +348,12 @@ def convert_instr_to_asm(fname: str, tac_jsn: list) -> None:
     exe_name = fname + '.exe'
     asm_name = fname + '.s'
     with open(asm_name, 'w') as afp:
-        print(*asm, file=afp, sep='\n')
+        total = []
+        for globl in asm:
+            total+=globl
+        tac_ = "\n".join(total)
+        afp.write(tac_)
+        # print(*asm, file=afp, sep='\n')
     os.system(f'gcc -o {exe_name} {asm_name} bx_runtime.c')
     print(f"Compilation succesful for {fname}")
 

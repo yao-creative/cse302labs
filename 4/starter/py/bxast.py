@@ -215,6 +215,14 @@ class ExpressionProcCall(Expression):
     def get_type(self) -> BX_TYPE:
         return self.__type
 
+    def get_params(self) -> List[Expression]:
+        """ return param list """
+        return self.__params
+
+    def get_name(self) -> str:
+        """ Return the name of the function """
+        return self.__name
+
     def __str__(self):
         return "ExpressionProcCall(%s, %s)" % (self.__name, self.__params)
 
@@ -409,8 +417,9 @@ class StatementEval(Statement):
     def __init__(self,location: List[int], expression: Expression):
         super().__init__(location)
         self.expression: Expression = expression
-    
+
     def type_check(self, scope: Scope, ongoingloop: bool) -> None:
+        # I need this in the tac to send the expression to the right parsing function
         self.expression.type_check(scope)
 
     def __str__(self):
@@ -615,6 +624,10 @@ class Prog(Node):
         self.__decls: List[Union[DeclProc, StatementVardecl]] = decls
         self.__scope = Scope()
         self.__scope.create_scope() #immediately initialize global scope
+
+    def global_decls(self) -> List[Union[DeclProc, StatementVardecl]]:
+        """ Return all the global declarations """
+        return self.__decls
 
     def __str__(self):
         return "Prog(%s)" % (self.__decls)

@@ -151,11 +151,11 @@ def p_statement(p):
 def p_eval(p):
     """eval : expression SEMICOLON"""
     p[0] = StatementEval([p.lineno(0), p.lexpos(0)],p[1])
-    
+
 def p_block(p):
     """block : LBRACE statementstar RBRACE"""
     p[0] = StatementBlock([p.lineno(0), p.lexpos(0)],p[2])
-    
+
 def p_assign(p):
     """assign : IDENT EQUALS expression SEMICOLON"""
     expr_var = ExpressionVar([p.lineno(0), p.lexpos(0)], p[1])

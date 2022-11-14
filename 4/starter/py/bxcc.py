@@ -4,7 +4,7 @@ from typing import List
 import ast2tac
 import bx2front
 import tac_cfopt
-from tac2x64 import tac2x64
+import tac2x64
 
 def main(args: list) -> None:
     """ Main function to convert source code to asm """
@@ -44,7 +44,7 @@ def main(args: list) -> None:
     # Do CFG optimizations
     serial_tac = tac_cfopt.get_serialized_tac(tac_instr)
     # stop if only CFG requested and write serialized tac
-    tac_cfopt.write_serial_tac(filename[:-3])
+    tac_cfopt.write_serial_tac(filename[:-3], serial_tac)
     if args.stopcfg:
         sys.exit(0)
     

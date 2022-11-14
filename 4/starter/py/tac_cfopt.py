@@ -1,6 +1,6 @@
 import sys, argparse, json
 from cfg import *
-from typing import List, FILE
+from typing import List
 
 # ------------------------------------------------------------------------------#
 # Basic Block Creator Class
@@ -112,7 +112,7 @@ def get_serialized_tac(tac_instr: List[dict]) -> List[dict]:
     for decl in tac_instr:
         if "proc" in decl:
             # get the final prev label counter and 
-            if len(tac_instr["labels"]):
+            if len(decl["labels"]):
                 label = int(decl["labels"][-1][3:])+1
             else:
                 label = 0
@@ -124,7 +124,7 @@ def get_serialized_tac(tac_instr: List[dict]) -> List[dict]:
 
     return serialized_tac
 
-def write_serial_tac(filename: FILE, serialized_tac: List[dict]) -> None:
+def write_serial_tac(filename: str, serialized_tac: List[dict]) -> None:
     """ Wrties the serialized tac to a json file """
     sname = filename + ".serial.json"
     with open(sname, "w") as fp:
