@@ -58,12 +58,12 @@ class Scope:
         return False
 
     def add_variable(self, variable: str, ty: BX_TYPE) -> None:
-        """ Adds a variable (ExpressionVar.name) in the current scope """
+        """ Adds a variable in the current scope """
         if self.scope_len():
             self.__scope_map[-1][variable] = ty
 
     def exists_in_global_scope(self, variable: str) -> bool:
-        """ Checks if a variable (ExpressionVar.name) exists in current scope """
+        """ Checks if a variable exists in current scope """
         # print(self.__scope_map[0])
         # print(variable)
         if variable in self.__scope_map[0]:
@@ -225,10 +225,12 @@ class ExpressionProcCall(Expression):
             if len(self.__params) != 1:
                 self.syntax_error(" print function can have only 1 parameter")
 
-            # print("entered print call")
             # set requirements for print call
             _type = self.__params[0].type_check(scope)
-            _type = self.__params[0].get_type()
+            if isinstance(self.__params[0], str):
+                _type = scope.get_type(self.__params[0])
+            else:
+                _type = scope.get_type(self.__params[0])
             # print(type(self.__params[0]))
             # print(self.__params[0].get_type())
             if _type == BX_TYPE.BOOL: self.__name == "__bx_print_bool"
@@ -256,26 +258,6 @@ class ExpressionProcCall(Expression):
                 parameter.type_check(scope)
                 if parameter.get_type() != in_types[i]:
                     self.syntax_error(f"Parameter {i} of procedure '{self.__name}' must be of type {in_types[i]}.")
-
-class ExpressionVar(Expression):
-    def __init__(self, location: List[int], name: str):
-        super().__init__(location)
-        self.name: str = name
-        self.location = location
-        self.type: BX_TYPE = None
-
-    def get_type(self) -> None:
-        return self.type
-
-    def __str__(self):
-        return "ExpressionVar({})".format(self.name)
-
-    def type_check(self, scope: Scope) -> None:
-        # print("expression var", scope)
-        if not scope.exists(self.name):
-            self.syntax_error(f" variable not yet declared {self.name}")
-        if self.type is None:
-            self.type = scope.get_type(self.name)
 
 class ExpressionInt(Expression):
     def __init__(self, location: List[int], value):
@@ -343,8 +325,8 @@ class ExpressionOp(Expression):
         for index, arg in enumerate(self.arguments):
             # print(f"checking arg {arg} of {self.operator}")
             arg.type_check(scope)
-            if isinstance(arg, ExpressionVar):
-                arg_type = scope.get_type(arg.name)
+            if isinstance(arg, str):
+                arg_type = scope.get_type(arg)
             else:
                 arg_type = arg.get_type()
             # print(F"arg type {arg_type}")
@@ -365,7 +347,7 @@ class ListVarDecl:
     def __add_var(self, location: List[int], name: str, expression: Expression) -> None:
         """ helper func to append var """
         # print(f"adding var {name} of type {self.__type}")
-        self.__vars.append(StatementVardecl(location, ExpressionVar(location, name), self.__type, expression))
+        self.__vars.append(StatementVardecl(location, name, self.__type, expression))
         # print(F"added var {self.__vars[-1]}")
 
     def add_multi_var(self, l: List[Tuple[List[int], str, Expression]]) -> None:
@@ -417,9 +399,9 @@ class StatementEval(Statement):
         return "eval(%s)" % (self.expression)
 
 class StatementReturn(Statement):
-    def __init__(self,location: List[int], expression: Union[ExpressionVar, ExpressionProcCall]):
+    def __init__(self,location: List[int], expression: Union[str, ExpressionProcCall]):
         super().__init__(location)
-        self.expression: Union[ExpressionVar, ExpressionProcCall] = expression
+        self.expression: Union[str, ExpressionProcCall] = expression
 
     def type_check(self, scope: Scope, ongoingloop: bool) -> None:
         """ Type checks if return type matches function return type"""
@@ -429,7 +411,6 @@ class StatementReturn(Statement):
             # print(f"expression for ret is {self.expression}")
             self.expression.type_check(scope)
             expr_ret_type = self.expression.get_type()
-        
         # print(expr_ret_type)
         # checks ret type of expression with proc
         ret_type = scope.get_proc_return_type()
@@ -440,9 +421,9 @@ class StatementReturn(Statement):
         return "return(%s)" % (self.expression)
 
 class StatementVardecl(Statement):
-    def __init__(self,location: List[int], variable: ExpressionVar, type: BX_TYPE, init: Expression):
+    def __init__(self,location: List[int], variable: str, type: BX_TYPE, init: Expression):
         super().__init__(location)
-        self.variable: ExpressionVar = variable
+        self.variable: str = variable
         self.__type: BX_TYPE = type
         self.init: Expression = init 
         self.__global = False
@@ -454,32 +435,32 @@ class StatementVardecl(Statement):
         return "vardecl(%s,%s,%s)" % (self.variable,self.__type,self.init)
 
     def global_type_check(self, scope: Scope) -> None:
-        if scope.exists_in_current_scope(self.variable.name):
-            self.syntax_error(f" variable {self.variable.name} already declared in current global scope")
+        if scope.exists_in_current_scope(self.variable):
+            self.syntax_error(f" variable {self.variable} already declared in current global scope")
         else:
-            scope.add_variable(self.variable.name, self.__type)
-            scope.add_global_var(self.variable.name, self.__type)
+            scope.add_variable(self.variable, self.__type)
+            scope.add_global_var(self.variable, self.__type)
         # global vars can only be literal check
         if not isinstance(self.init, ExpressionInt) and not isinstance(self.init, ExpressionBool):
-            self.syntax_error(f"globl var {self.variable.name} should be literal")
+            self.syntax_error(f"globl var {self.variable} should be literal")
         self.__global = True
 
     def type_check(self, scope: Scope, ongoingloop: bool) -> None:
         self.init.type_check(scope)
         if self.__global: 
             raise RuntimeError("Entered global Vardecl Type_checker. You should not be here")
-        if scope.exists_in_current_scope(self.variable.name): 
+        if scope.exists_in_current_scope(self.variable): 
             self.syntax_error(" variable already declared in current scope")
         else:
             # print(f"adding {self.variable} to scope and is not global, of type: {self.__type}")
-            scope.add_variable(self.variable.name, self.__type)
+            scope.add_variable(self.variable, self.__type)
         if self.init.get_type() != self.get_type():
-            self.syntax_error(f"type mismatch for var {self.variable.name}")
+            self.syntax_error(f"type mismatch for var {self.variable}")
 
 class StatementAssign(Statement):
-    def __init__(self, location: List[int], lvalue: ExpressionVar, rvalue: Expression):
+    def __init__(self, location: List[int], lvalue: str, rvalue: Expression):
         super().__init__(location)
-        self.lvalue: ExpressionVar = lvalue
+        self.lvalue: str = lvalue
         self.rvalue: Expression = rvalue
 
     def __str__(self):
@@ -487,13 +468,12 @@ class StatementAssign(Statement):
 
     def type_check(self, scope: Scope, ongoingloop: bool) -> None:
         print(f"{self}")
-        if not scope.exists(self.lvalue.name):
-            self.syntax_error(f" variable not yet declared {self.lvalue.name}")
+        if not scope.exists(self.lvalue):
+            self.syntax_error(f" variable not yet declared {self.lvalue}")
 
         self.rvalue.type_check(scope)
-        self.lvalue.type_check(scope)
-        if self.lvalue.get_type() != self.rvalue.get_type():
-            self.syntax_error(f"")
+        if scope.get_type(self.lvalue) != self.rvalue.get_type():
+            self.syntax_error(f"type mismatch for {self.lvalue}")
 
 # ------------------------------------------------------------------------------#
 # Conditional Statement Classes

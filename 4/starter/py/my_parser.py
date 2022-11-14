@@ -236,7 +236,7 @@ def p_expression(p):
         elif isinstance(p[1], int):
             p[0] = ExpressionInt([p.lineno(0), p.lexpos(0)], p[1])
         elif isinstance(p[1], str):
-            p[0] = ExpressionVar([p.lineno(0), p.lexpos(0)], p[1])
+            p[0] = p[1]
         else:
             raise SyntaxError("Invalid expression at line: " + str(p.lineno(0)))
 
