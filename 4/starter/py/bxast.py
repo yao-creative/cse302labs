@@ -38,7 +38,7 @@ class Scope:
         for scope in self.__scope_map[::-1]:
             if variable in scope:
                 return scope[variable]
-        return None
+        raise RuntimeError(f"variable {variable} not defined in the operation")
 
     def exists(self, variable) -> bool:
         """ Checks if a variable (ExpressionVar) exists in any scope """
@@ -163,8 +163,6 @@ class Param(Node):
 # Utility Class for Parser
 # ------------------------------------------------------------------------------#
 
-# TODO : Vrushank - Why do we need this?
-
 class ListParams:
     def __init__(self, params: List[Param], ty: BX_TYPE):
         self.params: List[Param] = params 
@@ -227,10 +225,14 @@ class ExpressionProcCall(Expression):
             if len(self.__params) != 1:
                 self.syntax_error(" print function can have only 1 parameter")
 
+            # print("entered print call")
             # set requirements for print call
-            type = self.__params[0].get_type()
-            if type == BX_TYPE.BOOL: self.__name == "__bx_print_bool"
-            elif type == BX_TYPE.INT: self.__name == "__bx_print_int"
+            _type = self.__params[0].type_check(scope)
+            _type = self.__params[0].get_type()
+            # print(type(self.__params[0]))
+            # print(self.__params[0].get_type())
+            if _type == BX_TYPE.BOOL: self.__name == "__bx_print_bool"
+            elif _type == BX_TYPE.INT: self.__name == "__bx_print_int"
             else: self.syntax_error(" print statement has invalid argument")
             # set return type for print call
             self.__type = BX_TYPE.VOID
@@ -269,10 +271,11 @@ class ExpressionVar(Expression):
         return "ExpressionVar({})".format(self.name)
 
     def type_check(self, scope: Scope) -> None:
-        print("expression var", scope)
-        if not scope.exists_in_current_scope(self.name):
+        # print("expression var", scope)
+        if not scope.exists(self.name):
             self.syntax_error(f" variable not yet declared {self.name}")
-        self.type = scope.get_type(self.name)
+        if self.type is None:
+            self.type = scope.get_type(self.name)
 
 class ExpressionInt(Expression):
     def __init__(self, location: List[int], value):
@@ -394,7 +397,7 @@ class StatementBlock(Statement):
         if args is not None:
             for arg in args:
                 scope.add_variable(arg.get_name(), arg.get_type())
-        print("block scope ", scope)
+        # print("block scope ", scope)
         for statement in self.statements:
             statement.type_check(scope, ongoingloop)
         scope.delete_scope()
@@ -456,8 +459,7 @@ class StatementVardecl(Statement):
         else:
             scope.add_variable(self.variable.name, self.__type)
             scope.add_global_var(self.variable.name, self.__type)
-        # 
-        print(type(self.init))
+        # global vars can only be literal check
         if not isinstance(self.init, ExpressionInt) and not isinstance(self.init, ExpressionBool):
             self.syntax_error(f"globl var {self.variable.name} should be literal")
         self.__global = True
@@ -484,12 +486,14 @@ class StatementAssign(Statement):
         return "StatementAssign(%s,%s)" % (self.lvalue,self.rvalue)
 
     def type_check(self, scope: Scope, ongoingloop: bool) -> None:
+        print(f"{self}")
         if not scope.exists(self.lvalue.name):
             self.syntax_error(f" variable not yet declared {self.lvalue.name}")
 
         self.rvalue.type_check(scope)
+        self.lvalue.type_check(scope)
         if self.lvalue.get_type() != self.rvalue.get_type():
-            self.syntax_error(f'')
+            self.syntax_error(f"")
 
 # ------------------------------------------------------------------------------#
 # Conditional Statement Classes
@@ -507,9 +511,7 @@ class StatementIfElse(Statement):
         return "ifelse(%s,%s,%s)" % (self.condition,self.block,self.if_rest)
 
     def type_check(self, scope: Scope, ongoingloop: bool) -> None:
-        # TODO - YAO the expression is parsed incorrectly
-        # check examples/fizzbuzz.bx
-        print(self.condition)
+        # print(self.condition)
         if self.condition.get_type() != BX_TYPE.BOOL:
             self.syntax_error(f' conditional expression does not have bool type')
         self.condition.type_check(scope)
@@ -637,7 +639,7 @@ class Prog(Node):
         for declaration in self.__decls:
             # global var decls are passed as list and they can be skipped
             if isinstance(declaration, list):
-                print(declaration)
+                # print(declaration)
                 continue
             else:
                 declaration.type_check(self.__scope)
