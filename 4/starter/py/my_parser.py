@@ -158,7 +158,8 @@ def p_block(p):
     
 def p_assign(p):
     """assign : IDENT EQUALS expression SEMICOLON"""
-    p[0] = StatementAssign([p.lineno(0), p.lexpos(0)], p[1], p[3])
+    expr_var = ExpressionVar([p.lineno(0), p.lexpos(0)], p[1])
+    p[0] = StatementAssign([p.lineno(0), p.lexpos(0)], expr_var, p[3])
 
 def p_ifelse(p):
     """ifelse : IF LPAREN expression RPAREN block ifrest"""
@@ -205,7 +206,8 @@ def p_vardecl(p):
     
 def p_varinits(p):
     """varinits : IDENT EQUALS expression varinitstar"""
-    p[0] =  [([p.lineno(0), p.lexpos(0)], p[1], p[3])] + p[4]
+    expr_var = ExpressionVar([p.lineno(0), p.lexpos(0)], p[1])
+    p[0] =  [([p.lineno(0), p.lexpos(0)], expr_var, p[3])] + p[4]
 
 def p_varinitstar(p):
     """varinitstar : 
@@ -214,7 +216,8 @@ def p_varinitstar(p):
         p[0] = []
     else:
         p[0] = p[1]
-        p[0].append(([p.lineno(0), p.lexpos(0)], p[3], p[5]))
+        expr_var = ExpressionVar([p.lineno(0), p.lexpos(0)], p[3])
+        p[0].append(([p.lineno(0), p.lexpos(0)], expr_var, p[5]))
         
 def p_expression(p):
     """expression : IDENT

@@ -512,6 +512,8 @@ class StatementIfElse(Statement):
 
     def type_check(self, scope: Scope, ongoingloop: bool) -> None:
         # print(self.condition)
+        if isinstance(self.condition, ExpressionVar):
+            self.condition.type_check(scope)
         if self.condition.get_type() != BX_TYPE.BOOL:
             self.syntax_error(f' conditional expression does not have bool type')
         self.condition.type_check(scope)
@@ -530,7 +532,7 @@ class StatementWhile(Statement):
     def type_check(self, scope: Scope, ongoingloop: bool) -> None:
         self.condition.type_check(scope)
         if self.condition.get_type() != BX_TYPE.BOOL:
-            self.syntax_error(f'')
+            self.syntax_error(f'condition in while statement is not Bool type {self.condition}')
         self.block.type_check(scope, True)
 
 class StatementJump(Statement):
