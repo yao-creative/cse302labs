@@ -493,7 +493,7 @@ class StatementAssign(Statement):
         self.rvalue.type_check(scope)
         self.lvalue.type_check(scope)
         if self.lvalue.get_type() != self.rvalue.get_type():
-            self.syntax_error(f"")
+            self.syntax_error(f"type mismatch for assign of {self.rvalue}")
 
 # ------------------------------------------------------------------------------#
 # Conditional Statement Classes
@@ -545,7 +545,7 @@ class StatementJump(Statement):
     
     def type_check(self, scope: Scope, ongoingloop: bool) -> None:
         if not ongoingloop:
-            self.syntax_error(f'')
+            self.syntax_error(f' bad break statement')
 
 # ------------------------------------------------------------------------------#
 # Main Classes
