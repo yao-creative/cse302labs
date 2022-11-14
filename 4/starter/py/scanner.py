@@ -69,7 +69,7 @@ def t_IDENT(t):
     return t
 
 def t_NUMBER(t):
-    r'\d+'
+    r'0|-?[1-9][0-9]*'
     t.value = int(t.value)
     return t
 
@@ -87,7 +87,6 @@ def t_newline(t):
 
     
 if __name__ == "__main__":
-    
     # parser = argparse.ArgumentParser(description= "Lex files")
     # parser.add_argument("--")
     lexer = lex.lex()

@@ -11,8 +11,6 @@ Authors: Yi Yao Tan
          Vrushank Agrawal
 """
 
-# TODO we dont need opposite because neg nums are allowed
-# in examples/var_decls.bx z should be a number and not ExpressionOp(opposite)
 __unop_dict = {
     '!': "not",
     '-': "opposite",
@@ -73,8 +71,6 @@ def p_declstar(p):
         p[0].append(p[2])
     # print(f"declstar: {p[0]}")
 
-# TODO Global vardecl is different than simple vardecl they can only
-# have numerical expressions and no binary or unary operations
 def p_decl(p):
     """decl : vardecl
             | procdecl"""
@@ -209,8 +205,6 @@ def p_vardecl(p):
     
 def p_varinits(p):
     """varinits : IDENT EQUALS expression varinitstar"""
-    # TODO expression can only be a num or a bool
-    # check examples gvar_badinit1 and gvar_badinit2 
     p[0] =  [([p.lineno(0), p.lexpos(0)], p[1], p[3])] + p[4]
 
 def p_varinitstar(p):
@@ -234,7 +228,6 @@ def p_expression(p):
                   | BITWISE_NEGATION expression
                   | IDENT LPAREN expressionstar RPAREN
     """
-    # TODO ProcCall can have zero parameters
     if len(p) == 2:
         if p[1] == "true":
             p[0] = ExpressionBool([p.lineno(0), p.lexpos(0)], True)
@@ -319,7 +312,7 @@ def run_parser(filename):
         data = f.read()
 
     result = parser.parse(data, lexer=lexer,tracking=True)
-    # print(result)
+    print(result)
     return result 
 
 if __name__ == "__main__":

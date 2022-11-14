@@ -236,6 +236,7 @@ class ExpressionProcCall(Expression):
             self.__type = BX_TYPE.VOID
             return
 
+        # print(" reached ExpreProcCall type check")
         # check type of all proc arguments
         proc = scope.get_global(self.__name)
         if proc is None:
@@ -244,7 +245,7 @@ class ExpressionProcCall(Expression):
             self.syntax_error(f" procedure {self.__name} already declared in global scope but as global variable")
         else:
             in_types, out_type = scope.get_global(self.__name)
-            self.__type = out_type #set type of proc call
+            self.__type = out_type # set type of proc call
             # check correct num params
             if len(self.__params) != len(in_types):
                 self.syntax_error(f"Procedure '{self.__name}' expects {len(in_types)} parameters, but {len(self.__params)} were given.")
@@ -259,15 +260,19 @@ class ExpressionVar(Expression):
         super().__init__(location)
         self.name: str = name
         self.location = location
+        self.type: BX_TYPE = None
 
     def get_type(self) -> None:
-        raise RuntimeError("The impossible happened get_type in ExpressionVar reached")
+        return self.type
 
     def __str__(self):
         return "ExpressionVar({})".format(self.name)
 
     def type_check(self, scope: Scope) -> None:
-        raise RuntimeError("The impossible happened type_check in ExpressionVar reached")
+        print("expression var", scope)
+        if not scope.exists_in_current_scope(self.name):
+            self.syntax_error(f" variable not yet declared {self.name}")
+        self.type = scope.get_type(self.name)
 
 class ExpressionInt(Expression):
     def __init__(self, location: List[int], value):
@@ -388,7 +393,8 @@ class StatementBlock(Statement):
         scope.create_scope()
         if args is not None:
             for arg in args:
-                arg.type_check(scope)
+                scope.add_variable(arg.get_name(), arg.get_type())
+        print("block scope ", scope)
         for statement in self.statements:
             statement.type_check(scope, ongoingloop)
         scope.delete_scope()
@@ -417,9 +423,11 @@ class StatementReturn(Statement):
         # if expression is None then it is a subroutine -> VOID
         expr_ret_type = BX_TYPE.VOID
         if self.expression is not None:
-            expr_ret_type = self.expression.get_type()
+            # print(f"expression for ret is {self.expression}")
             self.expression.type_check(scope)
+            expr_ret_type = self.expression.get_type()
         
+        # print(expr_ret_type)
         # checks ret type of expression with proc
         ret_type = scope.get_proc_return_type()
         if ret_type != expr_ret_type:
@@ -448,18 +456,23 @@ class StatementVardecl(Statement):
         else:
             scope.add_variable(self.variable.name, self.__type)
             scope.add_global_var(self.variable.name, self.__type)
+        # 
+        print(type(self.init))
+        if not isinstance(self.init, ExpressionInt) and not isinstance(self.init, ExpressionBool):
+            self.syntax_error(f"globl var {self.variable.name} should be literal")
         self.__global = True
 
     def type_check(self, scope: Scope, ongoingloop: bool) -> None:
         self.init.type_check(scope)
-        if not self.__global: 
-            if scope.exists_in_current_scope(self.variable.name): 
-                self.syntax_error(" variable already declared in current scope")
-            else:
-                # print(f"adding {self.variable} to scope and is not global, of type: {self.__type}")
-                scope.add_variable(self.variable.name, self.__type)
-        else:
+        if self.__global: 
             raise RuntimeError("Entered global Vardecl Type_checker. You should not be here")
+        if scope.exists_in_current_scope(self.variable.name): 
+            self.syntax_error(" variable already declared in current scope")
+        else:
+            # print(f"adding {self.variable} to scope and is not global, of type: {self.__type}")
+            scope.add_variable(self.variable.name, self.__type)
+        if self.init.get_type() != self.get_type():
+            self.syntax_error(f"type mismatch for var {self.variable.name}")
 
 class StatementAssign(Statement):
     def __init__(self, location: List[int], lvalue: ExpressionVar, rvalue: Expression):
@@ -472,7 +485,8 @@ class StatementAssign(Statement):
 
     def type_check(self, scope: Scope, ongoingloop: bool) -> None:
         if not scope.exists(self.lvalue.name):
-            self.syntax_error(f" variable not yet declared")
+            self.syntax_error(f" variable not yet declared {self.lvalue.name}")
+
         self.rvalue.type_check(scope)
         if self.lvalue.get_type() != self.rvalue.get_type():
             self.syntax_error(f'')
@@ -565,6 +579,7 @@ class DeclProc(Node):
     def type_check(self, scope: Scope) -> None:
         """ Type checks the proc block. Sets proc return type for Return statements """
         scope.set_proc_return_type(self.__returntype)
+        # print(self.__arguments)
         self.__body.type_check(scope, False, self.__arguments)
         scope.unset_proc_return_type()
 
