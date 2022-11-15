@@ -279,7 +279,7 @@ class Procx64():
                     arg = self.__stack.get_item(args[0], instr)
                     self.__asm_instr_proc.append(f'\tmovq {arg}, %rax')
                 # We jmp to the last exit label of the proc 
-                self.__asm_instr_proc.append(f'\tjmp {self.__func_name}.Lexit')
+                self.__asm_instr_proc.append(f'\tjmp .{self.__func_name}.Lexit')
 
             else:       # where did we screw up?
                 raise RuntimeError(f'Undefined opcode: {opcode}')

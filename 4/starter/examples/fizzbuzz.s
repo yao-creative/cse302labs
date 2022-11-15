@@ -71,7 +71,7 @@ fizzbuzz:
 	/*   %15 = const 151515 [TAC] */
 	movq $151515, -128(%rbp)
 	movq -136(%rbp), %rdi
-	callq __bx_print_int
+	callq __bx_print_int 1
 	/*   jmp %.L8 [TAC] */
 	jmp .fizzbuzz.L8
 	/*  %.L7: [TAC] */
@@ -79,7 +79,7 @@ fizzbuzz:
 	/*   %17 = const 333 [TAC] */
 	movq $333, -144(%rbp)
 	movq -152(%rbp), %rdi
-	callq __bx_print_int
+	callq __bx_print_int 1
 	/*  %.L8: [TAC] */
 .fizzbuzz.L8:
 	/*   jmp %.L5 [TAC] */
@@ -111,13 +111,13 @@ fizzbuzz:
 	/*   %24 = const 555 [TAC] */
 	movq $555, -200(%rbp)
 	movq -208(%rbp), %rdi
-	callq __bx_print_int
+	callq __bx_print_int 1
 	/*   jmp %.L11 [TAC] */
 	jmp .fizzbuzz.L11
 	/*  %.L10: [TAC] */
 .fizzbuzz.L10:
 	movq %rdi, %rdi
-	callq __bx_print_int
+	callq __bx_print_int 1
 	/*  %.L11: [TAC] */
 .fizzbuzz.L11:
 	/*  %.L5: [TAC] */
@@ -136,7 +136,7 @@ fizzbuzz:
 	/*  %.L2: [TAC] */
 .fizzbuzz.L2:
 	xorq %rax, %rax
-	jmp fizzbuzz.Lexit
+	jmp .fizzbuzz.Lexit
 .fizzbuzz.Lexit:
 	movq %rbp, %rsp
 	popq %rbp
@@ -156,9 +156,9 @@ main:
 	/*   %0 = const 100 [TAC] */
 	movq $100, -8(%rbp)
 	movq -24(%rbp), %rsi
-	callq fizzbuzz
+	callq fizzbuzz 2
 	xorq %rax, %rax
-	jmp main.Lexit
+	jmp .main.Lexit
 .main.Lexit:
 	movq %rbp, %rsp
 	popq %rbp
