@@ -86,8 +86,8 @@ class GlobalVarx64:
 
     def __create_asm(self) -> None:
         """ Creates x64 asm instr from the given tac instr """
-        self.__asm_instr_gvar.append(f"\tglobl {self.__name}")
-        self.__asm_instr_gvar.append(f"\tdata")
+        self.__asm_instr_gvar.append(f"\t.globl {self.__name}")
+        self.__asm_instr_gvar.append(f"\t.data")
         self.__asm_instr_gvar.append(f"{self.__name}:  .quad {self.__init}")
 
     def get_instr(self) -> list:

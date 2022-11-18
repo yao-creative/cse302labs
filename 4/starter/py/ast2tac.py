@@ -151,6 +151,8 @@ class AST_to_TAC_Generator:
         self.__proc_instructions.append({"opcode": opcode, 
                                          "args": args, 
                                          "result": result })
+    # ------------------------------------------------------------------------------#
+    # Convert bool result to int 
 
     def __bool_assign(self, fresh_temp:str, expression: ExpressionBool, temporary: str) -> None:
         """ Adds TAC instrs to convert bool expr result into int """
@@ -166,6 +168,24 @@ class AST_to_TAC_Generator:
         self.__emit("copy", [fresh_temp], temporary)
 
     # ------------------------------------------------------------------------------#
+    # ExpressionProcCall convertor
+
+    def __expression_call(self, expression: ExpressionProcCall, temporary: str) -> None:
+        """ function that creates TAC for expression call """
+        for index, param in enumerate(expression.get_params()):
+            temp = self.__code_state.fresh_temp()
+            if param.get_type() == BX_TYPE.BOOL:
+                temp2 = self.__code_state.fresh_temp()
+                self.__bool_assign(temp2, param, temp)
+            else:
+                self.__tmm_expression_parse(param, temp)
+
+            self.__emit(opcode="param", args=[index+1, temp], result=None)
+        res = None if expression.get_type() is BX_TYPE.VOID else temporary
+        self.__emit(opcode="call", args=["@"+expression.get_name(), len(expression.get_params())], result=res)
+
+
+    # ------------------------------------------------------------------------------#
     # Global Muncher
 
     def __tmm_global_parse(self) -> None:
@@ -179,8 +199,11 @@ class AST_to_TAC_Generator:
                 if isinstance(glob_func, StatementVardecl):                
                     var = glob_func
                     self.__code_state.add_globl_var("@"+var.variable.name)
+                    if isinstance(var.init, ExpressionBool):
+                        init_val = int(var.init.value)
+                    else: init_val = var.init.value
                     self.__global_vars.append({"var": "@"+var.variable.name,
-                                                "init": var.init.value})
+                                                "init": init_val})
         # now add all global functions
         for glob_func in self.__code.global_decls():
             if isinstance(glob_func, DeclProc):
@@ -307,7 +330,7 @@ class AST_to_TAC_Generator:
             raise RuntimeError(f'Got unexpected statement {statement}')
 
     # ------------------------------------------------------------------------------#
-    # Expression Muncher
+    # Int Expression Muncher
 
     def __tmm_expression_parse(self, expression: Expression, temporary: str) -> None:
         """ parses the expression and builds its tac """
@@ -412,24 +435,6 @@ class AST_to_TAC_Generator:
         else:       # should never reach here
             raise RuntimeError(f'Got unexpected expression {expression}')
 
-    # ------------------------------------------------------------------------------#
-    # Expression Caller
-
-    def __expression_call(self, expression: ExpressionProcCall, temporary: str) -> None:
-        """ function that creates TAC for expression call """
-        for index, param in enumerate(expression.get_params()):
-            temp = self.__code_state.fresh_temp()
-            if param.get_type() == BX_TYPE.BOOL:
-                temp2 = self.__code_state.fresh_temp()
-                self.__bool_assign(temp2, param, temp)
-            else:
-                self.__tmm_expression_parse(param, temp)
-
-            self.__emit(opcode="param", args=[index+1, temp], result=None)
-        res = None if expression.get_type() is BX_TYPE.VOID else temporary
-        self.__emit(opcode="call", args=["@"+expression.get_name(), len(expression.get_params())], result=res)
-
-
 
 # ------------------------------------------------------------------------------#
 # Main functions
@@ -449,7 +454,7 @@ def ast_to_tac(ast: Prog) -> json:
 def write_tacfile(fname: str, tac_instr: List[dict]) -> None:
     """ Writes a tac json to the system """
     tac_filename = fname[:-2] + 'tac.json'   # get new file name
-    print(tac_instr)
+    # print(tac_instr)
     with open(tac_filename, 'w') as fp:         # save the file
         json.dump(tac_instr, fp, indent=3) #, indent=3
     print(f"tac json file {tac_filename} written")
