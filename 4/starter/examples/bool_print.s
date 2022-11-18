@@ -6,7 +6,7 @@ main:
 	pushq %rbp
 	movq %rsp, %rbp
 	subq $144, %rsp
-	/*   %1 = const 0 [TAC] */
+	/*   %2 = const 0 [TAC] */
 	movq $0, -8(%rbp)
 	/*   jmp %.L2 [TAC] */
 	jmp .main.L2
@@ -56,16 +56,17 @@ main:
 	/* --jmp .main.L0-- */
 	/*  %.L0: [TAC] */
 .main.L0:
-	/*   %1 = const 1 [TAC] */
+	/*   %2 = const 1 [TAC] */
 	movq $1, -8(%rbp)
 	/*  %.L1: [TAC] */
 .main.L1:
-	/*   %0 = copy %1 [TAC] */
+	/*   %1 = copy %2 [TAC] */
 	movq -8(%rbp), %r11
 	movq %r11, -16(%rbp)
 	movq -16(%rbp), %rdi
+	/*   call @__bx_print_bool [TAC] */
 	callq __bx_print_bool
-	/*   %3 = const 0 [TAC] */
+	/*   %5 = const 0 [TAC] */
 	movq $0, -24(%rbp)
 	/*   jmp %.L18 [TAC] */
 	/* --jmp .main.L18-- */
@@ -135,16 +136,17 @@ main:
 	/* --jmp .main.L13-- */
 	/*  %.L13: [TAC] */
 .main.L13:
-	/*   %3 = const 1 [TAC] */
+	/*   %5 = const 1 [TAC] */
 	movq $1, -24(%rbp)
 	/*  %.L14: [TAC] */
 .main.L14:
-	/*   %2 = copy %3 [TAC] */
+	/*   %4 = copy %5 [TAC] */
 	movq -24(%rbp), %r11
 	movq %r11, -32(%rbp)
 	movq -32(%rbp), %rdi
+	/*   call @__bx_print_bool [TAC] */
 	callq __bx_print_bool
-	/*   %5 = const 0 [TAC] */
+	/*   %8 = const 0 [TAC] */
 	movq $0, -40(%rbp)
 	/*   jmp %.L38 [TAC] */
 	/* --jmp .main.L38-- */
@@ -278,16 +280,17 @@ main:
 	/* --jmp .main.L31-- */
 	/*  %.L31: [TAC] */
 .main.L31:
-	/*   %5 = const 1 [TAC] */
+	/*   %8 = const 1 [TAC] */
 	movq $1, -40(%rbp)
 	/*  %.L32: [TAC] */
 .main.L32:
-	/*   %4 = copy %5 [TAC] */
+	/*   %7 = copy %8 [TAC] */
 	movq -40(%rbp), %r11
 	movq %r11, -48(%rbp)
 	movq -48(%rbp), %rdi
+	/*   call @__bx_print_bool [TAC] */
 	callq __bx_print_bool
-	/*   %7 = const 0 [TAC] */
+	/*   %11 = const 0 [TAC] */
 	movq $0, -56(%rbp)
 	/*   jmp %.L70 [TAC] */
 	/* --jmp .main.L70-- */
@@ -565,16 +568,17 @@ main:
 	/* --jmp .main.L65-- */
 	/*  %.L65: [TAC] */
 .main.L65:
-	/*   %7 = const 1 [TAC] */
+	/*   %11 = const 1 [TAC] */
 	movq $1, -56(%rbp)
 	/*  %.L66: [TAC] */
 .main.L66:
-	/*   %6 = copy %7 [TAC] */
+	/*   %10 = copy %11 [TAC] */
 	movq -56(%rbp), %r11
 	movq %r11, -64(%rbp)
 	movq -64(%rbp), %rdi
+	/*   call @__bx_print_bool [TAC] */
 	callq __bx_print_bool
-	/*   %9 = const 0 [TAC] */
+	/*   %14 = const 0 [TAC] */
 	movq $0, -72(%rbp)
 	/*   jmp %.L138 [TAC] */
 	jmp .main.L138
@@ -636,16 +640,17 @@ main:
 	jmp .main.L136
 	/*  %.L135: [TAC] */
 .main.L135:
-	/*   %9 = const 1 [TAC] */
+	/*   %14 = const 1 [TAC] */
 	movq $1, -72(%rbp)
 	/*  %.L136: [TAC] */
 .main.L136:
-	/*   %8 = copy %9 [TAC] */
+	/*   %13 = copy %14 [TAC] */
 	movq -72(%rbp), %r11
 	movq %r11, -80(%rbp)
 	movq -80(%rbp), %rdi
+	/*   call @__bx_print_bool [TAC] */
 	callq __bx_print_bool
-	/*   %11 = const 0 [TAC] */
+	/*   %17 = const 0 [TAC] */
 	movq $0, -88(%rbp)
 	/*   jmp %.L155 [TAC] */
 	/* --jmp .main.L155-- */
@@ -715,16 +720,17 @@ main:
 	/* --jmp .main.L151-- */
 	/*  %.L151: [TAC] */
 .main.L151:
-	/*   %11 = const 1 [TAC] */
+	/*   %17 = const 1 [TAC] */
 	movq $1, -88(%rbp)
 	/*  %.L152: [TAC] */
 .main.L152:
-	/*   %10 = copy %11 [TAC] */
+	/*   %16 = copy %17 [TAC] */
 	movq -88(%rbp), %r11
 	movq %r11, -96(%rbp)
 	movq -96(%rbp), %rdi
+	/*   call @__bx_print_bool [TAC] */
 	callq __bx_print_bool
-	/*   %13 = const 0 [TAC] */
+	/*   %20 = const 0 [TAC] */
 	movq $0, -104(%rbp)
 	/*   jmp %.L173 [TAC] */
 	/* --jmp .main.L173-- */
@@ -858,16 +864,17 @@ main:
 	/* --jmp .main.L169-- */
 	/*  %.L169: [TAC] */
 .main.L169:
-	/*   %13 = const 1 [TAC] */
+	/*   %20 = const 1 [TAC] */
 	movq $1, -104(%rbp)
 	/*  %.L170: [TAC] */
 .main.L170:
-	/*   %12 = copy %13 [TAC] */
+	/*   %19 = copy %20 [TAC] */
 	movq -104(%rbp), %r11
 	movq %r11, -112(%rbp)
 	movq -112(%rbp), %rdi
+	/*   call @__bx_print_bool [TAC] */
 	callq __bx_print_bool
-	/*   %15 = const 0 [TAC] */
+	/*   %23 = const 0 [TAC] */
 	movq $0, -120(%rbp)
 	/*   jmp %.L207 [TAC] */
 	jmp .main.L207
@@ -1149,16 +1156,17 @@ main:
 	jmp .main.L204
 	/*  %.L203: [TAC] */
 .main.L203:
-	/*   %15 = const 1 [TAC] */
+	/*   %23 = const 1 [TAC] */
 	movq $1, -120(%rbp)
 	/*  %.L204: [TAC] */
 .main.L204:
-	/*   %14 = copy %15 [TAC] */
+	/*   %22 = copy %23 [TAC] */
 	movq -120(%rbp), %r11
 	movq %r11, -128(%rbp)
 	movq -128(%rbp), %rdi
+	/*   call @__bx_print_bool [TAC] */
 	callq __bx_print_bool
-	/*   %17 = const 0 [TAC] */
+	/*   %26 = const 0 [TAC] */
 	movq $0, -136(%rbp)
 	/*   jmp %.L282 [TAC] */
 	/* --jmp .main.L282-- */
@@ -1788,14 +1796,15 @@ main:
 	/* --jmp .main.L274-- */
 	/*  %.L274: [TAC] */
 .main.L274:
-	/*   %17 = const 1 [TAC] */
+	/*   %26 = const 1 [TAC] */
 	movq $1, -136(%rbp)
 	/*  %.L275: [TAC] */
 .main.L275:
-	/*   %16 = copy %17 [TAC] */
+	/*   %25 = copy %26 [TAC] */
 	movq -136(%rbp), %r11
 	movq %r11, -144(%rbp)
 	movq -144(%rbp), %rdi
+	/*   call @__bx_print_bool [TAC] */
 	callq __bx_print_bool
 	xorq %rax, %rax
 	jmp .main.Lexit

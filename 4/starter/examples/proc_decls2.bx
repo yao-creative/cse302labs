@@ -5,7 +5,7 @@ def fib(n : int) : int {
 }
 
 def is_even(n : int) : bool { // mutual recursion with is_odd()
-    return n == 0 || is_odd(n - 1);
+    return (n == 0) || is_odd(n - 1);
 }
 
 def is_odd(n : int) : bool { // mutual recursion with is_even()
