@@ -40,8 +40,8 @@ class Scope:
                 return scope[variable]
         raise RuntimeError(f"variable {variable} not defined in the operation")
 
-    def exists(self, variable) -> bool:
-        """ Checks if a variable (ExpressionVar) exists in any scope """
+    def exists(self, variable: str) -> bool:
+        """ Checks if a variable exists in any scope """
         # print(self.__scope_map)
         # print(variable)
         for scope in self.__scope_map[::-1]:
@@ -279,7 +279,7 @@ class ExpressionVar(Expression):
         return "ExpressionVar({})".format(self.name)
 
     def type_check(self, scope: Scope) -> None:
-        # print("expression var", scope)
+        # print("expression var", self.name, scope)
         if not scope.exists(self.name):
             self.syntax_error(f" variable not yet declared {self.name}")
         if self.type is None:
@@ -404,9 +404,11 @@ class StatementBlock(Statement):
         scope.create_scope()
         if args is not None:
             for arg in args:
+                arg.type_check(scope)
                 scope.add_variable(arg.get_name(), arg.get_type())
         # print("block scope ", scope)
         for statement in self.statements:
+            # print(statement)
             statement.type_check(scope, ongoingloop)
         scope.delete_scope()
 
@@ -475,12 +477,14 @@ class StatementVardecl(Statement):
 
     def type_check(self, scope: Scope, ongoingloop: bool) -> None:
         self.init.type_check(scope)
+        # print("vardecl ", self.variable.name)
+        # print("scope in vardecl ", scope)
         if self.__global: 
             raise RuntimeError("Entered global Vardecl Type_checker. You should not be here")
         if scope.exists_in_current_scope(self.variable.name): 
             self.syntax_error(" variable already declared in current scope")
         else:
-            # print(f"adding {self.variable} to scope and is not global, of type: {self.__type}")
+            # print(self.variable)
             scope.add_variable(self.variable.name, self.__type)
         if self.init.get_type() != self.get_type():
             self.syntax_error(f"type mismatch for var {self.variable.name}")

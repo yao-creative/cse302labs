@@ -206,8 +206,7 @@ def p_vardecl(p):
     
 def p_varinits(p):
     """varinits : IDENT EQUALS expression varinitstar"""
-    expr_var = ExpressionVar([p.lineno(0), p.lexpos(0)], p[1])
-    p[0] =  [([p.lineno(0), p.lexpos(0)], expr_var, p[3])] + p[4]
+    p[0] =  [([p.lineno(0), p.lexpos(0)], p[1], p[3])] + p[4]
 
 def p_varinitstar(p):
     """varinitstar : 
@@ -216,8 +215,7 @@ def p_varinitstar(p):
         p[0] = []
     else:
         p[0] = p[1]
-        expr_var = ExpressionVar([p.lineno(0), p.lexpos(0)], p[3])
-        p[0].append(([p.lineno(0), p.lexpos(0)], expr_var, p[5]))
+        p[0].append(([p.lineno(0), p.lexpos(0)], p[3], p[5]))
         
 def p_expression(p):
     """expression : IDENT
