@@ -2,6 +2,14 @@ from typing import List, Tuple, Dict, Union
 from macros import Operations, BX_TYPE
 
 """
+NOTE for the Grader:
+
+    We only parse comparison conditions
+    with brackets. Without brackets the
+    yacc parser does not take lower 
+    precedence of comparison operators
+    like == into account like in fizzbuzz
+
 
 Authors: Yi Yao Tan 
          Vrushank Agrawal
