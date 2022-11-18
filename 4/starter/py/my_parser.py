@@ -198,8 +198,8 @@ def p_vardecl(p):
     # print(f"variable declaration of type {p[4]}")
     listvardecl = ListVarDecl([], p[4])
     vars = p[2]
-    # TODO smth wrong with vars passing here
-    # check example gvar_repeated.bx, lvar_badinit, lvar_repeated, 
+    # TODO smth wrong with global vars passing here
+    # check examples/main_test.bx
     listvardecl.add_multi_var(vars)
     p[0] = listvardecl.return_vardecl_list()
     # print(f"vardecl: {p[0]}")
