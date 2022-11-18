@@ -159,9 +159,9 @@ class AST_to_TAC_Generator:
         # otherwise jmp to false where 0 is assigned above
         self.__tmm_bool_expression_parse(expression, LTrue, LFalse)
         self.__emit("label", [LTrue], None)
-        self.__emit("copy", [1], fresh_temp)
+        self.__emit("const", [1], fresh_temp)
         self.__emit("label", [LFalse], None)
-        self.__emit("copy", fresh_temp, temporary)
+        self.__emit("copy", [fresh_temp], temporary)
 
     # ------------------------------------------------------------------------------#
     # Global Muncher

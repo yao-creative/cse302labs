@@ -21,6 +21,7 @@ class Stack:
     def get_item(self, temp: str, instr: dict) -> str:
         """ Return the stack address of the temp """
         # if globl var then ret rip relative position
+        # print(temp)
         if temp[0] == "@":
             return f'{temp[1:]}(%rip)'
         return self.__lookup_temp(temp, instr)
@@ -196,6 +197,7 @@ class Procx64():
                 self.__asm_instr_proc.append(f'\tmovq ${args[0]}, {result}')    # add instruction as assembly
 
             elif opcode == 'copy':
+                # print(args, instr)
                 Macros._assert_argument_numb(args, 1, instr)
                 arg = self.__stack.get_item(args[0], instr)
                 result = self.__stack.get_item(result, instr)
