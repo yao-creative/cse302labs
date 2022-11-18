@@ -441,7 +441,7 @@ class StatementVardecl(Statement):
         super().__init__(location)
         self.variable: ExpressionVar = variable
         self.__type: BX_TYPE = type
-        self.init: Expression = init 
+        self.init: Union[ExpressionInt, ExpressionBool] = init 
         self.__global = False
 
     def get_type(self) -> BX_TYPE:

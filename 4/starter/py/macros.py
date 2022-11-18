@@ -134,9 +134,12 @@ class x64Macros:
     @staticmethod
     def _assert_temporary(temp: str, instr: dict) -> None:
         """ Checks if temporary is of correct format """
-        assert (isinstance(temp, str) and \
-                temp[0] == '%' and \
-                temp[1:].isnumeric()), f'Invalid format for temporary in {instr}'
+        assert (isinstance(temp, str)), f"Comparison can only happen with str in {instr}"
+        if temp[0] == "@":
+            assert (temp[1:].isalpha()), f'Global variable must be alpha in {instr}'
+        else:
+            assert (temp[0] == '%' and \
+                    temp[1:].isnumeric()), f'Invalid format for temporary in {instr}'
 
     @staticmethod
     def _assert_label(arg: str, instr: dict) -> None:

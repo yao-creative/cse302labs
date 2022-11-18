@@ -18,7 +18,7 @@ class CodeScope:
     def __init__(self) -> None:
         self.__temps: dict = []
         self.__temp_counter: int = 0
-        self.__temps_by_scope: List = []
+        self.__scope_map: List = []
         self.__labels: List[str] = []
         self.__label_counter: int = 0
         self.__break_stack = []
@@ -29,14 +29,14 @@ class CodeScope:
 
     def add_globl_var(self, variable: str) -> None:
         """ Temporary for globl var is same as its name """
-        assert(len(self.__temps_by_scope) == 1), f"global variable {variable} not defined globally "
-        self.__temps_by_scope[-1][variable] = variable
+        assert(len(self.__scope_map) == 1), f"global variable {variable} not defined globally "
+        self.__scope_map[0][variable] = variable
 
     def add_variable(self, variable: str) -> str:
         """ Adds a variable in code and creates a temp for it """
         self.__check_scope(variable)
         temp = self.fresh_temp()
-        self.__temps_by_scope[-1][variable] = temp
+        self.__scope_map[-1][variable] = temp
         return temp
 
     def fresh_temp(self) -> str:
@@ -54,16 +54,18 @@ class CodeScope:
         return label
 
     def fetch_temp(self, variable: str) -> str:
-        """ Returns a temp if it exists """
+        """ Returns a temp if it exists otherwise raises RuntimeError"""
         self.__check_scope(variable)
+        # print(f"Scope is {self.__scope_map}")
+        # print(f"Variable is {variable}")
         # We traverse the scopes from the last to check if variable is defined bottom up
-        for scope in self.__temps_by_scope[::-1]:
+        for scope in self.__scope_map[::-1]:
             # print(f"Scope is {scope}")
             if variable in scope:
                 # print(f" variable = {variable} and temp = {scope[variable]}")
                 return scope[variable]
         # check if variable is globally defined
-        if f'@{variable}' in self.__temps_by_scope[0]:
+        if f'@{variable}' in self.__scope_map[0]:
             return scope[f'@{variable}']
         else:
             raise RuntimeError(f"Variable {variable} accessed before definition")
@@ -80,16 +82,16 @@ class CodeScope:
 
     def enter_scope(self) -> None:
         """ adds a new scope dict to the stack """
-        self.__temps_by_scope.append({})
+        self.__scope_map.append({})
 
     def __check_scope(self, variable: ExpressionVar) -> None:
         """ Asserts that a scope exists """
-        if not len(self.__temps_by_scope):
+        if not len(self.__scope_map):
             raise RuntimeError(f'Variable {variable} is defined out of scope')
 
     def exit_scope(self) -> None:
         """ pops the last scope dict from the stack """
-        self.__temps_by_scope.pop()
+        self.__scope_map.pop()
 
     # ------------------------------------------------------------------------------#
     # loop handlers
@@ -169,15 +171,19 @@ class AST_to_TAC_Generator:
     def __tmm_global_parse(self) -> None:
         """ parses the global definition and builds its tac """
         self.__code_state.enter_scope()
-
+        # first add all global variables
+        # print(self.__code.global_decls())
         for glob_func in self.__code.global_decls():
-            if isinstance(glob_func, StatementVardecl):                
-                # for var in glob_func.return_vardecl_list():
-                var = glob_func
-                self.__code_state.add_globl_var("@"+var.variable.name)
-                self.__global_vars.append({"var": "@"+var.variable,
-                                            "init": var.init})
-            elif isinstance(glob_func, DeclProc):
+            if isinstance(glob_func, list):
+                glob_func = glob_func[0]
+                if isinstance(glob_func, StatementVardecl):                
+                    var = glob_func
+                    self.__code_state.add_globl_var("@"+var.variable.name)
+                    self.__global_vars.append({"var": "@"+var.variable.name,
+                                                "init": var.init.value})
+        # now add all global functions
+        for glob_func in self.__code.global_decls():
+            if isinstance(glob_func, DeclProc):
                 self.__code_state.enter_scope()
                 self.__code_state.enter_new_proc()
                 self.__proc_instructions = []
@@ -360,6 +366,11 @@ class AST_to_TAC_Generator:
             else: 
                 self.__emit("jmp", [Lfalse], None)
 
+        if isinstance(expression, ExpressionVar):
+            temp = self.__code_state.fetch_temp(expression.name)
+            self.__emit("jz", [temp, Lfalse], None)
+            self.__emit("jmp", [Ltrue], None)
+
         elif isinstance(expression, ExpressionOp):
             if expression.operator == "logical-and":
                 Lmid = self.__code_state.fresh_label()
@@ -438,6 +449,7 @@ def ast_to_tac(ast: Prog) -> json:
 def write_tacfile(fname: str, tac_instr: List[dict]) -> None:
     """ Writes a tac json to the system """
     tac_filename = fname[:-2] + 'tac.json'   # get new file name
+    print(tac_instr)
     with open(tac_filename, 'w') as fp:         # save the file
         json.dump(tac_instr, fp, indent=3) #, indent=3
     print(f"tac json file {tac_filename} written")
