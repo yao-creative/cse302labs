@@ -63,7 +63,7 @@ if __name__=="__main__":
     parse.add_argument('--stop-cfg', dest='stopcfg', action='store_true', default=False,
                         help='Perform CFG optimization and stop')
     parse.add_argument('--no-cfg', dest='nocfg', action='store_true', default=False,
-                        help='Perform CFG optimization and stop')
+                        help='Do not perform CFG optimization')
     parse.add_argument('filename', metavar="FILE", type=str, nargs=1)
     args = parse.parse_args(sys.argv[1:])
 

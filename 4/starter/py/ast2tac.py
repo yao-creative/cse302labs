@@ -155,6 +155,8 @@ class AST_to_TAC_Generator:
         LTrue = self.__code_state.fresh_label()
         LFalse = self.__code_state.fresh_label()
         self.__emit("const", [0], fresh_temp)
+        # if expression is true then transfer 1 to temporary
+        # otherwise jmp to false where 0 is assigned above
         self.__tmm_bool_expression_parse(expression, LTrue, LFalse)
         self.__emit("label", [LTrue], None)
         self.__emit("copy", [1], fresh_temp)
@@ -305,6 +307,7 @@ class AST_to_TAC_Generator:
             raise RuntimeError(f'Expression must have type INT or VOID but has type {expression.get_type()}')
 
         if isinstance(expression, ExpressionInt):
+            print("const:", expression.value, temporary)
             self.__emit("const", [expression.value], temporary)
 
         elif isinstance(expression, ExpressionVar):
@@ -340,12 +343,14 @@ class AST_to_TAC_Generator:
                     temp = self.__code_state.fetch_temp(param.name)
                 else:
                     temp = self.__code_state.fresh_temp()
+                    # print("param", param, temp, temporary)
                     # if param is bool then we need to convert its result into int
                     if param.get_type() == BX_TYPE.BOOL:
                         self.__bool_assign(temp, param, temporary)
                     else:
                         self.__tmm_expression_parse(param, temporary)
-                self.__emit(opcode="param", args=[index+1, temp], result=None)
+
+                self.__emit(opcode="param", args=[index+1, temporary], result=None)
             res = None if expression.get_type() is BX_TYPE.VOID else temporary
             self.__emit(opcode="call", args=["@"+expression.get_name(), len(expression.get_params())], result=res)
 
