@@ -189,6 +189,8 @@ class AST_to_TAC_Generator:
 
                 self.__tmm_statement_parse(glob_func.get_body())
                 # if last instr is not ret then add it to simplify CFG analysis
+                # print(glob_func.get_name())
+                # print(self.__proc_instructions[-5:])
                 if self.__proc_instructions[-1]["opcode"] != "ret":
                     self.__emit(opcode="ret", args=[], result=None)
                 self.__global_procs.append({"proc":"@"+glob_func.get_name(),
@@ -287,12 +289,13 @@ class AST_to_TAC_Generator:
                 temp = self.__code_state.fetch_temp(expr.name)
                 self.__emit(opcode="ret", args=[temp], result=None)
             else:
-                temp = self.__code_state.fresh_temp()
+                temporary = self.__code_state.fresh_temp()
                 if expr.get_type() == BX_TYPE.BOOL:
+                    temp = self.__code_state.fresh_temp()
                     self.__bool_assign(fresh_temp=temp, expression=expr, temporary=temporary)
                 else:
-                    self.__tmm_expression_parse(expr, temp)
-                self.__emit(opcode="ret", args=[temp], result=None)
+                    self.__tmm_expression_parse(expr, temporary)
+                self.__emit(opcode="ret", args=[temporary], result=None)
 
         else:       # should never reach here
             raise RuntimeError(f'Got unexpected statement {statement}')
@@ -307,7 +310,7 @@ class AST_to_TAC_Generator:
             raise RuntimeError(f'Expression must have type INT or VOID but has type {expression.get_type()}')
 
         if isinstance(expression, ExpressionInt):
-            print("const:", expression.value, temporary)
+            # print("const:", expression.value, temporary)
             self.__emit("const", [expression.value], temporary)
 
         elif isinstance(expression, ExpressionVar):
@@ -338,21 +341,7 @@ class AST_to_TAC_Generator:
             self.__emit(opcode, subexpr_targets, temporary)
 
         elif isinstance(expression, ExpressionProcCall):
-            for index, param in enumerate(expression.get_params()):
-                if isinstance(param, ExpressionVar):
-                    temp = self.__code_state.fetch_temp(param.name)
-                else:
-                    temp = self.__code_state.fresh_temp()
-                    # print("param", param, temp, temporary)
-                    # if param is bool then we need to convert its result into int
-                    if param.get_type() == BX_TYPE.BOOL:
-                        self.__bool_assign(temp, param, temporary)
-                    else:
-                        self.__tmm_expression_parse(param, temporary)
-
-                self.__emit(opcode="param", args=[index+1, temporary], result=None)
-            res = None if expression.get_type() is BX_TYPE.VOID else temporary
-            self.__emit(opcode="call", args=["@"+expression.get_name(), len(expression.get_params())], result=res)
+            self.__expression_call(expression=expression, temporary=temporary)
 
         else:       # should never reach here
             raise RuntimeError(f'Got unexpected expression {expression}')
@@ -403,8 +392,32 @@ class AST_to_TAC_Generator:
             else:       # should never reach here
                 raise RuntimeError(f'Got unexpected boolean operator {expression.operator}')
 
+        elif isinstance(expression, ExpressionProcCall):
+            temporary = self.__code_state.fresh_temp()
+            self.__expression_call(expression, temporary)
+            self.__emit("jz", [temporary, Lfalse], None)
+            self.__emit("jmp", [Ltrue], None)
+
         else:       # should never reach here
             raise RuntimeError(f'Got unexpected expression {expression}')
+
+    # ------------------------------------------------------------------------------#
+    # Expression Caller
+
+    def __expression_call(self, expression: ExpressionProcCall, temporary: str) -> None:
+        """ function that creates TAC for expression call """
+        for index, param in enumerate(expression.get_params()):
+            temp = self.__code_state.fresh_temp()
+            if param.get_type() == BX_TYPE.BOOL:
+                temp2 = self.__code_state.fresh_temp()
+                self.__bool_assign(temp2, param, temp)
+            else:
+                self.__tmm_expression_parse(param, temp)
+
+            self.__emit(opcode="param", args=[index+1, temp], result=None)
+        res = None if expression.get_type() is BX_TYPE.VOID else temporary
+        self.__emit(opcode="call", args=["@"+expression.get_name(), len(expression.get_params())], result=res)
+
 
 
 # ------------------------------------------------------------------------------#
@@ -426,7 +439,7 @@ def write_tacfile(fname: str, tac_instr: List[dict]) -> None:
     """ Writes a tac json to the system """
     tac_filename = fname[:-2] + 'tac.json'   # get new file name
     with open(tac_filename, 'w') as fp:         # save the file
-        json.dump(tac_instr, fp) #, indent=3
+        json.dump(tac_instr, fp, indent=3) #, indent=3
     print(f"tac json file {tac_filename} written")
 
 if __name__=="__main__":
