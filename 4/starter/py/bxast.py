@@ -401,28 +401,6 @@ class Statement(Node):
     def __init__(self,location: List[int]):
         super().__init__(location)
 
-class StatementBlock(Statement):
-    def __init__(self,location: List[int], statements: List[Statement]):
-        super().__init__(location)
-        self.statements: List[Statement] = statements
-        # print("Created BLOCK class")
-
-    def type_check(self, scope: Scope, ongoingloop: bool, args: List[Param] = None) -> None:
-        # print("entered BLOCK type_check")
-        scope.create_scope()
-        if args is not None:
-            for arg in args:
-                arg.type_check(scope)
-                scope.add_variable(arg.get_name(), arg.get_type())
-        # print("block scope ", scope)
-        for statement in self.statements:
-            # print(statement)
-            statement.type_check(scope, ongoingloop)
-        scope.delete_scope()
-
-    def __str__(self):
-        return "block(%s)" % (self.statements)
-
 class StatementEval(Statement):
     def __init__(self,location: List[int], expression: Expression):
         super().__init__(location)
@@ -473,7 +451,7 @@ class StatementVardecl(Statement):
         return "vardecl(%s,%s,%s)" % (self.variable,self.__type,self.init)
 
     def global_type_check(self, scope: Scope) -> None:
-        print(f"global variable: {self.variable}")
+        # print(f"global variable: {self.variable}")
         if scope.exists_in_current_scope(self.variable.name):
             self.syntax_error(f" variable {self.variable.name} already declared in current global scope")
         else:
@@ -519,6 +497,28 @@ class StatementAssign(Statement):
 # ------------------------------------------------------------------------------#
 # Conditional Statement Classes
 # ------------------------------------------------------------------------------#
+
+class StatementBlock(Statement):
+    def __init__(self,location: List[int], statements: List[Statement]):
+        super().__init__(location)
+        self.statements: List[Statement] = statements
+        # print("Created BLOCK class")
+
+    def type_check(self, scope: Scope, ongoingloop: bool, args: List[Param] = None) -> None:
+        # print("entered BLOCK type_check")
+        scope.create_scope()
+        if args is not None:
+            for arg in args:
+                arg.type_check(scope)
+                scope.add_variable(arg.get_name(), arg.get_type())
+        # print("block scope ", scope)
+        for statement in self.statements:
+            # print(statement)
+            statement.type_check(scope, ongoingloop)
+        scope.delete_scope()
+
+    def __str__(self):
+        return "block(%s)" % (self.statements)
 
 class StatementIfElse(Statement):
     def __init__(self, location: List[int], condition: Expression, block : StatementBlock, ifrest):
@@ -615,8 +615,40 @@ class DeclProc(Node):
                 if isinstance(stat, StatementReturn):
                     ret_stat = True
                     break
+                # if all if else statements have ret then func will always ret
+                if isinstance(stat, StatementIfElse):
+                    if self.__ifelse_has_ret(stat):
+                        ret_stat = True
+                        break
+
             if not ret_stat:
                 self.syntax_error(f" function {self.__name} of type {self.__returntype} has no return statement")
+
+    def __ifelse_has_ret(self, statement: StatementIfElse) -> bool:
+        """ Checks if the if else statement block has return statement """
+        # check if if statement has a ret
+        if not self.__block_has_ret(statement.block):
+            return False
+        # check if other conditionals have ret
+        if statement.if_rest is not None:
+            # check if next to next ifrest is else
+            if isinstance(statement.if_rest.if_rest, StatementBlock):
+                # if it is then check both elif and else blocks here
+                if self.__block_has_ret(statement.if_rest.block):
+                    return self.__block_has_ret(statement.if_rest.block)
+                return False
+            elif not self.__ifelse_has_ret(statement.if_rest):
+                return False
+        return False
+
+    def __block_has_ret(self, statement: StatementBlock):
+        """ check if the ifrest block has a ret statement """
+        for sub_stat in statement.statements:
+            if isinstance(sub_stat, StatementIfElse):
+                return self.__ifelse_has_ret(sub_stat)
+            if isinstance(sub_stat, StatementReturn):
+                return True        
+        return False
 
     def __str__(self):
         return "proc(%s,%s,%s,%s)" % (self.__name, self.__arguments, self.__returntype, self.__body)
@@ -651,7 +683,7 @@ class Prog(Node):
         """
         has_main = False
         for declaration in self.__decls:
-            print(f"declaration {declaration}")
+            # print(f"declaration {declaration}")
             if isinstance(declaration, DeclProc):
                 if declaration.get_name() == "main":
                     has_main = True
