@@ -62,7 +62,7 @@ class Stack:
                 f'{name}:',
                 f'\tpushq %rbp',
                 f'\tmovq %rsp, %rbp',
-                f'\tsubq ${stack_size}, %rsp']
+                f'\tsubq ${8*stack_size}, %rsp']
 
     def end_proc(self, proc_name: str) -> list:
         """ Adds final commands to end the proc """
@@ -146,10 +146,10 @@ class Procx64():
 
     def __create_asm_instr(self) -> None:
         """ Runs other functions to create asm instr for the current proc """
-        # add initial instr when entering proc
-        self.__asm_instr_proc = self.__stack.start_proc(self.__func_name)
         # convert the tac to assembly
         self.__tac_to_asm()
+        # add initial instr when entering proc
+        self.__asm_instr_proc[:0] = self.__stack.start_proc(self.__func_name)
         # add final instr when exiting proc
         self.__asm_instr_proc.extend(self.__stack.end_proc(self.__func_name))
 
@@ -240,9 +240,9 @@ class Procx64():
                 # if previous instruction is not a sub then we have a bool
                 # condition and we need to test the argument value with 0 to
                 # set the appropraite flags for the jcc instruction
-                if not self.__check_previous_instr(index-1, 'opcode', 'sub'):
-                    arg = self.__stack.get_item(arg, instr)
-                    self.__asm_instr_proc.append(f'\tcmpq $0, {arg}')
+                # if not self.__check_previous_instr(index-1, 'opcode', 'sub'):
+                arg = self.__stack.get_item(arg, instr)
+                self.__asm_instr_proc.append(f'\tcmpq $0, {arg}')
                 self.__asm_instr_proc.append(f'\t{opcode} {self.__get_label_name(lab)}')
 
             elif opcode == "call":
