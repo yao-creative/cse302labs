@@ -473,6 +473,7 @@ class StatementVardecl(Statement):
         return "vardecl(%s,%s,%s)" % (self.variable,self.__type,self.init)
 
     def global_type_check(self, scope: Scope) -> None:
+        print(f"global variable: {self.variable}")
         if scope.exists_in_current_scope(self.variable.name):
             self.syntax_error(f" variable {self.variable.name} already declared in current global scope")
         else:
@@ -650,11 +651,14 @@ class Prog(Node):
         """
         has_main = False
         for declaration in self.__decls:
+            print(f"declaration {declaration}")
             if isinstance(declaration, DeclProc):
                 if declaration.get_name() == "main":
                     has_main = True
             if isinstance(declaration, list):
-                declaration[0].global_type_check(self.__scope)
+                for decl in declaration:
+                    decl.global_type_check(self.__scope)
+
             else:
                 declaration.global_type_check(self.__scope)
         if not has_main:
