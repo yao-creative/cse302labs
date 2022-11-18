@@ -117,7 +117,7 @@ class Procx64():
     def __add_instr_comment(self, instr: dict) -> None:
         """ Adds instrs as a comment in the assembly """
         if instr['result'] == None:
-            if instr['opcode'] == 'jmp' or instr['opcode'] == 'print':
+            if instr['opcode'] == 'jmp' or instr['opcode'] == 'call':
                 self.__asm_instr_proc.append(f'\t/*   {instr["opcode"]} {instr["args"][0]} [TAC] */')
             elif instr['opcode'] in Macros._jcc:
                 self.__asm_instr_proc.append(f'\t/*   {instr["opcode"]} {instr["args"][0]}, {instr["args"][1]} [TAC] */')
@@ -239,10 +239,6 @@ class Procx64():
                 Macros._assert_temporary(arg, instr)
                 Macros._assert_label(lab, instr)
                 Macros._assert_result(result, instr)
-                # if previous instruction is not a sub then we have a bool
-                # condition and we need to test the argument value with 0 to
-                # set the appropraite flags for the jcc instruction
-                # if not self.__check_previous_instr(index-1, 'opcode', 'sub'):
                 arg = self.__stack.get_item(arg, instr)
                 self.__asm_instr_proc.append(f'\tcmpq $0, {arg}')
                 self.__asm_instr_proc.append(f'\t{opcode} {self.__get_label_name(lab)}')
@@ -252,15 +248,27 @@ class Procx64():
                 assert(args[0][0]) == "@", f"Invalid call in the {instr}"
                 arg_num = args[1]
                 func = args[0]
+
                 # push remaining params to stack in reverse order
                 if arg_num > 6:
                     Macros._assert_argument_numb(self.__param_temps_for_call, arg_num-6, instr)
                     for param_temp in reversed(self.__param_temps_for_call):
                         self.__asm_instr_proc.append(f'\tpushq {param_temp}')
+                # if not 16 byte aligned then push 0
+                if arg_num > 6 and arg_num%2:
+                    self.__asm_instr_proc.append(f'pushq $0')
+
                 self.__asm_instr_proc.append(f'\tcallq {func[1:]}')
-                self.__param_temps_for_call = []
+                self.__param_temps_for_call = []        # reset param temps
+
+                # add to stack pointer if more than 6 args
                 if arg_num > 6:
                     self.__asm_instr_proc.append(f'\taddq ${8*(arg_num-6)}, %rsp')
+
+                # if the call returns smth then transfer the result from rax
+                if result is not None:
+                    self.__asm_instr_proc.append(f'movq %rax, {self.__stack.get_item(result, instr)}')
+
 
             elif opcode == "param":
                 Macros._assert_argument_numb(args, 2, instr)
