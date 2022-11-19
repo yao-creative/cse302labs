@@ -216,10 +216,12 @@ class AST_to_TAC_Generator:
                     arg_temp = self.__code_state.add_variable(var.get_name())
                     args.append(arg_temp)
 
+                # if glob_func.get_name() == "is_odd": 
+                    # print(glob_func.get_body())
                 self.__tmm_statement_parse(glob_func.get_body())
                 # if last instr is not ret then add it to simplify CFG analysis
                 # print(glob_func.get_name())
-                # print(self.__proc_instructions[-5:])
+                # print(self.__proc_instructions)
                 if self.__proc_instructions[-1]["opcode"] != "ret":
                     self.__emit(opcode="ret", args=[], result=None)
                 self.__global_procs.append({"proc":"@"+glob_func.get_name(),
@@ -240,6 +242,7 @@ class AST_to_TAC_Generator:
         if isinstance(statement, StatementBlock):
             self.__code_state.enter_scope()
             for stmt in statement.statements:
+                # print(stmt)
                 self.__tmm_statement_parse(stmt)
             self.__code_state.exit_scope() 
 
@@ -312,7 +315,7 @@ class AST_to_TAC_Generator:
 
         elif isinstance(statement, StatementReturn):
             expr = statement.expression
-            if expr is None or isinstance(expr, ExpressionProcCall):
+            if expr is None:
                 self.__emit(opcode="ret", args=[], result=None)
             elif isinstance(expr, ExpressionVar):
                 temp = self.__code_state.fetch_temp(expr.name)
@@ -386,10 +389,10 @@ class AST_to_TAC_Generator:
         if isinstance(expression, ExpressionBool):
             if expression.value: 
                 self.__emit("jmp", [Ltrue], None)
-            else: 
+            else:
                 self.__emit("jmp", [Lfalse], None)
 
-        if isinstance(expression, ExpressionVar):
+        elif isinstance(expression, ExpressionVar):
             temp = self.__code_state.fetch_temp(expression.name)
             self.__emit("jz", [temp, Lfalse], None)
             self.__emit("jmp", [Ltrue], None)

@@ -256,7 +256,7 @@ class Procx64():
                         self.__asm_instr_proc.append(f'\tpushq {param_temp}')
                 # if not 16 byte aligned then push 0
                 if arg_num > 6 and arg_num%2:
-                    self.__asm_instr_proc.append(f'pushq $0')
+                    self.__asm_instr_proc.append(f'\tpushq $0')
 
                 self.__asm_instr_proc.append(f'\tcallq {func[1:]}')
                 self.__param_temps_for_call = []        # reset param temps
@@ -267,7 +267,7 @@ class Procx64():
 
                 # if the call returns smth then transfer the result from rax
                 if result is not None:
-                    self.__asm_instr_proc.append(f'movq %rax, {self.__stack.get_item(result, instr)}')
+                    self.__asm_instr_proc.append(f'\tmovq %rax, {self.__stack.get_item(result, instr)}')
 
 
             elif opcode == "param":
