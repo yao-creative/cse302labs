@@ -1,0 +1,8 @@
+def sum7 (a, b, c, d, e, f, g, h, i, j : int) : int {
+    return (a + b + c + d + e + f + g + h + i + j);
+}
+
+def main () {
+    var sum = 0 : int;
+    print(sum7(1, 1, 1, 1, 1, 1, 1, 1, 1, 1));
+}
