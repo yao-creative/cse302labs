@@ -125,7 +125,9 @@ def get_serialized_tac(tac_instr: List[dict]) -> List[dict]:
         if "proc" in decl:
             # get the final prev label counter and 
             if len(decl["labels"]):
-                label = int(decl["labels"][-1][3:])+1
+                # print(sorted(decl["labels"]))
+                label = get_max_label(decl["labels"])+1
+                print(label)
             else:
                 label = 0
             assert decl["proc"][0] == '@'
@@ -139,6 +141,10 @@ def get_serialized_tac(tac_instr: List[dict]) -> List[dict]:
             serialized_tac.append(decl)
     # print(serialized_tac)
     return serialized_tac
+
+def get_max_label(labels: List[str]) -> List[str]:
+    """ Returns the max label in the list """
+    return max([int(lab[3:]) for lab in labels])
 
 def __create_tac(declaration: Dict[str, List[dict]], new_instr: List[dict], new_labs: List[dict]) -> dict:
     """ Recreates the tac form for the serialized instructions """

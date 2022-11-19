@@ -111,7 +111,7 @@ class Block:
         return self.__label
 
     def set_succ(self, succ: List[str]) -> None:
-        """ Sets the predecessor for the curr block """
+        """ Sets the successor for the curr block """
         self.__successors = succ
 
     def set_pred(self, preds: List[str]) -> None:
@@ -163,12 +163,18 @@ class CFG:
         """ Updates all edges in cfg blocks """
         edges = {}
         for block in self.__blocks:
+            # block_lab = block.get_block_label()
+            # print(block_lab)
             dest = []
+            # if block_lab == "%.L10":
+            #     print(block.instructions())
             for instr in block.instructions():
                 if instr["opcode"] in Block.jccs:
                     if instr["args"][-1] not in dest:
                         dest.append(instr["args"][-1])
             edges[block.get_block_label()] = dest
+            # if block_lab == "%.L10":
+            #     print(dest)
             block.set_succ(dest)
         self.__successors = edges
 
@@ -176,6 +182,8 @@ class CFG:
         """ Updates the pred graph in the blocks """
         pred_graph = {block.get_block_label(): [] for block in self.__blocks}
         for block in self.__blocks:
+            # print(pred_graph)
+            # print(block.successors())
             for label in block.successors():
                 assert(label in pred_graph), f"unidentified block label {label}"
                 pred_graph[label].append(block.get_block_label())
@@ -195,10 +203,15 @@ class CFG:
 
     def __update_graph(self) -> None:
         """ updates edges in the CFG graph """
+        # update edges
         self.__update_edges()
+        # print("successors: ", self.__successors)
+        # print("predecessors: ", self.__predecessors)
+        # print("blocks remaining: ", [block.get_block_label() for block in self.__blocks])
+        # update pred graph
         self.__update_pred_edges()
-        # print(self.__successors)
-        # print(self.__predecessors)
+        # print("successors: ", self.__successors)
+        # print("predecessors: ", self.__predecessors)
 
     def __del_block(self, block: Block) -> None:
         """ Delete the given block because it has no pred """
@@ -309,6 +322,9 @@ class CFG:
         """ Unreachable Code Elimination """
         visited_blocks = {self.__entry_block.get_block_label()}
         to_visit = self.__entry_block.successors()
+        # print("successors: ", self.__successors)
+        # print("predecessors: ", self.__predecessors)
+        # print("blocks remaining: ", [block.instructions() for block in self.__blocks if block.get_block_label() == "%.L10"])
         # mark UC
         while len(to_visit) > 0:
             label = to_visit.pop()
@@ -326,6 +342,9 @@ class CFG:
             self.__deleted_labels.add(block.get_block_label())
             self.__del_block(block)
 
+        # print("successors: ", self.__successors)
+        # print("predecessors: ", self.__predecessors)
+        # print("blocks remaining: ", [block.instructions() for block in self.__blocks if block.get_block_label() == "%.L10"])
         # for block in self.__blocks:
         #     print(block.instructions())
         print("UCE done")
