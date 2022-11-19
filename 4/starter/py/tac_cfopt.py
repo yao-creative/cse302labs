@@ -21,6 +21,9 @@ class CFG_creator:
         self.__num_instr: int = len(self.__updated_tac_instr)
         self.__blocks: List[Block] = self.__block_inference()
 
+    # ---------------------------------------------------------------------------#
+    # Helper functions
+
     def __create_new_label(self) -> str:
         """ Create and return a new label """
         label = f"{self.__label_counter}"
@@ -50,6 +53,17 @@ class CFG_creator:
                     new_tac_instr.append(self.__create_label_instr(self.__create_new_label()))
 
         return new_tac_instr
+
+    def return_labs(self) -> List[str]:
+        """ Return list of new labels created """
+        return self.__new_labels
+
+    def return_blocks(self) -> List[Block]:
+        """ Returns the list of blocks """
+        return self.__blocks
+
+    # ---------------------------------------------------------------------------#
+    # Main Block Inference
 
     def __block_inference(self) -> List[Block]:
         """ Creates Blocks from the updated tac_instr """
@@ -98,9 +112,6 @@ class CFG_creator:
 
         return blocks
 
-    def return_blocks(self) -> List[Block]:
-        """ Returns the list of blocks """
-        return self.__blocks
 
 # ------------------------------------------------------------------------------#
 # Main function
@@ -117,12 +128,22 @@ def get_serialized_tac(tac_instr: List[dict]) -> List[dict]:
             else:
                 label = 0
             assert decl["proc"][0] == '@'
-            basic_blocks = CFG_creator(decl["proc"][1:], decl["body"], label).return_blocks()
+            cfg_reader = CFG_creator(decl["proc"][1:], decl["body"], label)
+            basic_blocks = cfg_reader.return_blocks()
             cfg = CFG(basic_blocks, decl["proc"][1:])
             cfg.optimization()
-            serialized_tac.append(cfg.serialized_tac())
+            proc_tac = __create_tac(decl, cfg.serialized_tac(), cfg_reader.return_labs())
+            serialized_tac.append(proc_tac)
 
     return serialized_tac
+
+def __create_tac(declaration: Dict[str, List[dict]], new_instr: List[dict], new_labs: List[dict]) -> List[dict]:
+    """ Recreates the tac form for the serialized instructions """
+    return [{"proc": declaration["proc"],
+            "args": declaration["args"],
+            "body": new_instr,
+            "temps": declaration["temps"],
+            "labels": declaration["labels"]+new_labs}]
 
 def write_serial_tac(filename: str, serialized_tac: List[dict]) -> None:
     """ Wrties the serialized tac to a json file """

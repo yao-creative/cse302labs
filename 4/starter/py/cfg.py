@@ -326,8 +326,8 @@ class CFG:
             self.__deleted_labels.add(block.get_block_label())
             self.__del_block(block)
 
-        for block in self.__blocks:
-            print(block.instructions())
+        # for block in self.__blocks:
+        #     print(block.instructions())
         print("UCE done", '\n')
 
         self.__update_graph()
@@ -346,8 +346,8 @@ class CFG:
             index -= 1
         self.__update_graph()
 
-        for block in self.__blocks:
-            print(block.instructions())
+        # for block in self.__blocks:
+        #     print(block.instructions())
         print("Coalesce done", '\n')
 
         self.__uce()
@@ -363,8 +363,8 @@ class CFG:
             index -= 1
         self.__update_graph()
 
-        for block in self.__blocks:
-            print(block.instructions())
+        # for block in self.__blocks:
+        #     print(block.instructions())
         print("jmp thread done", '\n')
         
         self.__uce()
@@ -378,8 +378,8 @@ class CFG:
                 self.__ret_blocks.append(block)
         self.__update_graph()
 
-        for block in self.__blocks:
-            print(block.instructions())
+        # for block in self.__blocks:
+        #     print(block.instructions())
         print("jmp cond done", '\n')
 
         self.__uce()
@@ -421,7 +421,7 @@ class CFG:
         return scheduled
 
     def serialized_tac(self) -> List[dict]:
-        """ Returns serialized TAC instr """
+        """ Returns serialized Blocks converted to TAC form """
         blocks = self.__serialize()
         tac_instrs = []
         for block in blocks:
