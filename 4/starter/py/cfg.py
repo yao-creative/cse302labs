@@ -111,7 +111,7 @@ class Block:
         return self.__label
 
     def set_succ(self, succ: List[str]) -> None:
-        """ Sets the predecessor for the curr block """
+        """ Sets the successor for the curr block """
         self.__successors = succ
 
     def set_pred(self, preds: List[str]) -> None:
@@ -163,12 +163,18 @@ class CFG:
         """ Updates all edges in cfg blocks """
         edges = {}
         for block in self.__blocks:
+            # block_lab = block.get_block_label()
+            # print(block_lab)
             dest = []
+            # if block_lab == "%.L10":
+            #     print(block.instructions())
             for instr in block.instructions():
                 if instr["opcode"] in Block.jccs:
                     if instr["args"][-1] not in dest:
                         dest.append(instr["args"][-1])
             edges[block.get_block_label()] = dest
+            # if block_lab == "%.L10":
+            #     print(dest)
             block.set_succ(dest)
         self.__successors = edges
 
@@ -176,6 +182,8 @@ class CFG:
         """ Updates the pred graph in the blocks """
         pred_graph = {block.get_block_label(): [] for block in self.__blocks}
         for block in self.__blocks:
+            # print(pred_graph)
+            # print(block.successors())
             for label in block.successors():
                 assert(label in pred_graph), f"unidentified block label {label}"
                 pred_graph[label].append(block.get_block_label())
@@ -195,10 +203,15 @@ class CFG:
 
     def __update_graph(self) -> None:
         """ updates edges in the CFG graph """
+        # update edges
         self.__update_edges()
+        # print("successors: ", self.__successors)
+        # print("predecessors: ", self.__predecessors)
+        # print("blocks remaining: ", [block.get_block_label() for block in self.__blocks])
+        # update pred graph
         self.__update_pred_edges()
-        # print(self.__successors)
-        # print(self.__predecessors)
+        # print("successors: ", self.__successors)
+        # print("predecessors: ", self.__predecessors)
 
     def __del_block(self, block: Block) -> None:
         """ Delete the given block because it has no pred """
@@ -309,6 +322,9 @@ class CFG:
         """ Unreachable Code Elimination """
         visited_blocks = {self.__entry_block.get_block_label()}
         to_visit = self.__entry_block.successors()
+        # print("successors: ", self.__successors)
+        # print("predecessors: ", self.__predecessors)
+        # print("blocks remaining: ", [block.instructions() for block in self.__blocks if block.get_block_label() == "%.L10"])
         # mark UC
         while len(to_visit) > 0:
             label = to_visit.pop()
@@ -326,9 +342,12 @@ class CFG:
             self.__deleted_labels.add(block.get_block_label())
             self.__del_block(block)
 
-        for block in self.__blocks:
-            print(block.instructions())
-        print("UCE done", '\n')
+        # print("successors: ", self.__successors)
+        # print("predecessors: ", self.__predecessors)
+        # print("blocks remaining: ", [block.instructions() for block in self.__blocks if block.get_block_label() == "%.L10"])
+        # for block in self.__blocks:
+        #     print(block.instructions())
+        print("UCE done")
 
         self.__update_graph()
 
@@ -346,9 +365,9 @@ class CFG:
             index -= 1
         self.__update_graph()
 
-        for block in self.__blocks:
-            print(block.instructions())
-        print("Coalesce done", '\n')
+        # for block in self.__blocks:
+        #     print(block.instructions())
+        print("Coalesce done")
 
         self.__uce()
 
@@ -363,9 +382,9 @@ class CFG:
             index -= 1
         self.__update_graph()
 
-        for block in self.__blocks:
-            print(block.instructions())
-        print("jmp thread done", '\n')
+        # for block in self.__blocks:
+        #     print(block.instructions())
+        print("jmp thread done")
         
         self.__uce()
         self.__coalesce()
@@ -378,9 +397,9 @@ class CFG:
                 self.__ret_blocks.append(block)
         self.__update_graph()
 
-        for block in self.__blocks:
-            print(block.instructions())
-        print("jmp cond done", '\n')
+        # for block in self.__blocks:
+        #     print(block.instructions())
+        print("jmp cond done")
 
         self.__uce()
         self.__jmp_thread()
@@ -395,56 +414,35 @@ class CFG:
 
     def __serialize(self) -> List[Block]:
         """ Serialisation from CFG to TAC """
-        curr_block: Block = self.__entry_block 
+        curr_block: Block = self.__entry_block
         scheduled: List[Block] = list()
+        remaining_blocks: List[Block] = self.__blocks.copy()
         # print(self.__labels_to_blocks)
         
         # All blocks end with jmp or ret so we string jmp blocks together
-        while True:
+        while len(scheduled) < self.__num_blocks:
             scheduled.append(curr_block)
-            last_instr_code: str = curr_block.last_instr_opcode()
+            remaining_blocks.remove(curr_block)
+            last_instr_code = curr_block.last_instr_opcode()
+            # once we hit a ret block we must add first unscheduled block
             if last_instr_code == "ret":
-                break
-            assert(last_instr_code == "jmp"), f"Last instr is not jmp: {curr_block.instructions()[-1]}"
+                if len(remaining_blocks) > 0:
+                    curr_block = remaining_blocks[0]
+                continue
+            assert(last_instr_code == "jmp"), f"Last instr should be jmp: {curr_block.instructions()[-1]}"
             next_lab = curr_block.last_instr_label()
             curr_block = self.__labels_to_blocks[next_lab]
+            # if curr block is a loop then we get out of it if blocks remain
+            if curr_block in scheduled:
+                if len(remaining_blocks) > 0:
+                    curr_block = remaining_blocks[0]
         
-        # and add undetected ret ending blocks
-        if len(self.__ret_blocks) > 1:
-            assert(len(scheduled) < len(self.__blocks)), f"Ensure that no duplicates are added in scheduling"
-            for block in self.__ret_blocks:
-                if block not in scheduled:
-                    scheduled.append(block)
         return scheduled
 
     def serialized_tac(self) -> List[dict]:
-        """ Returns serialized TAC instr """
+        """ Returns serialized Blocks converted to TAC form """
         blocks = self.__serialize()
         tac_instrs = []
         for block in blocks:
             tac_instrs += block.instructions()
         return tac_instrs
-
-    # ---------------------------------------------------------------------------#
-    # Getter functions for unit tests
-
-    def get_blocks(self) -> List[Block]:
-        return self.__blocks
-
-    def get_label_to_blocks(self) -> Dict[str, Block]:
-        return self.__labels_to_blocks
-
-    def get_edges(self) -> Dict[str, List[str]]:
-        return self.__successors
-
-    def uce(self) -> None:
-        self.__uce()
-
-    def coalesce(self) -> None:
-        self.__coalesce()
-    
-    def jmp_thread(self) -> None:
-        self.__jmp_thread()
-    
-    def jmp_cond_mod(self) -> None:
-        self.__jmp_cond_mod()

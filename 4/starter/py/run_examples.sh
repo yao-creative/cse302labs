@@ -1,11 +1,11 @@
 # shell script to test all examples
 
 # # test on all files
-# for file in $(find ../examples -name "*.bx"); do
-#     echo $file 
-#     python3 bxcc.py $file
-#     echo -e '\n'
-# done
+for file in $(find ../examples -name "*.bx"); do
+    echo $file 
+    python3 bxcc.py $file --keep-tac
+    echo -e '\n'
+done
 
 # run all executables
 # for file in $(find ../examples -name "*.exe"); do
@@ -15,7 +15,8 @@
 # done
 
 # test all error files
-for file in $(find ../regression -name "*.bx"); do
-    echo $file 
-    python3 bxcc.py $file
-done
+# for file in $(find ../regression -name "*.bx"); do
+#     echo $file 
+#     python3 bx2front.py $file
+#     echo -e '\n'
+# done

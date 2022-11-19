@@ -1,0 +1,24 @@
+def print_42() {            // no params or return value
+    print(42);
+}                           // implicit return at end of subroutine
+
+def print_double(x : int) { // one param, no return value
+    print(x + x);
+    return;                 // return arg optional for subroutine
+}
+
+def sum(x, y : int) : int { // multiple params, and return value
+    return x + y;           // return arg required for functions
+}
+
+def sum_(x : int, y : int) : int { // equivalent to sum() above
+    return x + y;
+}
+
+def main() {
+    print_42();
+    print_double(4);
+    var z = sum(4, 5) : int;
+    print(z);
+    print(sum_(4, 5));
+}

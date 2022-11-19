@@ -6,13 +6,13 @@
 
 def fizzbuzz(cur, last : int) {
   while (cur <= last) {
-    if (cur % 3 == 0) {
-      if (cur % 5 == 0) {
+    if ((cur % 3) == 0) {
+      if ((cur % 5) == 0) {
          print(151515);
       } else {
          print(333);
       }
-    } else if (cur % 5 == 0) {
+    } else if ((cur % 5) == 0) {
       print(555);
     } else {
       print(cur);

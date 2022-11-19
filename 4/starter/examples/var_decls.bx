@@ -1,0 +1,20 @@
+var x = 0 : int;
+var y = 42 : int;
+var b = true : bool;    // can allow variables of bool type
+var z = -42 : int;      // negative numerals allowed in NUMBER token
+
+// var zz = - 42 : int;     // WARNING: space makes it an <expr>, not a NUMBER
+// var w = 10 + 20 : int;   // expression initializers not allowed in global vars
+// var d = b : bool;        // cannot even refer to other global vars in initializer
+
+def main() {
+    var w = 10 + 20 : int;          // arbitrary initializers for local vars
+    var u = 10, v = u * 3 : int;    // later vars can be initialized using earlier vars
+    print(w);                       // 30
+    print(v);                       // 30
+    print(u);                       // 10
+    print(x);                       // 0
+    print(y);                       // 42
+    print(b);                       // true
+    print(z);                       // -42
+}

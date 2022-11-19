@@ -1,0 +1,426 @@
+[
+   {
+      "proc": "@sum7",
+      "args": [
+         "%0",
+         "%1",
+         "%2",
+         "%3",
+         "%4",
+         "%5",
+         "%6",
+         "%7",
+         "%8",
+         "%9"
+      ],
+      "body": [
+         {
+            "opcode": "label",
+            "args": [
+               "%.Lentry"
+            ],
+            "result": null
+         },
+         {
+            "opcode": "copy",
+            "args": [
+               "%0"
+            ],
+            "result": "%11"
+         },
+         {
+            "opcode": "copy",
+            "args": [
+               "%1"
+            ],
+            "result": "%13"
+         },
+         {
+            "opcode": "copy",
+            "args": [
+               "%2"
+            ],
+            "result": "%15"
+         },
+         {
+            "opcode": "copy",
+            "args": [
+               "%3"
+            ],
+            "result": "%17"
+         },
+         {
+            "opcode": "copy",
+            "args": [
+               "%4"
+            ],
+            "result": "%19"
+         },
+         {
+            "opcode": "copy",
+            "args": [
+               "%5"
+            ],
+            "result": "%21"
+         },
+         {
+            "opcode": "copy",
+            "args": [
+               "%6"
+            ],
+            "result": "%23"
+         },
+         {
+            "opcode": "copy",
+            "args": [
+               "%7"
+            ],
+            "result": "%25"
+         },
+         {
+            "opcode": "copy",
+            "args": [
+               "%8"
+            ],
+            "result": "%27"
+         },
+         {
+            "opcode": "copy",
+            "args": [
+               "%9"
+            ],
+            "result": "%28"
+         },
+         {
+            "opcode": "add",
+            "args": [
+               "%27",
+               "%28"
+            ],
+            "result": "%26"
+         },
+         {
+            "opcode": "add",
+            "args": [
+               "%25",
+               "%26"
+            ],
+            "result": "%24"
+         },
+         {
+            "opcode": "add",
+            "args": [
+               "%23",
+               "%24"
+            ],
+            "result": "%22"
+         },
+         {
+            "opcode": "add",
+            "args": [
+               "%21",
+               "%22"
+            ],
+            "result": "%20"
+         },
+         {
+            "opcode": "add",
+            "args": [
+               "%19",
+               "%20"
+            ],
+            "result": "%18"
+         },
+         {
+            "opcode": "add",
+            "args": [
+               "%17",
+               "%18"
+            ],
+            "result": "%16"
+         },
+         {
+            "opcode": "add",
+            "args": [
+               "%15",
+               "%16"
+            ],
+            "result": "%14"
+         },
+         {
+            "opcode": "add",
+            "args": [
+               "%13",
+               "%14"
+            ],
+            "result": "%12"
+         },
+         {
+            "opcode": "add",
+            "args": [
+               "%11",
+               "%12"
+            ],
+            "result": "%10"
+         },
+         {
+            "opcode": "ret",
+            "args": [
+               "%10"
+            ],
+            "result": null
+         }
+      ],
+      "temps": [
+         "%0",
+         "%1",
+         "%10",
+         "%11",
+         "%12",
+         "%13",
+         "%14",
+         "%15",
+         "%16",
+         "%17",
+         "%18",
+         "%19",
+         "%2",
+         "%20",
+         "%21",
+         "%22",
+         "%23",
+         "%24",
+         "%25",
+         "%26",
+         "%27",
+         "%28",
+         "%3",
+         "%4",
+         "%5",
+         "%6",
+         "%7",
+         "%8",
+         "%9"
+      ],
+      "labels": [
+         "%.Lentry"
+      ]
+   },
+   {
+      "proc": "@main",
+      "args": [],
+      "body": [
+         {
+            "opcode": "label",
+            "args": [
+               "%.Lentry"
+            ],
+            "result": null
+         },
+         {
+            "opcode": "const",
+            "args": [
+               0
+            ],
+            "result": "%0"
+         },
+         {
+            "opcode": "const",
+            "args": [
+               1
+            ],
+            "result": "%3"
+         },
+         {
+            "opcode": "param",
+            "args": [
+               1,
+               "%3"
+            ],
+            "result": null
+         },
+         {
+            "opcode": "const",
+            "args": [
+               1
+            ],
+            "result": "%4"
+         },
+         {
+            "opcode": "param",
+            "args": [
+               2,
+               "%4"
+            ],
+            "result": null
+         },
+         {
+            "opcode": "const",
+            "args": [
+               1
+            ],
+            "result": "%5"
+         },
+         {
+            "opcode": "param",
+            "args": [
+               3,
+               "%5"
+            ],
+            "result": null
+         },
+         {
+            "opcode": "const",
+            "args": [
+               1
+            ],
+            "result": "%6"
+         },
+         {
+            "opcode": "param",
+            "args": [
+               4,
+               "%6"
+            ],
+            "result": null
+         },
+         {
+            "opcode": "const",
+            "args": [
+               1
+            ],
+            "result": "%7"
+         },
+         {
+            "opcode": "param",
+            "args": [
+               5,
+               "%7"
+            ],
+            "result": null
+         },
+         {
+            "opcode": "const",
+            "args": [
+               1
+            ],
+            "result": "%8"
+         },
+         {
+            "opcode": "param",
+            "args": [
+               6,
+               "%8"
+            ],
+            "result": null
+         },
+         {
+            "opcode": "const",
+            "args": [
+               1
+            ],
+            "result": "%9"
+         },
+         {
+            "opcode": "param",
+            "args": [
+               7,
+               "%9"
+            ],
+            "result": null
+         },
+         {
+            "opcode": "const",
+            "args": [
+               1
+            ],
+            "result": "%10"
+         },
+         {
+            "opcode": "param",
+            "args": [
+               8,
+               "%10"
+            ],
+            "result": null
+         },
+         {
+            "opcode": "const",
+            "args": [
+               1
+            ],
+            "result": "%11"
+         },
+         {
+            "opcode": "param",
+            "args": [
+               9,
+               "%11"
+            ],
+            "result": null
+         },
+         {
+            "opcode": "const",
+            "args": [
+               1
+            ],
+            "result": "%12"
+         },
+         {
+            "opcode": "param",
+            "args": [
+               10,
+               "%12"
+            ],
+            "result": null
+         },
+         {
+            "opcode": "call",
+            "args": [
+               "@sum7",
+               10
+            ],
+            "result": "%2"
+         },
+         {
+            "opcode": "param",
+            "args": [
+               1,
+               "%2"
+            ],
+            "result": null
+         },
+         {
+            "opcode": "call",
+            "args": [
+               "@__bx_print_int",
+               1
+            ],
+            "result": null
+         },
+         {
+            "opcode": "ret",
+            "args": [],
+            "result": null
+         }
+      ],
+      "temps": [
+         "%0",
+         "%1",
+         "%10",
+         "%11",
+         "%12",
+         "%2",
+         "%3",
+         "%4",
+         "%5",
+         "%6",
+         "%7",
+         "%8",
+         "%9"
+      ],
+      "labels": [
+         "%.Lentry"
+      ]
+   }
+]

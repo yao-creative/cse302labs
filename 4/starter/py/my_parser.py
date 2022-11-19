@@ -11,7 +11,6 @@ Authors: Yi Yao Tan
          Vrushank Agrawal
 """
 
-
 __unop_dict = {
     '!': "not",
     '-': "opposite",
@@ -71,47 +70,50 @@ def p_declstar(p):
         p[0] = p[1]
         p[0].append(p[2])
     # print(f"declstar: {p[0]}")
-        
+
 def p_decl(p):
     """decl : vardecl
             | procdecl"""
     # print(f"decl: {p[1]}")
     p[0] = p[1]
-    
           
 def p_procdecl(p):
-    """procdecl : DEF IDENT LPAREN paramstar RPAREN type block"""
+    """procdecl : DEF IDENT LPAREN paramstar RPAREN type_optional block"""
     p[0]: DeclProc = DeclProc([p.lineno(0), p.lexpos(0)], p[2], p[4], p[6], p[7])
     
-def p_type(p):
-    """type : 
-            | COLON BOOL
-            | COLON INT"""
+def p_type_optional(p):
+    """type_optional : 
+                       | COLON BOOL
+                       | COLON INT"""
     if len(p) == 1:
-        p[0] = "void"
+        p[0] = BX_TYPE.VOID
     else:
-        p[0] = p[2]
+        p[0] = BX_TYPE.INT if p[2] == "int" else BX_TYPE.BOOL
         
+def p_type(p):
+    """type : INT
+            | BOOL"""
+    p[0] = BX_TYPE.INT if p[1] == "int" else BX_TYPE.BOOL    
+      
 def p_paramstar(p):
     """paramstar : 
                  | param
                  | param COMMA paramstar"""
-    print(f"entered paramstar")
+    # print(f"entered paramstar")
     if len(p) == 1:
         p[0] = []
     if len(p) == 2:
         p[0] = p[1]
     elif len(p) == 4:
         p[0] = p[1] + p[3]
-    print(f"paramstar: {p[0]}")
+    # print(f"paramstar: {p[0]}")
 
 def p_param(p):
-    """param : identstar type"""
-    lp = ListParams([], p[2])
-    print(f"identstar p[2]: {p[2]}")
+    """param : identstar COLON type"""
+    lp = ListParams([], p[3])
+    # print(f"identstar p[2]: {p[2]}")
     lp.add_multi_param(p[1])
     p[0] = lp.return_params_list()
-    
 
 def p_identstar(p):
     """identstar : IDENT
@@ -129,13 +131,15 @@ def p_statementstar(p):
         p[0] = []
     else:
         p[0] = p[1]
-        p[0].append(p[2])
+        if isinstance(p[2], list):
+            p[0].extend(p[2])
+        else:
+            p[0].append(p[2])
         
 def p_statement(p):
     """statement : vardecl
                  | eval
                  | assign
-                 | print
                  | block
                  | ifelse
                  | while
@@ -147,19 +151,16 @@ def p_statement(p):
 def p_eval(p):
     """eval : expression SEMICOLON"""
     p[0] = StatementEval([p.lineno(0), p.lexpos(0)],p[1])
-    
+
 def p_block(p):
     """block : LBRACE statementstar RBRACE"""
     p[0] = StatementBlock([p.lineno(0), p.lexpos(0)],p[2])
-    
+
 def p_assign(p):
     """assign : IDENT EQUALS expression SEMICOLON"""
-    p[0] = StatementAssign([p.lineno(0), p.lexpos(0)], p[1], p[3])
+    expr_var = ExpressionVar([p.lineno(0), p.lexpos(0)], p[1])
+    p[0] = StatementAssign([p.lineno(0), p.lexpos(0)], expr_var, p[3])
 
-def p_print(p):
-    """print : PRINT LPAREN expression RPAREN SEMICOLON"""
-    p[0] = StatementPrint([p.lineno(0), p.lexpos(0)],p[3])
-    
 def p_ifelse(p):
     """ifelse : IF LPAREN expression RPAREN block ifrest"""
     p[0] = StatementIfElse([p.lineno(0), p.lexpos(0)],p[3],p[5],p[6])
@@ -192,13 +193,16 @@ def p_return(p):
     else:
         p[0] = StatementReturn([p.lineno(0), p.lexpos(0)],p[2])
 
-    
 def p_vardecl(p):
-    """vardecl : VAR varinits type SEMICOLON"""
+    """vardecl : VAR varinits COLON type SEMICOLON"""
+    # print(f"variable declaration of type {p[4]}")
     listvardecl = ListVarDecl([], p[4])
-    vars = p[1]
+    vars = p[2]
+    # TODO smth wrong with global vars passing here
+    # check examples/main_test.bx
     listvardecl.add_multi_var(vars)
     p[0] = listvardecl.return_vardecl_list()
+    # print(f"vardecl: {p[0]}")
     
 def p_varinits(p):
     """varinits : IDENT EQUALS expression varinitstar"""
@@ -223,7 +227,7 @@ def p_expression(p):
                   | MINUS expression %prec UMINUS
                   | NOT expression
                   | BITWISE_NEGATION expression
-                  | IDENT LPAREN expression expressionstar RPAREN
+                  | IDENT LPAREN expressionstar RPAREN
     """
     if len(p) == 2:
         if p[1] == "true":
@@ -231,9 +235,9 @@ def p_expression(p):
         elif p[1] == "false":
             p[0] = ExpressionBool([p.lineno(0), p.lexpos(0)], False)
         elif isinstance(p[1], int):
-            p[0] = ExpressionInt([p.lineno(0), p.lexpos(0)],p[1])
+            p[0] = ExpressionInt([p.lineno(0), p.lexpos(0)], p[1])
         elif isinstance(p[1], str):
-            p[0] = ExpressionVar([p.lineno(0), p.lexpos(0)],p[1])
+            p[0] = ExpressionVar([p.lineno(0), p.lexpos(0)], p[1])
         else:
             raise SyntaxError("Invalid expression at line: " + str(p.lineno(0)))
 
@@ -252,8 +256,8 @@ def p_expression(p):
             op = __binop_dict.get(p[2])
             p[0] = ExpressionOp([p.lineno(0), p.lexpos(0)], op, [p[1], p[3]])
             
-    elif len(p) == 6: # function call
-        params = [p[3]] + p[4]
+    elif len(p) == 5: # function call
+        params = p[3]
         p[0] = ExpressionProcCall([p.lineno(0), p.lexpos(0)], p[1], params)
         
     else:
@@ -261,9 +265,12 @@ def p_expression(p):
     
 def p_expressionstar(p):
     """expressionstar : 
+                      | expression 
                       | expressionstar COMMA expression"""
     if len(p) == 1:
         p[0] = []
+    elif len(p) == 2:
+        p[0] = [p[1]]
     else:
         p[0] = p[1]
         p[0].append(p[3])
@@ -292,9 +299,8 @@ def p_binop(p):
 def p_error(p):
     if p:
         print(f"error: {p}")
-        print(f"Syntax error: at token at line: {p.lineno}")
+        # print(f"Syntax error: at token at line: {p.lineno}")
         # Just discard the token and tell the parser it's okay.
-
     else:
         print(f"Syntax error: at EOF")
     sys.exit(1)
@@ -307,12 +313,8 @@ def run_parser(filename):
         data = f.read()
 
     result = parser.parse(data, lexer=lexer,tracking=True)
-    print(result)
+    # print(result)
     return result 
 
 if __name__ == "__main__":
     res = run_parser(sys.argv[1])
-    
-
-
-    

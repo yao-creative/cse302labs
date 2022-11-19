@@ -1,0 +1,28 @@
+def fib(n : int) : int {
+    if (n == 0) { return 0; }
+    else if (n == 1) { return 1; }
+    else { return fib(n - 1) + fib(n - 2); } // recursion
+}
+
+def is_even(n : int) : bool { // mutual recursion with is_odd()
+    return (n == 0) || is_odd(n - 1);
+}
+
+def is_odd(n : int) : bool { // mutual recursion with is_even()
+    42 + 42; // can evaluate any expr as stmt
+    return is_even(n - 1);
+}
+
+def print_range(lo, hi : int) { // multiple params in a group
+    if (lo < hi) {
+        print(lo);
+        return print_range(lo + 1, hi); // return arg can be subroutine call!
+    }
+}
+
+def main() {
+    print(is_even(4));
+    print(is_odd(5));
+    print_range(3, 9);
+    print(fib(4));
+}
