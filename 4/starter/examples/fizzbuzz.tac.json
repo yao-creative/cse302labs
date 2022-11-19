@@ -180,13 +180,13 @@
             "args": [
                151515
             ],
-            "result": "%15"
+            "result": "%16"
          },
          {
             "opcode": "param",
             "args": [
                1,
-               "%15"
+               "%16"
             ],
             "result": null
          },
@@ -217,13 +217,13 @@
             "args": [
                333
             ],
-            "result": "%17"
+            "result": "%18"
          },
          {
             "opcode": "param",
             "args": [
                1,
-               "%17"
+               "%18"
             ],
             "result": null
          },
@@ -320,13 +320,13 @@
             "args": [
                555
             ],
-            "result": "%24"
+            "result": "%25"
          },
          {
             "opcode": "param",
             "args": [
                1,
-               "%24"
+               "%25"
             ],
             "result": null
          },
@@ -353,10 +353,17 @@
             "result": null
          },
          {
+            "opcode": "copy",
+            "args": [
+               "%0"
+            ],
+            "result": "%27"
+         },
+         {
             "opcode": "param",
             "args": [
                1,
-               "%26"
+               "%27"
             ],
             "result": null
          },
@@ -387,20 +394,20 @@
             "args": [
                "%0"
             ],
-            "result": "%27"
+            "result": "%28"
          },
          {
             "opcode": "const",
             "args": [
                1
             ],
-            "result": "%28"
+            "result": "%29"
          },
          {
             "opcode": "add",
             "args": [
-               "%27",
-               "%28"
+               "%28",
+               "%29"
             ],
             "result": "%0"
          },
@@ -447,6 +454,7 @@
          "%26",
          "%27",
          "%28",
+         "%29",
          "%3",
          "%4",
          "%5",
@@ -479,13 +487,13 @@
             "args": [
                0
             ],
-            "result": "%0"
+            "result": "%1"
          },
          {
             "opcode": "param",
             "args": [
                1,
-               "%0"
+               "%1"
             ],
             "result": null
          },
@@ -494,13 +502,13 @@
             "args": [
                100
             ],
-            "result": "%0"
+            "result": "%2"
          },
          {
             "opcode": "param",
             "args": [
                2,
-               "%0"
+               "%2"
             ],
             "result": null
          },

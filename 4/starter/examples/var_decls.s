@@ -18,6 +18,8 @@ main:
 	pushq %rbp
 	movq %rsp, %rbp
 	subq $128, %rsp
+	/*  %.Lentry: [TAC] */
+.main.Lentry:
 	/*   %1 = const 10 [TAC] */
 	movq $10, -8(%rbp)
 	/*   %2 = const 20 [TAC] */
@@ -78,6 +80,8 @@ main:
 .main.L0:
 	/*   %19 = const 1 [TAC] */
 	movq $1, -104(%rbp)
+	/*   jmp %.L1 [TAC] */
+	/* --jmp .main.L1-- */
 	/*  %.L1: [TAC] */
 .main.L1:
 	/*   %18 = copy %19 [TAC] */

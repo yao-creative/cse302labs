@@ -1,0 +1,50 @@
+[
+   {
+      "proc": "@main",
+      "args": [],
+      "body": [
+         {
+            "opcode": "label",
+            "args": [
+               "%.Lentry"
+            ],
+            "result": null
+         },
+         {
+            "opcode": "const",
+            "args": [
+               42
+            ],
+            "result": "%1"
+         },
+         {
+            "opcode": "param",
+            "args": [
+               1,
+               "%1"
+            ],
+            "result": null
+         },
+         {
+            "opcode": "call",
+            "args": [
+               "@__bx_print_int",
+               1
+            ],
+            "result": null
+         },
+         {
+            "opcode": "ret",
+            "args": [],
+            "result": null
+         }
+      ],
+      "temps": [
+         "%0",
+         "%1"
+      ],
+      "labels": [
+         "%.Lentry"
+      ]
+   }
+]

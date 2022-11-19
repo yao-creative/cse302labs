@@ -6,6 +6,8 @@ print_42:
 	pushq %rbp
 	movq %rsp, %rbp
 	subq $16, %rsp
+	/*  %.Lentry: [TAC] */
+.print_42.Lentry:
 	/*   %1 = const 42 [TAC] */
 	movq $42, -8(%rbp)
 	movq -8(%rbp), %rdi
@@ -26,6 +28,8 @@ print_double:
 	pushq %rbp
 	movq %rsp, %rbp
 	subq $32, %rsp
+	/*  %.Lentry: [TAC] */
+.print_double.Lentry:
 	/*   %3 = copy %0 [TAC] */
 	movq %rdi, %r11
 	movq %r11, -16(%rbp)
@@ -54,6 +58,8 @@ sum:
 	pushq %rbp
 	movq %rsp, %rbp
 	subq $48, %rsp
+	/*  %.Lentry: [TAC] */
+.sum.Lentry:
 	/*   %3 = copy %0 [TAC] */
 	movq %rdi, %r11
 	movq %r11, -24(%rbp)
@@ -79,6 +85,8 @@ sum_:
 	pushq %rbp
 	movq %rsp, %rbp
 	subq $48, %rsp
+	/*  %.Lentry: [TAC] */
+.sum_.Lentry:
 	/*   %3 = copy %0 [TAC] */
 	movq %rdi, %r11
 	movq %r11, -24(%rbp)
@@ -104,6 +112,8 @@ main:
 	pushq %rbp
 	movq %rsp, %rbp
 	subq $64, %rsp
+	/*  %.Lentry: [TAC] */
+.main.Lentry:
 	/*   call @print_42 [TAC] */
 	callq print_42
 	/*   %2 = const 4 [TAC] */
@@ -119,7 +129,7 @@ main:
 	movq -24(%rbp), %rsi
 	/*   %3 = call @sum, 2 [TAC] */
 	callq sum
-movq %rax, -32(%rbp)
+	movq %rax, -32(%rbp)
 	/*   %7 = copy %3 [TAC] */
 	movq -32(%rbp), %r11
 	movq %r11, -40(%rbp)
@@ -134,7 +144,7 @@ movq %rax, -32(%rbp)
 	movq -56(%rbp), %rsi
 	/*   %9 = call @sum_, 2 [TAC] */
 	callq sum_
-movq %rax, -64(%rbp)
+	movq %rax, -64(%rbp)
 	movq -64(%rbp), %rdi
 	/*   call @__bx_print_int [TAC] */
 	callq __bx_print_int

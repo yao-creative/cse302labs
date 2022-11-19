@@ -6,6 +6,13 @@
       ],
       "body": [
          {
+            "opcode": "label",
+            "args": [
+               "%.Lentry"
+            ],
+            "result": null
+         },
+         {
             "opcode": "copy",
             "args": [
                "%0"
@@ -39,34 +46,6 @@
             "opcode": "jmp",
             "args": [
                "%.L1"
-            ],
-            "result": null
-         },
-         {
-            "opcode": "label",
-            "args": [
-               "%.L0"
-            ],
-            "result": null
-         },
-         {
-            "opcode": "const",
-            "args": [
-               0
-            ],
-            "result": "%4"
-         },
-         {
-            "opcode": "ret",
-            "args": [
-               "%4"
-            ],
-            "result": null
-         },
-         {
-            "opcode": "jmp",
-            "args": [
-               "%.L2"
             ],
             "result": null
          },
@@ -111,34 +90,6 @@
             "opcode": "jmp",
             "args": [
                "%.L4"
-            ],
-            "result": null
-         },
-         {
-            "opcode": "label",
-            "args": [
-               "%.L3"
-            ],
-            "result": null
-         },
-         {
-            "opcode": "const",
-            "args": [
-               1
-            ],
-            "result": "%8"
-         },
-         {
-            "opcode": "ret",
-            "args": [
-               "%8"
-            ],
-            "result": null
-         },
-         {
-            "opcode": "jmp",
-            "args": [
-               "%.L5"
             ],
             "result": null
          },
@@ -241,9 +192,23 @@
             "result": null
          },
          {
+            "opcode": "jmp",
+            "args": [
+               "%.L5"
+            ],
+            "result": null
+         },
+         {
             "opcode": "label",
             "args": [
                "%.L5"
+            ],
+            "result": null
+         },
+         {
+            "opcode": "jmp",
+            "args": [
+               "%.L2"
             ],
             "result": null
          },
@@ -257,6 +222,62 @@
          {
             "opcode": "ret",
             "args": [],
+            "result": null
+         },
+         {
+            "opcode": "label",
+            "args": [
+               "%.L0"
+            ],
+            "result": null
+         },
+         {
+            "opcode": "const",
+            "args": [
+               0
+            ],
+            "result": "%4"
+         },
+         {
+            "opcode": "ret",
+            "args": [
+               "%4"
+            ],
+            "result": null
+         },
+         {
+            "opcode": "jmp",
+            "args": [
+               "%.L2"
+            ],
+            "result": null
+         },
+         {
+            "opcode": "label",
+            "args": [
+               "%.L3"
+            ],
+            "result": null
+         },
+         {
+            "opcode": "const",
+            "args": [
+               1
+            ],
+            "result": "%8"
+         },
+         {
+            "opcode": "ret",
+            "args": [
+               "%8"
+            ],
+            "result": null
+         },
+         {
+            "opcode": "jmp",
+            "args": [
+               "%.L5"
+            ],
             "result": null
          }
       ],
@@ -286,7 +307,10 @@
          "%.L2",
          "%.L3",
          "%.L4",
-         "%.L5"
+         "%.L5",
+         "%.Lentry",
+         "%.L6",
+         "%.L7"
       ]
    },
    {
@@ -295,6 +319,13 @@
          "%0"
       ],
       "body": [
+         {
+            "opcode": "label",
+            "args": [
+               "%.Lentry"
+            ],
+            "result": null
+         },
          {
             "opcode": "const",
             "args": [
@@ -414,6 +445,13 @@
             "result": "%2"
          },
          {
+            "opcode": "jmp",
+            "args": [
+               "%.L1"
+            ],
+            "result": null
+         },
+         {
             "opcode": "label",
             "args": [
                "%.L1"
@@ -450,7 +488,10 @@
       "labels": [
          "%.L0",
          "%.L1",
-         "%.L2"
+         "%.L2",
+         "%.Lentry",
+         "%.L3",
+         "%.L4"
       ]
    },
    {
@@ -459,6 +500,13 @@
          "%0"
       ],
       "body": [
+         {
+            "opcode": "label",
+            "args": [
+               "%.Lentry"
+            ],
+            "result": null
+         },
          {
             "opcode": "const",
             "args": [
@@ -556,6 +604,13 @@
             "result": "%5"
          },
          {
+            "opcode": "jmp",
+            "args": [
+               "%.L1"
+            ],
+            "result": null
+         },
+         {
             "opcode": "label",
             "args": [
                "%.L1"
@@ -591,7 +646,9 @@
       ],
       "labels": [
          "%.L0",
-         "%.L1"
+         "%.L1",
+         "%.Lentry",
+         "%.L2"
       ]
    },
    {
@@ -601,6 +658,13 @@
          "%1"
       ],
       "body": [
+         {
+            "opcode": "label",
+            "args": [
+               "%.Lentry"
+            ],
+            "result": null
+         },
          {
             "opcode": "copy",
             "args": [
@@ -636,6 +700,32 @@
             "args": [
                "%.L1"
             ],
+            "result": null
+         },
+         {
+            "opcode": "label",
+            "args": [
+               "%.L1"
+            ],
+            "result": null
+         },
+         {
+            "opcode": "jmp",
+            "args": [
+               "%.L2"
+            ],
+            "result": null
+         },
+         {
+            "opcode": "label",
+            "args": [
+               "%.L2"
+            ],
+            "result": null
+         },
+         {
+            "opcode": "ret",
+            "args": [],
             "result": null
          },
          {
@@ -734,25 +824,6 @@
                "%.L2"
             ],
             "result": null
-         },
-         {
-            "opcode": "label",
-            "args": [
-               "%.L1"
-            ],
-            "result": null
-         },
-         {
-            "opcode": "label",
-            "args": [
-               "%.L2"
-            ],
-            "result": null
-         },
-         {
-            "opcode": "ret",
-            "args": [],
-            "result": null
          }
       ],
       "temps": [
@@ -772,13 +843,22 @@
       "labels": [
          "%.L0",
          "%.L1",
-         "%.L2"
+         "%.L2",
+         "%.Lentry",
+         "%.L3"
       ]
    },
    {
       "proc": "@main",
       "args": [],
       "body": [
+         {
+            "opcode": "label",
+            "args": [
+               "%.Lentry"
+            ],
+            "result": null
+         },
          {
             "opcode": "const",
             "args": [
@@ -837,6 +917,13 @@
                1
             ],
             "result": "%2"
+         },
+         {
+            "opcode": "jmp",
+            "args": [
+               "%.L1"
+            ],
+            "result": null
          },
          {
             "opcode": "label",
@@ -926,6 +1013,13 @@
                1
             ],
             "result": "%7"
+         },
+         {
+            "opcode": "jmp",
+            "args": [
+               "%.L3"
+            ],
+            "result": null
          },
          {
             "opcode": "label",
@@ -1021,7 +1115,10 @@
          "%.L0",
          "%.L1",
          "%.L2",
-         "%.L3"
+         "%.L3",
+         "%.Lentry",
+         "%.L4",
+         "%.L5"
       ]
    }
 ]
