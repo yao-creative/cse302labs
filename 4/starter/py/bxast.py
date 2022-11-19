@@ -67,6 +67,7 @@ class Scope:
 
     def add_variable(self, variable: str, ty: BX_TYPE) -> None:
         """ Adds a variable (ExpressionVar.name) in the current scope """
+        # print(variable)
         if self.scope_len():
             self.__scope_map[-1][variable] = ty
 
@@ -689,8 +690,8 @@ class Prog(Node):
                     has_main = True
             if isinstance(declaration, list):
                 for decl in declaration:
+                    # print(decl)
                     decl.global_type_check(self.__scope)
-
             else:
                 declaration.global_type_check(self.__scope)
         if not has_main:

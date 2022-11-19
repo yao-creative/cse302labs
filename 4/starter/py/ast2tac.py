@@ -184,7 +184,6 @@ class AST_to_TAC_Generator:
         res = None if expression.get_type() is BX_TYPE.VOID else temporary
         self.__emit(opcode="call", args=["@"+expression.get_name(), len(expression.get_params())], result=res)
 
-
     # ------------------------------------------------------------------------------#
     # Global Muncher
 
@@ -195,15 +194,15 @@ class AST_to_TAC_Generator:
         # print(self.__code.global_decls())
         for glob_func in self.__code.global_decls():
             if isinstance(glob_func, list):
-                glob_func = glob_func[0]
-                if isinstance(glob_func, StatementVardecl):                
-                    var = glob_func
-                    self.__code_state.add_globl_var("@"+var.variable.name)
-                    if isinstance(var.init, ExpressionBool):
-                        init_val = int(var.init.value)
-                    else: init_val = var.init.value
-                    self.__global_vars.append({"var": "@"+var.variable.name,
-                                                "init": init_val})
+                for glob_decl in glob_func:
+                    if isinstance(glob_decl, StatementVardecl):
+                        var = glob_decl
+                        self.__code_state.add_globl_var("@"+var.variable.name)
+                        if isinstance(var.init, ExpressionBool):
+                            init_val = int(var.init.value)
+                        else: init_val = var.init.value
+                        self.__global_vars.append({"var": "@"+var.variable.name,
+                                                    "init": init_val})
         # now add all global functions
         for glob_func in self.__code.global_decls():
             if isinstance(glob_func, DeclProc):
