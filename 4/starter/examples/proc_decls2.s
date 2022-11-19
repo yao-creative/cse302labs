@@ -6,10 +6,11 @@ fib:
 	pushq %rbp
 	movq %rsp, %rbp
 	subq $144, %rsp
+	movq %rdi, -8(%rbp)
 	/*  %.Lentry: [TAC] */
 .fib.Lentry:
 	/*   %1 = copy %0 [TAC] */
-	movq %rdi, %r11
+	movq -8(%rbp), %r11
 	movq %r11, -16(%rbp)
 	/*   %2 = const 0 [TAC] */
 	movq $0, -24(%rbp)
@@ -25,7 +26,7 @@ fib:
 	/*  %.L1: [TAC] */
 .fib.L1:
 	/*   %5 = copy %0 [TAC] */
-	movq %rdi, %r11
+	movq -8(%rbp), %r11
 	movq %r11, -40(%rbp)
 	/*   %6 = const 1 [TAC] */
 	movq $1, -48(%rbp)
@@ -41,7 +42,7 @@ fib:
 	/*  %.L4: [TAC] */
 .fib.L4:
 	/*   %12 = copy %0 [TAC] */
-	movq %rdi, %r11
+	movq -8(%rbp), %r11
 	movq %r11, -64(%rbp)
 	/*   %13 = const 1 [TAC] */
 	movq $1, -72(%rbp)
@@ -54,7 +55,7 @@ fib:
 	callq fib
 	movq %rax, -88(%rbp)
 	/*   %16 = copy %0 [TAC] */
-	movq %rdi, %r11
+	movq -8(%rbp), %r11
 	movq %r11, -96(%rbp)
 	/*   %17 = const 2 [TAC] */
 	movq $2, -104(%rbp)
@@ -111,12 +112,13 @@ is_even:
 	pushq %rbp
 	movq %rsp, %rbp
 	subq $80, %rsp
+	movq %rdi, -8(%rbp)
 	/*  %.Lentry: [TAC] */
 .is_even.Lentry:
 	/*   %2 = const 0 [TAC] */
 	movq $0, -16(%rbp)
 	/*   %3 = copy %0 [TAC] */
-	movq %rdi, %r11
+	movq -8(%rbp), %r11
 	movq %r11, -24(%rbp)
 	/*   %4 = const 0 [TAC] */
 	movq $0, -32(%rbp)
@@ -132,7 +134,7 @@ is_even:
 	/*  %.L2: [TAC] */
 .is_even.L2:
 	/*   %8 = copy %0 [TAC] */
-	movq %rdi, %r11
+	movq -8(%rbp), %r11
 	movq %r11, -48(%rbp)
 	/*   %9 = const 1 [TAC] */
 	movq $1, -56(%rbp)
@@ -175,6 +177,7 @@ is_odd:
 	pushq %rbp
 	movq %rsp, %rbp
 	subq $80, %rsp
+	movq %rdi, -8(%rbp)
 	/*  %.Lentry: [TAC] */
 .is_odd.Lentry:
 	/*   %2 = const 42 [TAC] */
@@ -188,7 +191,7 @@ is_odd:
 	/*   %5 = const 0 [TAC] */
 	movq $0, -40(%rbp)
 	/*   %8 = copy %0 [TAC] */
-	movq %rdi, %r11
+	movq -8(%rbp), %r11
 	movq %r11, -48(%rbp)
 	/*   %9 = const 1 [TAC] */
 	movq $1, -56(%rbp)
@@ -231,13 +234,15 @@ print_range:
 	pushq %rbp
 	movq %rsp, %rbp
 	subq $96, %rsp
+	movq %rdi, -8(%rbp)
+	movq %rsi, -16(%rbp)
 	/*  %.Lentry: [TAC] */
 .print_range.Lentry:
 	/*   %2 = copy %0 [TAC] */
-	movq %rdi, %r11
+	movq -8(%rbp), %r11
 	movq %r11, -24(%rbp)
 	/*   %3 = copy %1 [TAC] */
-	movq %rsi, %r11
+	movq -16(%rbp), %r11
 	movq %r11, -32(%rbp)
 	/*   %4 = sub %2, %3 [TAC] */
 	movq -24(%rbp), %r11
@@ -259,13 +264,13 @@ print_range:
 	/*  %.L0: [TAC] */
 .print_range.L0:
 	/*   %6 = copy %0 [TAC] */
-	movq %rdi, %r11
+	movq -8(%rbp), %r11
 	movq %r11, -48(%rbp)
 	movq -48(%rbp), %rdi
 	/*   call @__bx_print_int [TAC] */
 	callq __bx_print_int
 	/*   %9 = copy %0 [TAC] */
-	movq %rdi, %r11
+	movq -8(%rbp), %r11
 	movq %r11, -56(%rbp)
 	/*   %10 = const 1 [TAC] */
 	movq $1, -64(%rbp)
@@ -275,7 +280,7 @@ print_range:
 	movq %r11, -72(%rbp)
 	movq -72(%rbp), %rdi
 	/*   %11 = copy %1 [TAC] */
-	movq %rsi, %r11
+	movq -16(%rbp), %r11
 	movq %r11, -80(%rbp)
 	movq -80(%rbp), %rsi
 	/*   call @print_range [TAC] */

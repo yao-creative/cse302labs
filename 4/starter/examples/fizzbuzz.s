@@ -6,6 +6,8 @@ fizzbuzz:
 	pushq %rbp
 	movq %rsp, %rbp
 	subq $208, %rsp
+	movq %rdi, -8(%rbp)
+	movq %rsi, -16(%rbp)
 	/*  %.Lentry: [TAC] */
 .fizzbuzz.Lentry:
 	/*   jmp %.L0 [TAC] */
@@ -13,10 +15,10 @@ fizzbuzz:
 	/*  %.L0: [TAC] */
 .fizzbuzz.L0:
 	/*   %2 = copy %0 [TAC] */
-	movq %rdi, %r11
+	movq -8(%rbp), %r11
 	movq %r11, -24(%rbp)
 	/*   %3 = copy %1 [TAC] */
-	movq %rsi, %r11
+	movq -16(%rbp), %r11
 	movq %r11, -32(%rbp)
 	/*   %4 = sub %2, %3 [TAC] */
 	movq -24(%rbp), %r11
@@ -34,7 +36,7 @@ fizzbuzz:
 	/*  %.L1: [TAC] */
 .fizzbuzz.L1:
 	/*   %6 = copy %0 [TAC] */
-	movq %rdi, %r11
+	movq -8(%rbp), %r11
 	movq %r11, -48(%rbp)
 	/*   %7 = const 3 [TAC] */
 	movq $3, -56(%rbp)
@@ -57,7 +59,7 @@ fizzbuzz:
 	/*  %.L4: [TAC] */
 .fizzbuzz.L4:
 	/*   %20 = copy %0 [TAC] */
-	movq %rdi, %r11
+	movq -8(%rbp), %r11
 	movq %r11, -88(%rbp)
 	/*   %21 = const 5 [TAC] */
 	movq $5, -96(%rbp)
@@ -80,7 +82,7 @@ fizzbuzz:
 	/*  %.L10: [TAC] */
 .fizzbuzz.L10:
 	/*   %27 = copy %0 [TAC] */
-	movq %rdi, %r11
+	movq -8(%rbp), %r11
 	movq %r11, -128(%rbp)
 	movq -128(%rbp), %rdi
 	/*   call @__bx_print_int [TAC] */
@@ -94,20 +96,20 @@ fizzbuzz:
 	/*  %.L5: [TAC] */
 .fizzbuzz.L5:
 	/*   %28 = copy %0 [TAC] */
-	movq %rdi, %r11
+	movq -8(%rbp), %r11
 	movq %r11, -136(%rbp)
 	/*   %29 = const 1 [TAC] */
 	movq $1, -144(%rbp)
 	/*   %0 = add %28, %29 [TAC] */
 	movq -136(%rbp), %r11
 	addq -144(%rbp), %r11
-	movq %r11, %rdi
+	movq %r11, -8(%rbp)
 	/*   jmp %.L0 [TAC] */
 	jmp .fizzbuzz.L0
 	/*  %.L3: [TAC] */
 .fizzbuzz.L3:
 	/*   %11 = copy %0 [TAC] */
-	movq %rdi, %r11
+	movq -8(%rbp), %r11
 	movq %r11, -152(%rbp)
 	/*   %12 = const 5 [TAC] */
 	movq $5, -160(%rbp)

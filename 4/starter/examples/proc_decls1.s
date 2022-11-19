@@ -28,13 +28,14 @@ print_double:
 	pushq %rbp
 	movq %rsp, %rbp
 	subq $32, %rsp
+	movq %rdi, -8(%rbp)
 	/*  %.Lentry: [TAC] */
 .print_double.Lentry:
 	/*   %3 = copy %0 [TAC] */
-	movq %rdi, %r11
+	movq -8(%rbp), %r11
 	movq %r11, -16(%rbp)
 	/*   %4 = copy %0 [TAC] */
-	movq %rdi, %r11
+	movq -8(%rbp), %r11
 	movq %r11, -24(%rbp)
 	/*   %2 = add %3, %4 [TAC] */
 	movq -16(%rbp), %r11
@@ -58,13 +59,15 @@ sum:
 	pushq %rbp
 	movq %rsp, %rbp
 	subq $48, %rsp
+	movq %rdi, -8(%rbp)
+	movq %rsi, -16(%rbp)
 	/*  %.Lentry: [TAC] */
 .sum.Lentry:
 	/*   %3 = copy %0 [TAC] */
-	movq %rdi, %r11
+	movq -8(%rbp), %r11
 	movq %r11, -24(%rbp)
 	/*   %4 = copy %1 [TAC] */
-	movq %rsi, %r11
+	movq -16(%rbp), %r11
 	movq %r11, -32(%rbp)
 	/*   %2 = add %3, %4 [TAC] */
 	movq -24(%rbp), %r11
@@ -85,13 +88,15 @@ sum_:
 	pushq %rbp
 	movq %rsp, %rbp
 	subq $48, %rsp
+	movq %rdi, -8(%rbp)
+	movq %rsi, -16(%rbp)
 	/*  %.Lentry: [TAC] */
 .sum_.Lentry:
 	/*   %3 = copy %0 [TAC] */
-	movq %rdi, %r11
+	movq -8(%rbp), %r11
 	movq %r11, -24(%rbp)
 	/*   %4 = copy %1 [TAC] */
-	movq %rsi, %r11
+	movq -16(%rbp), %r11
 	movq %r11, -32(%rbp)
 	/*   %2 = add %3, %4 [TAC] */
 	movq -24(%rbp), %r11

@@ -74,10 +74,11 @@ fib:
 	pushq %rbp
 	movq %rsp, %rbp
 	subq $128, %rsp
+	movq %rdi, -8(%rbp)
 	/*  %.Lentry: [TAC] */
 .fib.Lentry:
 	/*   %1 = copy %0 [TAC] */
-	movq %rdi, %r11
+	movq -8(%rbp), %r11
 	movq %r11, -16(%rbp)
 	/*   %2 = const 0 [TAC] */
 	movq $0, -24(%rbp)
@@ -93,7 +94,7 @@ fib:
 	/*  %.L1: [TAC] */
 .fib.L1:
 	/*   %4 = copy %0 [TAC] */
-	movq %rdi, %r11
+	movq -8(%rbp), %r11
 	movq %r11, -40(%rbp)
 	/*   %5 = const 1 [TAC] */
 	movq $1, -48(%rbp)
@@ -109,7 +110,7 @@ fib:
 	/*  %.L4: [TAC] */
 .fib.L4:
 	/*   %10 = copy %0 [TAC] */
-	movq %rdi, %r11
+	movq -8(%rbp), %r11
 	movq %r11, -64(%rbp)
 	/*   %11 = const 1 [TAC] */
 	movq $1, -72(%rbp)
@@ -122,7 +123,7 @@ fib:
 	callq fib
 	movq %rax, -88(%rbp)
 	/*   %14 = copy %0 [TAC] */
-	movq %rdi, %r11
+	movq -8(%rbp), %r11
 	movq %r11, -96(%rbp)
 	/*   %15 = const 2 [TAC] */
 	movq $2, -104(%rbp)
