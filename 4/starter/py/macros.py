@@ -146,7 +146,8 @@ class x64Macros:
         """ Checks if label is of correct format """
         assert (isinstance(arg, str) and \
                 arg.startswith('%.L') and \
-                arg[3:].isnumeric()), f'Invalid format for label in {instr}'
+                arg[3:] == "entry" or arg[3:].isnumeric()), \
+                f'Invalid format for label in {instr}'
 
     @staticmethod
     def _assert_argument_numb(args: List, num: int, instr: dict) -> None:

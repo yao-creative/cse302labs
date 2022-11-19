@@ -328,7 +328,7 @@ class CFG:
 
         # for block in self.__blocks:
         #     print(block.instructions())
-        print("UCE done", '\n')
+        print("UCE done")
 
         self.__update_graph()
 
@@ -348,7 +348,7 @@ class CFG:
 
         # for block in self.__blocks:
         #     print(block.instructions())
-        print("Coalesce done", '\n')
+        print("Coalesce done")
 
         self.__uce()
 
@@ -365,7 +365,7 @@ class CFG:
 
         # for block in self.__blocks:
         #     print(block.instructions())
-        print("jmp thread done", '\n')
+        print("jmp thread done")
         
         self.__uce()
         self.__coalesce()
@@ -380,7 +380,7 @@ class CFG:
 
         # for block in self.__blocks:
         #     print(block.instructions())
-        print("jmp cond done", '\n')
+        print("jmp cond done")
 
         self.__uce()
         self.__jmp_thread()

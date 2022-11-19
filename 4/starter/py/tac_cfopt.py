@@ -32,7 +32,7 @@ class CFG_creator:
 
     def __create_label_instr(self, name: str) -> dict:
         """ Create and returns a label instr for the proc """
-        label_name = f".{self.__func_name}.L{name}"
+        label_name = f"%.L{name}"
         self.__new_labels.append(label_name)
         return {"opcode": "label",
                 "args": [label_name],
@@ -121,6 +121,8 @@ def get_serialized_tac(tac_instr: List[dict]) -> List[dict]:
     """ Creates the CFG for given tac instr """
     serialized_tac = []
     for decl in tac_instr:
+        # print(decl)
+        # print('\n')
         if "proc" in decl:
             # get the final prev label counter and 
             if len(decl["labels"]):
@@ -134,16 +136,18 @@ def get_serialized_tac(tac_instr: List[dict]) -> List[dict]:
             cfg.optimization()
             proc_tac = __create_tac(decl, cfg.serialized_tac(), cfg_reader.return_labs())
             serialized_tac.append(proc_tac)
-
+        else:
+            serialized_tac.append(decl)
+    # print(serialized_tac)
     return serialized_tac
 
-def __create_tac(declaration: Dict[str, List[dict]], new_instr: List[dict], new_labs: List[dict]) -> List[dict]:
+def __create_tac(declaration: Dict[str, List[dict]], new_instr: List[dict], new_labs: List[dict]) -> dict:
     """ Recreates the tac form for the serialized instructions """
-    return [{"proc": declaration["proc"],
+    return {"proc": declaration["proc"],
             "args": declaration["args"],
             "body": new_instr,
             "temps": declaration["temps"],
-            "labels": declaration["labels"]+new_labs}]
+            "labels": declaration["labels"]+new_labs}
 
 def write_serial_tac(filename: str, serialized_tac: List[dict]) -> None:
     """ Wrties the serialized tac to a json file """
