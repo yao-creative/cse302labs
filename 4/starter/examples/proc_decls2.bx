@@ -23,6 +23,6 @@ def print_range(lo, hi : int) { // multiple params in a group
 def main() {
     print(is_even(4));
     print(is_odd(5));
-    // print_range(3, 9);
+    print_range(3, 9);
     print(fib(4));
 }

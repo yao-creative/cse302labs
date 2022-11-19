@@ -960,15 +960,53 @@
          {
             "opcode": "const",
             "args": [
-               4
+               3
+            ],
+            "result": "%11"
+         },
+         {
+            "opcode": "param",
+            "args": [
+               1,
+               "%11"
+            ],
+            "result": null
+         },
+         {
+            "opcode": "const",
+            "args": [
+               9
             ],
             "result": "%12"
          },
          {
             "opcode": "param",
             "args": [
-               1,
+               2,
                "%12"
+            ],
+            "result": null
+         },
+         {
+            "opcode": "call",
+            "args": [
+               "@print_range",
+               2
+            ],
+            "result": null
+         },
+         {
+            "opcode": "const",
+            "args": [
+               4
+            ],
+            "result": "%15"
+         },
+         {
+            "opcode": "param",
+            "args": [
+               1,
+               "%15"
             ],
             "result": null
          },
@@ -978,13 +1016,13 @@
                "@fib",
                1
             ],
-            "result": "%11"
+            "result": "%14"
          },
          {
             "opcode": "param",
             "args": [
                1,
-               "%11"
+               "%14"
             ],
             "result": null
          },
@@ -1008,6 +1046,9 @@
          "%10",
          "%11",
          "%12",
+         "%13",
+         "%14",
+         "%15",
          "%2",
          "%3",
          "%4",

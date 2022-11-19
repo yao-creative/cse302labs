@@ -301,7 +301,7 @@ print_range:
 main:
 	pushq %rbp
 	movq %rsp, %rbp
-	subq $80, %rsp
+	subq $96, %rsp
 	/*  %.Lentry: [TAC] */
 .main.Lentry:
 	/*   %2 = const 0 [TAC] */
@@ -358,13 +358,21 @@ main:
 	movq -64(%rbp), %rdi
 	/*   call @__bx_print_bool [TAC] */
 	callq __bx_print_bool
-	/*   %12 = const 4 [TAC] */
-	movq $4, -72(%rbp)
+	/*   %11 = const 3 [TAC] */
+	movq $3, -72(%rbp)
 	movq -72(%rbp), %rdi
-	/*   %11 = call @fib, 1 [TAC] */
+	/*   %12 = const 9 [TAC] */
+	movq $9, -80(%rbp)
+	movq -80(%rbp), %rsi
+	/*   call @print_range [TAC] */
+	callq print_range
+	/*   %15 = const 4 [TAC] */
+	movq $4, -88(%rbp)
+	movq -88(%rbp), %rdi
+	/*   %14 = call @fib, 1 [TAC] */
 	callq fib
-	movq %rax, -80(%rbp)
-	movq -80(%rbp), %rdi
+	movq %rax, -96(%rbp)
+	movq -96(%rbp), %rdi
 	/*   call @__bx_print_int [TAC] */
 	callq __bx_print_int
 	xorq %rax, %rax
