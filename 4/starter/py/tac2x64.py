@@ -16,7 +16,7 @@ class Stack:
         self.__temp_map: Dict[str, str] = dict()
         self.__proc_args: List[str] = proc_args
         self.__proc_args_num: int = len(self.__proc_args)
-        self.__args_temp_init()
+        # self.__args_temp_init()
 
     def get_item(self, temp: str, instr: dict) -> str:
         """ Return the stack address of the temp """
@@ -26,7 +26,7 @@ class Stack:
             return f'{temp[1:]}(%rip)'
         return self.__lookup_temp(temp, instr)
 
-    def __lookup_temp(self, temp: str, instr: dict) -> str:
+    def __lookup_temp(self, temp: str, instr: dict = None) -> str:
         """ Returns the value of the temp from the stack 
             while simultaneously creating a hash table """
         Macros._assert_temporary(temp, instr)
@@ -38,19 +38,25 @@ class Stack:
             self.__temp_map[temp] = f'{-8 * (len(self.__temp_map)+1)}(%rbp)'
         return self.__temp_map[temp]
 
-    def __args_temp_init(self) -> None:
-        """ Initializes the temp map for all function arguments """
-        # I do not need to allocate temp slots in the stack for proc args
-        # because they are already stored in regs and stack
+    def args_temp_init(self) -> List[str]:
+        """ Initializes the temp map for all function arguments 
+            and returns instructions for moving them to stack """
+        param_instr = []
         for index in range(0, self.__proc_args_num):
             arg = self.__proc_args[index]
             if index < 6:
-                self.__temp_map[arg] = f"{Macros._first_6_regs[index]}"
+                temp = self.__lookup_temp(arg)
+                param_instr.append(f"\tmovq {Macros._first_6_regs[index]}, {temp}")
+                # self.__temp_map[arg] = f"{Macros._first_6_regs[index]}"
             else:
                 offset = 8*(index - 4)
                 assert(offset > 15), f' param {index} offset is invalid at {offset}(%rbp)'
                 assert(offset <= (8*(self.__proc_args_num-5))), f' param {index} offset is invalid at {offset}(%rbp)'
-                self.__temp_map[arg] = f"{offset}(%rbp)"
+                temp = self.__lookup_temp(arg)
+                param_instr.append(f"\tmovq {offset}(%rbp), %r11")
+                param_instr.append(f"\tmovq %r11, {temp}")
+                # self.__temp_map[arg] = f"{offset}(%rbp)"
+        return param_instr
 
     def start_proc(self, name: str) -> list:
         """ Adds initial commands when proc is entered """
@@ -164,6 +170,9 @@ class Procx64():
 
     def __tac_to_asm(self):
         """ Get the x64 instructions corresponding to the TAC """
+
+        # initialize param instruction for the proc
+        self.__asm_instr_proc = self.__stack.args_temp_init()        
 
         for index, instr in enumerate(self.__tac_instr):
             

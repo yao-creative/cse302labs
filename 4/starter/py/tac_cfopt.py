@@ -127,7 +127,7 @@ def get_serialized_tac(tac_instr: List[dict]) -> List[dict]:
             if len(decl["labels"]):
                 # print(sorted(decl["labels"]))
                 label = get_max_label(decl["labels"])+1
-                print(label)
+                # print(label)
             else:
                 label = 0
             assert decl["proc"][0] == '@'

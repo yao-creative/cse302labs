@@ -3,7 +3,7 @@
 # # test on all files
 for file in $(find ../examples -name "*.bx"); do
     echo $file 
-    python3 bxcc.py $file --no-cfg --keep-tac
+    python3 bxcc.py $file --keep-tac
     echo -e '\n'
 done
 
