@@ -43,7 +43,6 @@ class CFG_creator:
         new_tac_instr: List = []
         # add entry label
         new_tac_instr.append(self.__create_label_instr("entry"))
-        
         # parse tac instr to add lable after each jcc
         for index, instr in enumerate(self.__tac_instr):
             new_tac_instr.append(instr)
@@ -78,8 +77,8 @@ class CFG_creator:
             if not len(current_block_instr):
                 assert(instr["opcode"] == "label"), f'First instruction not a label {instr}'
 
-            # Create a block until a ret instr
-            if instr["opcode"] == "ret":
+            # Create a block until last instr
+            if index == len(self.__updated_tac_instr)-1:
                 current_block_instr.append(instr)
                 blocks.append(Block(current_block_instr))
                 # print(current_block_instr)
