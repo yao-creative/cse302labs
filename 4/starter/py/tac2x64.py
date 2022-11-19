@@ -47,7 +47,7 @@ class Stack:
             if index < 6:
                 self.__temp_map[arg] = f"{Macros._first_6_regs[index]}"
             else:
-                offset = 8*(index - 5)
+                offset = 8*(index - 4)
                 assert(offset > 15), f' param {index} offset is invalid at {offset}(%rbp)'
                 assert(offset <= (8*(self.__proc_args_num-5))), f' param {index} offset is invalid at {offset}(%rbp)'
                 self.__temp_map[arg] = f"{offset}(%rbp)"
@@ -249,14 +249,14 @@ class Procx64():
                 arg_num = args[1]
                 func = args[0]
 
+                # if not 16 byte aligned then push 0 as last temp argument
+                if arg_num > 6 and arg_num%2:
+                    self.__asm_instr_proc.append(f'\tpushq $0')
                 # push remaining params to stack in reverse order
                 if arg_num > 6:
                     Macros._assert_argument_numb(self.__param_temps_for_call, arg_num-6, instr)
                     for param_temp in reversed(self.__param_temps_for_call):
-                        self.__asm_instr_proc.append(f'\tpushq {param_temp}')
-                # if not 16 byte aligned then push 0
-                if arg_num > 6 and arg_num%2:
-                    self.__asm_instr_proc.append(f'\tpushq $0')
+                        self.__asm_instr_proc.append(f'\tpushq {self.__stack.get_item(param_temp, instr)}')
 
                 self.__asm_instr_proc.append(f'\tcallq {func[1:]}')
                 self.__param_temps_for_call = []        # reset param temps
