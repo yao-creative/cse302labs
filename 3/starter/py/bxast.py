@@ -241,7 +241,7 @@ class ExpressionOp(Expression):
 # ------------------------------------------------------------------------------#
 
         
-class Statement(Decl):
+class Statement(Node):
     def __init__(self,location: List[int]):
         super().__init__(location)
 
