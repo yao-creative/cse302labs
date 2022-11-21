@@ -17,7 +17,7 @@ main:
 	movq %r11, -16(%rbp)
 	/*   print %4 [TAC] */
 	movq -16(%rbp), %rdi
-	callq __bx_print_int
+	callq bx_print_int
 	/*   %8 = copy %0 [TAC] */
 	movq -8(%rbp), %r11
 	movq %r11, -24(%rbp)
@@ -30,15 +30,15 @@ main:
 	/*   jz %10, %.L5 [TAC] */
 	jz .main.L5
 	/*   jmp %.L6 [TAC] */
-	/* --jmp .main.L6-- */
-	/*  %.L6: [TAC] */
-.main.L6:
-	/*   jmp %.L7 [TAC] */
-	jmp .main.L7
+	jmp .main.L6
 	/*  %.L5: [TAC] */
 .main.L5:
 	/*   jmp %.L3 [TAC] */
 	jmp .main.L3
+	/*   jmp %.L7 [TAC] */
+	jmp .main.L7
+	/*  %.L6: [TAC] */
+.main.L6:
 	/*  %.L7: [TAC] */
 .main.L7:
 	/*   %15 = copy %0 [TAC] */
@@ -60,38 +60,38 @@ main:
 	/*   jz %18, %.L11 [TAC] */
 	jz .main.L11
 	/*   jmp %.L12 [TAC] */
-	/* --jmp .main.L12-- */
-	/*  %.L12: [TAC] */
-.main.L12:
-	/*   %20 = const 3 [TAC] */
-	movq $3, -88(%rbp)
-	/*   %21 = copy %0 [TAC] */
-	movq -8(%rbp), %r11
-	movq %r11, -96(%rbp)
-	/*   %19 = mul %20, %21 [TAC] */
-	movq -88(%rbp), %rax
-	imulq -96(%rbp)
-	movq %rax, -104(%rbp)
-	/*   %22 = const 1 [TAC] */
-	movq $1, -112(%rbp)
-	/*   %0 = add %19, %22 [TAC] */
-	movq -104(%rbp), %r11
-	addq -112(%rbp), %r11
-	movq %r11, -8(%rbp)
-	/*   jmp %.L13 [TAC] */
-	jmp .main.L13
+	jmp .main.L12
 	/*  %.L11: [TAC] */
 .main.L11:
+	/*   %19 = copy %0 [TAC] */
+	movq -8(%rbp), %r11
+	movq %r11, -88(%rbp)
+	/*   %20 = const 2 [TAC] */
+	movq $2, -96(%rbp)
+	/*   %0 = div %19, %20 [TAC] */
+	movq -88(%rbp), %rax
+	cqto
+	idivq -96(%rbp)
+	movq %rax, -8(%rbp)
+	/*   jmp %.L13 [TAC] */
+	jmp .main.L13
+	/*  %.L12: [TAC] */
+.main.L12:
+	/*   %22 = const 3 [TAC] */
+	movq $3, -104(%rbp)
 	/*   %23 = copy %0 [TAC] */
 	movq -8(%rbp), %r11
-	movq %r11, -120(%rbp)
-	/*   %24 = const 2 [TAC] */
-	movq $2, -128(%rbp)
-	/*   %0 = div %23, %24 [TAC] */
-	movq -120(%rbp), %rax
-	cqto
-	idivq -128(%rbp)
-	movq %rax, -8(%rbp)
+	movq %r11, -112(%rbp)
+	/*   %21 = mul %22, %23 [TAC] */
+	movq -104(%rbp), %rax
+	imulq -112(%rbp)
+	movq %rax, -120(%rbp)
+	/*   %24 = const 1 [TAC] */
+	movq $1, -128(%rbp)
+	/*   %0 = add %21, %24 [TAC] */
+	movq -120(%rbp), %r11
+	addq -128(%rbp), %r11
+	movq %r11, -8(%rbp)
 	/*  %.L13: [TAC] */
 .main.L13:
 	/*   jmp %.L1 [TAC] */
@@ -100,5 +100,5 @@ main:
 .main.L3:
 	movq %rbp, %rsp
 	popq %rbp
-	xorl %eax, %eax
+	movq $0, %rax
 	retq

@@ -9,7 +9,6 @@ reserved = {
     "print": "PRINT",
     "def" : "DEF",
     "int" : "INT",
-    "bool": "BOOL",
     "var" : "VAR",
     "if" : "IF",
     "else": "ELSE",

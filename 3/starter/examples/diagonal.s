@@ -28,15 +28,15 @@ main:
 	/*   jz %11, %.L6 [TAC] */
 	jz .main.L6
 	/*   jmp %.L7 [TAC] */
-	/* --jmp .main.L7-- */
-	/*  %.L7: [TAC] */
-.main.L7:
-	/*   jmp %.L8 [TAC] */
-	jmp .main.L8
+	jmp .main.L7
 	/*  %.L6: [TAC] */
 .main.L6:
 	/*   jmp %.L5 [TAC] */
 	jmp .main.L5
+	/*   jmp %.L8 [TAC] */
+	jmp .main.L8
+	/*  %.L7: [TAC] */
+.main.L7:
 	/*  %.L8: [TAC] */
 .main.L8:
 	/*   %12 = copy %0 [TAC] */
@@ -44,7 +44,7 @@ main:
 	movq %r11, -56(%rbp)
 	/*   print %12 [TAC] */
 	movq -56(%rbp), %rdi
-	callq __bx_print_int
+	callq bx_print_int
 	/*   %1 = const 1 [TAC] */
 	movq $1, -16(%rbp)
 	/*   %2 = const 0 [TAC] */
@@ -68,15 +68,15 @@ main:
 	/*   jnle %21, %.L16 [TAC] */
 	jnle .main.L16
 	/*   jmp %.L17 [TAC] */
-	/* --jmp .main.L17-- */
-	/*  %.L17: [TAC] */
-.main.L17:
-	/*   jmp %.L18 [TAC] */
-	jmp .main.L18
+	jmp .main.L17
 	/*  %.L16: [TAC] */
 .main.L16:
 	/*   jmp %.L15 [TAC] */
 	jmp .main.L15
+	/*   jmp %.L18 [TAC] */
+	jmp .main.L18
+	/*  %.L17: [TAC] */
+.main.L17:
 	/*  %.L18: [TAC] */
 .main.L18:
 	/*   %22 = copy %2 [TAC] */
@@ -107,7 +107,7 @@ main:
 	movq %r11, -120(%rbp)
 	/*   print %26 [TAC] */
 	movq -120(%rbp), %rdi
-	callq __bx_print_int
+	callq bx_print_int
 	/*   %27 = copy %0 [TAC] */
 	movq -8(%rbp), %r11
 	movq %r11, -128(%rbp)
@@ -123,5 +123,5 @@ main:
 .main.L5:
 	movq %rbp, %rsp
 	popq %rbp
-	xorl %eax, %eax
+	movq $0, %rax
 	retq

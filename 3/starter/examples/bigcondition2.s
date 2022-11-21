@@ -1621,26 +1621,30 @@ main:
 	/*   jz %407, %.L3 [TAC] */
 	jz .main.L3
 	/*   jmp %.L2 [TAC] */
-	jmp .main.L2
-	/*  %.L3: [TAC] */
-.main.L3:
-	/*   %408 = const -42 [TAC] */
-	movq $-42, -2448(%rbp)
-	/*   print %408 [TAC] */
-	movq -2448(%rbp), %rdi
-	callq __bx_print_int
-	/*   jmp %.L4 [TAC] */
-	jmp .main.L4
+	/* --jmp .main.L2-- */
 	/*  %.L2: [TAC] */
 .main.L2:
-	/*   %409 = const 42 [TAC] */
+	/*   %408 = const 42 [TAC] */
+	movq $42, -2448(%rbp)
+	/*   print %408 [TAC] */
+	movq -2448(%rbp), %rdi
+	callq bx_print_int
+	/*   jmp %.L4 [TAC] */
+	jmp .main.L4
+	/*  %.L3: [TAC] */
+.main.L3:
+	/*   %410 = const 42 [TAC] */
 	movq $42, -2456(%rbp)
+	/*   %409 = neg %410 [TAC] */
+	movq -2456(%rbp), %r11
+	negq %r11
+	movq %r11, -2464(%rbp)
 	/*   print %409 [TAC] */
-	movq -2456(%rbp), %rdi
-	callq __bx_print_int
+	movq -2464(%rbp), %rdi
+	callq bx_print_int
 	/*  %.L4: [TAC] */
 .main.L4:
 	movq %rbp, %rsp
 	popq %rbp
-	xorl %eax, %eax
+	movq $0, %rax
 	retq
