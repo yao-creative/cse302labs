@@ -28,7 +28,7 @@ main:
 	movq %r11, -56(%rbp)
 	/*   print %4 [TAC] */
 	movq -56(%rbp), %rdi
-	callq __bx_print_int
+	callq bx_print_int
 	/*   %8 = copy %0 [TAC] */
 	movq -8(%rbp), %r11
 	movq %r11, -64(%rbp)
@@ -41,7 +41,7 @@ main:
 	movq %r11, -80(%rbp)
 	/*   print %7 [TAC] */
 	movq -80(%rbp), %rdi
-	callq __bx_print_int
+	callq bx_print_int
 	/*   %12 = copy %0 [TAC] */
 	movq -8(%rbp), %r11
 	movq %r11, -88(%rbp)
@@ -71,8 +71,8 @@ main:
 	movq %rdx, -144(%rbp)
 	/*   print %15 [TAC] */
 	movq -144(%rbp), %rdi
-	callq __bx_print_int
+	callq bx_print_int
 	movq %rbp, %rsp
 	popq %rbp
-	xorl %eax, %eax
+	movq $0, %rax
 	retq

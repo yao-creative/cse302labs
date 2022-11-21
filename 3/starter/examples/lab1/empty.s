@@ -6,5 +6,5 @@ main:
 	subq $0, %rsp
 	movq %rbp, %rsp
 	popq %rbp
-	xorl %eax, %eax
+	movq $0, %rax
 	retq

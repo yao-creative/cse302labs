@@ -43,7 +43,7 @@ main:
 	movq %r11, -80(%rbp)
 	/*   print %12 [TAC] */
 	movq -80(%rbp), %rdi
-	callq __bx_print_int
+	callq bx_print_int
 	/*   %13 = copy %1 [TAC] */
 	movq -16(%rbp), %r11
 	movq %r11, -88(%rbp)
@@ -66,5 +66,5 @@ main:
 .main.L6:
 	movq %rbp, %rsp
 	popq %rbp
-	xorl %eax, %eax
+	movq $0, %rax
 	retq

@@ -8,8 +8,8 @@ main:
 	movq $42, -8(%rbp)
 	/*   print %0 [TAC] */
 	movq -8(%rbp), %rdi
-	callq __bx_print_int
+	callq bx_print_int
 	movq %rbp, %rsp
 	popq %rbp
-	xorl %eax, %eax
+	movq $0, %rax
 	retq

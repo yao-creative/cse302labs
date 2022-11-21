@@ -17,8 +17,8 @@ main:
 	movq %r11, -32(%rbp)
 	/*   print %3 [TAC] */
 	movq -32(%rbp), %rdi
-	callq __bx_print_int
+	callq bx_print_int
 	movq %rbp, %rsp
 	popq %rbp
-	xorl %eax, %eax
+	movq $0, %rax
 	retq
