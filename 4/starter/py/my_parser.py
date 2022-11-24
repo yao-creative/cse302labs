@@ -223,7 +223,24 @@ def p_expression(p):
                   | TRUE
                   | FALSE
                   | LPAREN expression RPAREN
-                  | expression binop expression
+                  | expression PERCENT expression
+                  | expression DIVIDE expression
+                  | expression MULTIPLY expression
+                  | expression MINUS expression
+                  | expression PLUS expression
+                  | expression LOGICAL_SHIFT_RIGHT expression
+                  | expression LOGICAL_SHIFT_LEFT expression
+                  | expression CMPGE expression
+                  | expression CMPG expression
+                  | expression CMPLE expression
+                  | expression CMPL expression
+                  | expression CMPNE expression
+                  | expression CMPE expression
+                  | expression BITWISE_AND expression
+                  | expression BITWISE_XOR expression
+                  | expression BITWISE_OR expression
+                  | expression AND expression
+                  | expression OR expression
                   | MINUS expression %prec UMINUS
                   | NOT expression
                   | BITWISE_NEGATION expression
@@ -275,26 +292,26 @@ def p_expressionstar(p):
         p[0] = p[1]
         p[0].append(p[3])
         
-def p_binop(p):
-    """binop : PLUS         
-             | MINUS        
-             | MULTIPLY     
-             | DIVIDE       
-             | PERCENT      
-             | BITWISE_AND  
-             | BITWISE_OR   
-             | BITWISE_XOR  
-             | LOGICAL_SHIFT_LEFT
-             | LOGICAL_SHIFT_RIGHT
-             | CMPE         
-             | CMPNE        
-             | CMPL         
-             | CMPLE        
-             | CMPG         
-             | CMPGE        
-             | AND          
-             | OR           """
-    p[0] = p[1]
+# def p_binop(p):
+#     """binop : PLUS         
+#              | MINUS        
+#              | MULTIPLY     
+#              | DIVIDE       
+#              | PERCENT      
+#              | BITWISE_AND  
+#              | BITWISE_OR   
+#              | BITWISE_XOR  
+#              | LOGICAL_SHIFT_LEFT
+#              | LOGICAL_SHIFT_RIGHT
+#              | CMPE         
+#              | CMPNE        
+#              | CMPL         
+#              | CMPLE        
+#              | CMPG         
+#              | CMPGE        
+#              | AND          
+#              | OR           """
+#     p[0] = p[1]
     
 def p_error(p):
     if p:
