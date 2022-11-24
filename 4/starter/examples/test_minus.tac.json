@@ -1,0 +1,113 @@
+[
+   {
+      "var": "@a",
+      "init": -42
+   },
+   {
+      "proc": "@iden",
+      "args": [
+         "%0"
+      ],
+      "body": [
+         {
+            "opcode": "copy",
+            "args": [
+               "%0"
+            ],
+            "result": "%3"
+         },
+         {
+            "opcode": "neg",
+            "args": [
+               "%3"
+            ],
+            "result": "%2"
+         },
+         {
+            "opcode": "neg",
+            "args": [
+               "%2"
+            ],
+            "result": "%1"
+         },
+         {
+            "opcode": "ret",
+            "args": [
+               "%1"
+            ],
+            "result": null
+         }
+      ],
+      "temps": [
+         "%0",
+         "%1",
+         "%2",
+         "%3"
+      ],
+      "labels": []
+   },
+   {
+      "proc": "@main",
+      "args": [],
+      "body": [
+         {
+            "opcode": "const",
+            "args": [
+               -42
+            ],
+            "result": "%0"
+         },
+         {
+            "opcode": "copy",
+            "args": [
+               "%0"
+            ],
+            "result": "%3"
+         },
+         {
+            "opcode": "param",
+            "args": [
+               1,
+               "%3"
+            ],
+            "result": null
+         },
+         {
+            "opcode": "call",
+            "args": [
+               "@iden",
+               1
+            ],
+            "result": "%2"
+         },
+         {
+            "opcode": "param",
+            "args": [
+               1,
+               "%2"
+            ],
+            "result": null
+         },
+         {
+            "opcode": "call",
+            "args": [
+               "@__bx_print_int",
+               1
+            ],
+            "result": null
+         },
+         {
+            "opcode": "ret",
+            "args": [],
+            "result": null
+         }
+      ],
+      "temps": [
+         "%0",
+         "%1",
+         "%2",
+         "%3"
+      ],
+      "labels": []
+   }
+]

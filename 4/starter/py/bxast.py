@@ -2,15 +2,6 @@ from typing import List, Tuple, Dict, Union
 from macros import Operations, BX_TYPE
 
 """
-NOTE for the Grader:
-
-    We only parse comparison conditions
-    with brackets. Without brackets the
-    yacc parser does not take lower 
-    precedence of comparison operators
-    like == into account like in fizzbuzz
-
-
 Authors: Yi Yao Tan 
          Vrushank Agrawal
 """
@@ -308,8 +299,6 @@ class ExpressionInt(Expression):
         return "ExpressionInt({})".format(self.value)
 
     def type_check(self, scope: Scope) -> None:
-        if self.value < 0:
-            self.syntax_error(" negative number")
         if self.value >= self.__max:
             self.syntax_error(" number too large")
 

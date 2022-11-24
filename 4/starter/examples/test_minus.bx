@@ -1,0 +1,10 @@
+def iden(a :int) :int {
+    return - (-a);
+}
+
+def main() {
+    var a = -42: int;
+    print(iden(a));
+}
+
+var a = -42 : int;

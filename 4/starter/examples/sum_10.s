@@ -22,70 +22,70 @@ sum7:
 	movq %r11, -80(%rbp)
 	/*  %.Lentry: [TAC] */
 .sum7.Lentry:
-	/*   %11 = copy %0 [TAC] */
+	/*   %19 = copy %0 [TAC] */
 	movq -8(%rbp), %r11
 	movq %r11, -88(%rbp)
-	/*   %13 = copy %1 [TAC] */
+	/*   %20 = copy %1 [TAC] */
 	movq -16(%rbp), %r11
 	movq %r11, -96(%rbp)
-	/*   %15 = copy %2 [TAC] */
-	movq -24(%rbp), %r11
+	/*   %18 = add %19, %20 [TAC] */
+	movq -88(%rbp), %r11
+	addq -96(%rbp), %r11
 	movq %r11, -104(%rbp)
-	/*   %17 = copy %3 [TAC] */
-	movq -32(%rbp), %r11
+	/*   %21 = copy %2 [TAC] */
+	movq -24(%rbp), %r11
 	movq %r11, -112(%rbp)
-	/*   %19 = copy %4 [TAC] */
-	movq -40(%rbp), %r11
+	/*   %17 = add %18, %21 [TAC] */
+	movq -104(%rbp), %r11
+	addq -112(%rbp), %r11
 	movq %r11, -120(%rbp)
-	/*   %21 = copy %5 [TAC] */
-	movq -48(%rbp), %r11
+	/*   %22 = copy %3 [TAC] */
+	movq -32(%rbp), %r11
 	movq %r11, -128(%rbp)
-	/*   %23 = copy %6 [TAC] */
-	movq -56(%rbp), %r11
+	/*   %16 = add %17, %22 [TAC] */
+	movq -120(%rbp), %r11
+	addq -128(%rbp), %r11
 	movq %r11, -136(%rbp)
-	/*   %25 = copy %7 [TAC] */
-	movq -64(%rbp), %r11
+	/*   %23 = copy %4 [TAC] */
+	movq -40(%rbp), %r11
 	movq %r11, -144(%rbp)
-	/*   %27 = copy %8 [TAC] */
-	movq -72(%rbp), %r11
+	/*   %15 = add %16, %23 [TAC] */
+	movq -136(%rbp), %r11
+	addq -144(%rbp), %r11
 	movq %r11, -152(%rbp)
-	/*   %28 = copy %9 [TAC] */
-	movq -80(%rbp), %r11
+	/*   %24 = copy %5 [TAC] */
+	movq -48(%rbp), %r11
 	movq %r11, -160(%rbp)
-	/*   %26 = add %27, %28 [TAC] */
+	/*   %14 = add %15, %24 [TAC] */
 	movq -152(%rbp), %r11
 	addq -160(%rbp), %r11
 	movq %r11, -168(%rbp)
-	/*   %24 = add %25, %26 [TAC] */
-	movq -144(%rbp), %r11
-	addq -168(%rbp), %r11
+	/*   %25 = copy %6 [TAC] */
+	movq -56(%rbp), %r11
 	movq %r11, -176(%rbp)
-	/*   %22 = add %23, %24 [TAC] */
-	movq -136(%rbp), %r11
+	/*   %13 = add %14, %25 [TAC] */
+	movq -168(%rbp), %r11
 	addq -176(%rbp), %r11
 	movq %r11, -184(%rbp)
-	/*   %20 = add %21, %22 [TAC] */
-	movq -128(%rbp), %r11
-	addq -184(%rbp), %r11
+	/*   %26 = copy %7 [TAC] */
+	movq -64(%rbp), %r11
 	movq %r11, -192(%rbp)
-	/*   %18 = add %19, %20 [TAC] */
-	movq -120(%rbp), %r11
+	/*   %12 = add %13, %26 [TAC] */
+	movq -184(%rbp), %r11
 	addq -192(%rbp), %r11
 	movq %r11, -200(%rbp)
-	/*   %16 = add %17, %18 [TAC] */
-	movq -112(%rbp), %r11
-	addq -200(%rbp), %r11
+	/*   %27 = copy %8 [TAC] */
+	movq -72(%rbp), %r11
 	movq %r11, -208(%rbp)
-	/*   %14 = add %15, %16 [TAC] */
-	movq -104(%rbp), %r11
+	/*   %11 = add %12, %27 [TAC] */
+	movq -200(%rbp), %r11
 	addq -208(%rbp), %r11
 	movq %r11, -216(%rbp)
-	/*   %12 = add %13, %14 [TAC] */
-	movq -96(%rbp), %r11
-	addq -216(%rbp), %r11
+	/*   %28 = copy %9 [TAC] */
+	movq -80(%rbp), %r11
 	movq %r11, -224(%rbp)
-	/*   %10 = add %11, %12 [TAC] */
-	movq -88(%rbp), %r11
+	/*   %10 = add %11, %28 [TAC] */
+	movq -216(%rbp), %r11
 	addq -224(%rbp), %r11
 	movq %r11, -232(%rbp)
 	movq -232(%rbp), %rax

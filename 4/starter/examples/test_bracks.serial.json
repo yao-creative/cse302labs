@@ -1,14 +1,8 @@
 [
    {
-      "proc": "@sum7",
+      "proc": "@test_bracks",
       "args": [
-         "%0",
-         "%1",
-         "%2",
-         "%3",
-         "%4",
-         "%5",
-         "%6"
+         "%0"
       ],
       "body": [
          {
@@ -19,106 +13,103 @@
             "result": null
          },
          {
+            "opcode": "const",
+            "args": [
+               0
+            ],
+            "result": "%2"
+         },
+         {
             "opcode": "copy",
             "args": [
                "%0"
             ],
-            "result": "%13"
+            "result": "%4"
          },
          {
-            "opcode": "copy",
+            "opcode": "const",
             "args": [
-               "%1"
+               3
             ],
-            "result": "%14"
+            "result": "%5"
          },
          {
             "opcode": "add",
             "args": [
-               "%13",
-               "%14"
+               "%4",
+               "%5"
             ],
-            "result": "%12"
+            "result": "%3"
+         },
+         {
+            "opcode": "const",
+            "args": [
+               5
+            ],
+            "result": "%6"
+         },
+         {
+            "opcode": "sub",
+            "args": [
+               "%3",
+               "%6"
+            ],
+            "result": "%7"
+         },
+         {
+            "opcode": "jz",
+            "args": [
+               "%7",
+               "%.L0"
+            ],
+            "result": null
+         },
+         {
+            "opcode": "jmp",
+            "args": [
+               "%.L1"
+            ],
+            "result": null
+         },
+         {
+            "opcode": "label",
+            "args": [
+               "%.L1"
+            ],
+            "result": null
          },
          {
             "opcode": "copy",
             "args": [
                "%2"
             ],
-            "result": "%15"
-         },
-         {
-            "opcode": "add",
-            "args": [
-               "%12",
-               "%15"
-            ],
-            "result": "%11"
-         },
-         {
-            "opcode": "copy",
-            "args": [
-               "%3"
-            ],
-            "result": "%16"
-         },
-         {
-            "opcode": "add",
-            "args": [
-               "%11",
-               "%16"
-            ],
-            "result": "%10"
-         },
-         {
-            "opcode": "copy",
-            "args": [
-               "%4"
-            ],
-            "result": "%17"
-         },
-         {
-            "opcode": "add",
-            "args": [
-               "%10",
-               "%17"
-            ],
-            "result": "%9"
-         },
-         {
-            "opcode": "copy",
-            "args": [
-               "%5"
-            ],
-            "result": "%18"
-         },
-         {
-            "opcode": "add",
-            "args": [
-               "%9",
-               "%18"
-            ],
-            "result": "%8"
-         },
-         {
-            "opcode": "copy",
-            "args": [
-               "%6"
-            ],
-            "result": "%19"
-         },
-         {
-            "opcode": "add",
-            "args": [
-               "%8",
-               "%19"
-            ],
-            "result": "%7"
+            "result": "%1"
          },
          {
             "opcode": "ret",
             "args": [
-               "%7"
+               "%1"
+            ],
+            "result": null
+         },
+         {
+            "opcode": "label",
+            "args": [
+               "%.L0"
+            ],
+            "result": null
+         },
+         {
+            "opcode": "const",
+            "args": [
+               1
+            ],
+            "result": "%2"
+         },
+         {
+            "opcode": "jmp",
+            "args": [
+               "%.L1"
             ],
             "result": null
          }
@@ -126,27 +117,18 @@
       "temps": [
          "%0",
          "%1",
-         "%10",
-         "%11",
-         "%12",
-         "%13",
-         "%14",
-         "%15",
-         "%16",
-         "%17",
-         "%18",
-         "%19",
          "%2",
          "%3",
          "%4",
          "%5",
          "%6",
-         "%7",
-         "%8",
-         "%9"
+         "%7"
       ],
       "labels": [
-         "%.Lentry"
+         "%.L0",
+         "%.L1",
+         "%.Lentry",
+         "%.L2"
       ]
    },
    {
@@ -165,12 +147,78 @@
             "args": [
                0
             ],
-            "result": "%0"
+            "result": "%2"
+         },
+         {
+            "opcode": "const",
+            "args": [
+               2
+            ],
+            "result": "%4"
+         },
+         {
+            "opcode": "param",
+            "args": [
+               1,
+               "%4"
+            ],
+            "result": null
+         },
+         {
+            "opcode": "call",
+            "args": [
+               "@test_bracks",
+               1
+            ],
+            "result": "%3"
+         },
+         {
+            "opcode": "jz",
+            "args": [
+               "%3",
+               "%.L1"
+            ],
+            "result": null
+         },
+         {
+            "opcode": "jmp",
+            "args": [
+               "%.L0"
+            ],
+            "result": null
+         },
+         {
+            "opcode": "label",
+            "args": [
+               "%.L0"
+            ],
+            "result": null
          },
          {
             "opcode": "const",
             "args": [
                1
+            ],
+            "result": "%2"
+         },
+         {
+            "opcode": "jmp",
+            "args": [
+               "%.L1"
+            ],
+            "result": null
+         },
+         {
+            "opcode": "label",
+            "args": [
+               "%.L1"
+            ],
+            "result": null
+         },
+         {
+            "opcode": "copy",
+            "args": [
+               "%2"
             ],
             "result": "%1"
          },
@@ -183,122 +231,9 @@
             "result": null
          },
          {
-            "opcode": "const",
-            "args": [
-               1
-            ],
-            "result": "%2"
-         },
-         {
-            "opcode": "param",
-            "args": [
-               2,
-               "%2"
-            ],
-            "result": null
-         },
-         {
-            "opcode": "const",
-            "args": [
-               1
-            ],
-            "result": "%3"
-         },
-         {
-            "opcode": "param",
-            "args": [
-               3,
-               "%3"
-            ],
-            "result": null
-         },
-         {
-            "opcode": "const",
-            "args": [
-               1
-            ],
-            "result": "%4"
-         },
-         {
-            "opcode": "param",
-            "args": [
-               4,
-               "%4"
-            ],
-            "result": null
-         },
-         {
-            "opcode": "const",
-            "args": [
-               1
-            ],
-            "result": "%5"
-         },
-         {
-            "opcode": "param",
-            "args": [
-               5,
-               "%5"
-            ],
-            "result": null
-         },
-         {
-            "opcode": "const",
-            "args": [
-               1
-            ],
-            "result": "%6"
-         },
-         {
-            "opcode": "param",
-            "args": [
-               6,
-               "%6"
-            ],
-            "result": null
-         },
-         {
-            "opcode": "const",
-            "args": [
-               1
-            ],
-            "result": "%7"
-         },
-         {
-            "opcode": "param",
-            "args": [
-               7,
-               "%7"
-            ],
-            "result": null
-         },
-         {
             "opcode": "call",
             "args": [
-               "@sum7",
-               7
-            ],
-            "result": "%0"
-         },
-         {
-            "opcode": "copy",
-            "args": [
-               "%0"
-            ],
-            "result": "%9"
-         },
-         {
-            "opcode": "param",
-            "args": [
-               1,
-               "%9"
-            ],
-            "result": null
-         },
-         {
-            "opcode": "call",
-            "args": [
-               "@__bx_print_int",
+               "@__bx_print_bool",
                1
             ],
             "result": null
@@ -314,15 +249,13 @@
          "%1",
          "%2",
          "%3",
-         "%4",
-         "%5",
-         "%6",
-         "%7",
-         "%8",
-         "%9"
+         "%4"
       ],
       "labels": [
-         "%.Lentry"
+         "%.L0",
+         "%.L1",
+         "%.Lentry",
+         "%.L2"
       ]
    }
 ]

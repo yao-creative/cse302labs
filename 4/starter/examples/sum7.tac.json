@@ -16,35 +16,67 @@
             "args": [
                "%0"
             ],
-            "result": "%8"
+            "result": "%13"
          },
          {
             "opcode": "copy",
             "args": [
                "%1"
             ],
-            "result": "%10"
+            "result": "%14"
          },
          {
-            "opcode": "copy",
+            "opcode": "add",
             "args": [
-               "%2"
+               "%13",
+               "%14"
             ],
             "result": "%12"
          },
          {
             "opcode": "copy",
             "args": [
+               "%2"
+            ],
+            "result": "%15"
+         },
+         {
+            "opcode": "add",
+            "args": [
+               "%12",
+               "%15"
+            ],
+            "result": "%11"
+         },
+         {
+            "opcode": "copy",
+            "args": [
                "%3"
             ],
-            "result": "%14"
+            "result": "%16"
+         },
+         {
+            "opcode": "add",
+            "args": [
+               "%11",
+               "%16"
+            ],
+            "result": "%10"
          },
          {
             "opcode": "copy",
             "args": [
                "%4"
             ],
-            "result": "%16"
+            "result": "%17"
+         },
+         {
+            "opcode": "add",
+            "args": [
+               "%10",
+               "%17"
+            ],
+            "result": "%9"
          },
          {
             "opcode": "copy",
@@ -52,6 +84,14 @@
                "%5"
             ],
             "result": "%18"
+         },
+         {
+            "opcode": "add",
+            "args": [
+               "%9",
+               "%18"
+            ],
+            "result": "%8"
          },
          {
             "opcode": "copy",
@@ -63,48 +103,8 @@
          {
             "opcode": "add",
             "args": [
-               "%18",
-               "%19"
-            ],
-            "result": "%17"
-         },
-         {
-            "opcode": "add",
-            "args": [
-               "%16",
-               "%17"
-            ],
-            "result": "%15"
-         },
-         {
-            "opcode": "add",
-            "args": [
-               "%14",
-               "%15"
-            ],
-            "result": "%13"
-         },
-         {
-            "opcode": "add",
-            "args": [
-               "%12",
-               "%13"
-            ],
-            "result": "%11"
-         },
-         {
-            "opcode": "add",
-            "args": [
-               "%10",
-               "%11"
-            ],
-            "result": "%9"
-         },
-         {
-            "opcode": "add",
-            "args": [
                "%8",
-               "%9"
+               "%19"
             ],
             "result": "%7"
          },

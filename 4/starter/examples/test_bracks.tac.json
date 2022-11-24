@@ -1,0 +1,229 @@
+[
+   {
+      "proc": "@test_bracks",
+      "args": [
+         "%0"
+      ],
+      "body": [
+         {
+            "opcode": "const",
+            "args": [
+               0
+            ],
+            "result": "%2"
+         },
+         {
+            "opcode": "copy",
+            "args": [
+               "%0"
+            ],
+            "result": "%4"
+         },
+         {
+            "opcode": "const",
+            "args": [
+               3
+            ],
+            "result": "%5"
+         },
+         {
+            "opcode": "add",
+            "args": [
+               "%4",
+               "%5"
+            ],
+            "result": "%3"
+         },
+         {
+            "opcode": "const",
+            "args": [
+               5
+            ],
+            "result": "%6"
+         },
+         {
+            "opcode": "sub",
+            "args": [
+               "%3",
+               "%6"
+            ],
+            "result": "%7"
+         },
+         {
+            "opcode": "jz",
+            "args": [
+               "%7",
+               "%.L0"
+            ],
+            "result": null
+         },
+         {
+            "opcode": "jmp",
+            "args": [
+               "%.L1"
+            ],
+            "result": null
+         },
+         {
+            "opcode": "label",
+            "args": [
+               "%.L0"
+            ],
+            "result": null
+         },
+         {
+            "opcode": "const",
+            "args": [
+               1
+            ],
+            "result": "%2"
+         },
+         {
+            "opcode": "label",
+            "args": [
+               "%.L1"
+            ],
+            "result": null
+         },
+         {
+            "opcode": "copy",
+            "args": [
+               "%2"
+            ],
+            "result": "%1"
+         },
+         {
+            "opcode": "ret",
+            "args": [
+               "%1"
+            ],
+            "result": null
+         }
+      ],
+      "temps": [
+         "%0",
+         "%1",
+         "%2",
+         "%3",
+         "%4",
+         "%5",
+         "%6",
+         "%7"
+      ],
+      "labels": [
+         "%.L0",
+         "%.L1"
+      ]
+   },
+   {
+      "proc": "@main",
+      "args": [],
+      "body": [
+         {
+            "opcode": "const",
+            "args": [
+               0
+            ],
+            "result": "%2"
+         },
+         {
+            "opcode": "const",
+            "args": [
+               2
+            ],
+            "result": "%4"
+         },
+         {
+            "opcode": "param",
+            "args": [
+               1,
+               "%4"
+            ],
+            "result": null
+         },
+         {
+            "opcode": "call",
+            "args": [
+               "@test_bracks",
+               1
+            ],
+            "result": "%3"
+         },
+         {
+            "opcode": "jz",
+            "args": [
+               "%3",
+               "%.L1"
+            ],
+            "result": null
+         },
+         {
+            "opcode": "jmp",
+            "args": [
+               "%.L0"
+            ],
+            "result": null
+         },
+         {
+            "opcode": "label",
+            "args": [
+               "%.L0"
+            ],
+            "result": null
+         },
+         {
+            "opcode": "const",
+            "args": [
+               1
+            ],
+            "result": "%2"
+         },
+         {
+            "opcode": "label",
+            "args": [
+               "%.L1"
+            ],
+            "result": null
+         },
+         {
+            "opcode": "copy",
+            "args": [
+               "%2"
+            ],
+            "result": "%1"
+         },
+         {
+            "opcode": "param",
+            "args": [
+               1,
+               "%1"
+            ],
+            "result": null
+         },
+         {
+            "opcode": "call",
+            "args": [
+               "@__bx_print_bool",
+               1
+            ],
+            "result": null
+         },
+         {
+            "opcode": "ret",
+            "args": [],
+            "result": null
+         }
+      ],
+      "temps": [
+         "%0",
+         "%1",
+         "%2",
+         "%3",
+         "%4"
+      ],
+      "labels": [
+         "%.L0",
+         "%.L1"
+      ]
+   }
+]
